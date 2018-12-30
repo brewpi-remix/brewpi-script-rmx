@@ -34,7 +34,7 @@
 ############
 
 # Set up some project variables
-THISSCRIPT="fixPermissions.sh"
+THISSCRIPT="installDependencies.sh"
 VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"
@@ -44,7 +44,7 @@ PACKAGE="BrewPi-Script-RMX"
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
   echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
+Usage: sudo . $THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
@@ -68,27 +68,33 @@ fi
 
 echo -e "\n***Script $THISSCRIPT starting.***\n"
 
-# Make sure user pi is running with sudo
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "\nThis script must be run by user 'pi' with sudo."
-  echo -e "Enter the following command as one line:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
-  exit 1
+### Check if we have root privs to run
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   exit 1
 fi
 
-# Make sure user pi is running with sudo
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "\nThis script must be run by user 'pi' with sudo."
-  echo -e "Enter the following command as one line:"
-  echo -e "/home/$REALUSER/$GITPROJ/$THISSCRIPT\n" 1>&2
-  exit 1
-fi
+############
+### Functions to catch/display errors during setup
+############
+warn() {
+  local fmt="$1"
+  command shift 2>/dev/null
+  echo "$fmt"
+  echo "${@}"
+  echo
+  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
+  echo "-------------------------------------"
+  echo "See above lines for error message."
+  echo "Setup NOT completed."
+  echo
+}
+
+die () {
+  local st="$?"
+  warn "$@"
+  exit "$st"
+}
 
 # The script path will execute one dir above the location of this bash file
 unset CDPATH

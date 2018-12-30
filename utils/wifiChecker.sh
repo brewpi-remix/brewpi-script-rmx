@@ -70,9 +70,31 @@ echo -e "\n***Script $THISSCRIPT starting.***\n"
 
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root: sudo ./$THISSCRIPT) ($(date))" 1>&2
+   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
    exit 1
 fi
+
+############
+### Functions to catch/display errors during setup
+############
+warn() {
+  local fmt="$1"
+  command shift 2>/dev/null
+  echo "$fmt"
+  echo "${@}"
+  echo
+  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
+  echo "-------------------------------------"
+  echo "See above lines for error message."
+  echo "Setup NOT completed."
+  echo
+}
+
+die () {
+  local st="$?"
+  warn "$@"
+  exit "$st"
+}
 
 ### User-editable settings ###
 # Total number of times to try and contact the router if first packet fails

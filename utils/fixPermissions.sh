@@ -17,15 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-tools, an installer for
+# These scripts were originally a part of brewpi-script, scripts for
 # the BrewPi project (https://github.com/BrewPi). Legacy support (for the
 # very popular Arduino controller) seems to have been discontinued in
-# favor of new hardware.  No significant changes in the Legacy branch
-# seem to have been made since the develop branch was merged on Mar 19,
-# 2015 (e45ab). My original intent was to simply make this script work
-# again since the original called for PHP5 explicity. I've spent so much
-# time creating the bootstrapper and re-writing the logic I'm officialy
-# calling it a re-mix.
+# favor of new hardware.  My original intent was to simply make these
+# scripts work again since the original called for PHP5 explicity. I've
+# spent so much time making them work and re-writing the logic I'm
+# officialy calling it a re-mix.
 
 # All credit for the original concept, as well as the BrewPi project as
 # a whole, goes to Elco, Geo, Freeder, vanosg, routhcr, ajt2 and many

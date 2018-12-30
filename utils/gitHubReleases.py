@@ -152,7 +152,7 @@ class gitHubReleases:
 
 if __name__ == "__main__":
     # test code
-    releases = gitHubReleases("https://api.github.com/repos/BrewPi/firmware")
+    releases = gitHubReleases("https://api.github.com/repos/lbussy/brewpi-firmware-rmx")
     latest = releases.getLatestTag('core', False)
     print "Latest tag: " + latest
     print "Downloading binary for latest tag"

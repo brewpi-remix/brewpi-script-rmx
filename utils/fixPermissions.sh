@@ -44,7 +44,7 @@ PACKAGE="BrewPi-Script-RMX"
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
   echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
+Usage: sudo . $THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
@@ -68,15 +68,10 @@ fi
 
 echo -e "\n***Script $THISSCRIPT starting.***\n"
 
-# Make sure user pi is running with sudo
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "\nThis script must be run by user 'pi' with sudo."
-  echo -e "Enter the following command as one line:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
-  exit 1
+### Check if we have root privs to run
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   exit 1
 fi
 
 ############

@@ -1,23 +1,75 @@
 #!/bin/bash
-# Copyright 2013 BrewPi
-# This file is part of BrewPi.
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi. If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Tools RMX. If not, see <https://www.gnu.org/licenses/>.
 
-########################
-### This script will install dependencies required by BrewPi through apt-get
-########################
+# These scripts were originally a part of brewpi-tools, an installer for
+# the BrewPi project (https://github.com/BrewPi). Legacy support (for the
+# very popular Arduino controller) seems to have been discontinued in
+# favor of new hardware.  No significant changes in the Legacy branch
+# seem to have been made since the develop branch was merged on Mar 19,
+# 2015 (e45ab). My original intent was to simply make this script work
+# again since the original called for PHP5 explicity. I've spent so much
+# time creating the bootstrapper and re-writing the logic I'm officialy
+# calling it a re-mix.
+
+# All credit for the original concept, as well as the BrewPi project as
+# a whole, goes to Elco, Geo, Freeder, vanosg, routhcr, ajt2 and many
+# more contributors around the world. Apologies if I have missed anyone.
+
+############
+### Init
+############
+
+# Set up some project variables
+THISSCRIPT="installDependencies.sh"
+VERSION="0.4.5.0"
+# These should stay the same
+GITPROJ="brewpi-script-rmx"
+PACKAGE="BrewPi-Script-RMX"
+
+# Support the standard --help and --version.
+#
+# func_usage outputs to stdout the --help usage message.
+func_usage () {
+  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
+}
+# func_version outputs to stdout the --version message.
+func_version () {
+  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
+Copyright (C) 2018 Lee C. Bussy (@LBussy)
+This is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+<https://www.gnu.org/licenses/>
+There is NO WARRANTY, to the extent permitted by law."
+}
+if test $# = 1; then
+  case "$1" in
+    --help | --hel | --he | --h )
+      func_usage; exit 0 ;;
+    --version | --versio | --versi | --vers | --ver | --ve | --v )
+      func_version; exit 0 ;;
+  esac
+fi
+
+echo -e "\n***Script $THISSCRIPT starting.***\n"
 
 ############
 ### Functions to catch/display errors during setup
@@ -25,8 +77,14 @@
 warn() {
   local fmt="$1"
   command shift 2>/dev/null
-  echo -e "$fmt\n" "${@}"
-  echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***\n----------------------------------\nSee above lines for error message\nScript NOT completed\n"
+  echo "$fmt"
+  echo "${@}"
+  echo
+  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
+  echo "-------------------------------------"
+  echo "See above lines for error message."
+  echo "Setup NOT completed."
+  echo
 }
 
 die () {
@@ -36,20 +94,54 @@ die () {
 }
 
 ############
-### Install required packages
+### Check for network connection
+###########
+echo -e "\nChecking for connection to GitHub.\n"
+ping -c 3 github.com &> /dev/null 1>&2
+if [ $? -ne 0 ]; then
+  echo "----------------------------------------------"
+  echo "Could not ping github.com. Are you sure you"
+  echo "have a working Internet connection? Installer"
+  echo "will exit, because it needs to fetch code from"
+  echo "github.com."
+  echo
+  exit 1
+fi
+echo -e "\nConnection to Internet sucessfull.\n"
+
 ############
-echo -e "\n***** Installing/updating required packages... *****\n"
+### Update required packages
+############
 lastUpdate=$(stat -c %Y /var/lib/apt/lists)
 nowTime=$(date +%s)
 if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
-    echo "last apt-get update was over a week ago. Running apt-get update before updating dependencies"
-    sudo apt-get update||die
+  echo -e "\nLast apt-get update was over a week ago. Running"
+  echo -e "apt-get update before updating dependencies.\n"
+  apt-get update||die
+  echo
 fi
 
-sudo apt-get install -y apache2 libapache2-mod-php5 php5-cli php5-common php5-cgi php5 git-core build-essential python-dev python-pip git-core || die
+echo -e "\n***** Processing BrewPi dependencies. *****\n"
 
-echo -e "\n***** Installing/updating required python packages via pip... *****\n"
+echo -e "Updating required apt packages.\n"
 
-sudo pip install pyserial psutil simplejson configobj gitpython --upgrade
+# Install support for Arduino
+apt-get install arduino-core -y
 
-echo -e "\n***** Done processing BrewPi dependencies *****\n"
+# Install general stuff
+apt-get install git-core pastebinit build-essential -y
+
+# Install Apache
+apt-get install apache2 -y
+
+# Install PHP
+apt-get install libapache2-mod-php php-cli php-common php-cgi php php-mbstring -y
+
+# Install Python
+apt-get install python-dev python-pip python-configobj -y
+
+echo -e "\nUpdating required python packages via pip.\n"
+pip install pyserial psutil simplejson configobj gitpython --upgrade
+
+echo -e "\n***** Done processing BrewPi dependencies. *****\n"
+

@@ -2,7 +2,7 @@
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Tools Remix (BrewPi-Script-RMX).
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
 # BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -15,17 +15,15 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BrewPi Tools RMX. If not, see <https://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-tools, an installer for
+# These scripts were originally a part of brewpi-script, scripts for
 # the BrewPi project (https://github.com/BrewPi). Legacy support (for the
 # very popular Arduino controller) seems to have been discontinued in
-# favor of new hardware.  No significant changes in the Legacy branch
-# seem to have been made since the develop branch was merged on Mar 19,
-# 2015 (e45ab). My original intent was to simply make this script work
-# again since the original called for PHP5 explicity. I've spent so much
-# time creating the bootstrapper and re-writing the logic I'm officialy
-# calling it a re-mix.
+# favor of new hardware.  My original intent was to simply make these
+# scripts work again since the original called for PHP5 explicity. I've
+# spent so much time making them work and re-writing the logic I'm
+# officialy calling it a re-mix.
 
 # All credit for the original concept, as well as the BrewPi project as
 # a whole, goes to Elco, Geo, Freeder, vanosg, routhcr, ajt2 and many
@@ -36,11 +34,9 @@
 ############
 
 # Set up some project variables
-THISSCRIPT="runAfterUpdate.sh"
+THISSCRIPT="fixPermissions.sh"
 VERSION="0.4.5.0"
 # These should stay the same
-GITUSER="lbussy"
-GITPROJ="brewpi-script-rmx"
 PACKAGE="BrewPi-Script-RMX"
 
 # Support the standard --help and --version.
@@ -71,6 +67,17 @@ if test $# = 1; then
 fi
 
 echo -e "\n***Script $THISSCRIPT starting.***\n"
+
+# Make sure user pi is running with sudo
+if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
+if [[ $EUID -ne 0 ]]; then UIDERROR="root";
+elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
+if [[ ! $UIDERROR == ""  ]]; then
+  echo -e "\nThis script must be run by user 'pi' with sudo."
+  echo -e "Enter the following command as one line:"
+  echo -e "sudo . $THISSCRIPT\n" 1>&2
+  exit 1
+fi
 
 # Make sure user pi is running with sudo
 if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi

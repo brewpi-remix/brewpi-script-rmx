@@ -34,7 +34,7 @@
 ############
 
 # Set up some project variables
-THISSCRIPT="fixPermissions.sh"
+THISSCRIPT="fixPermissions"
 VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"
@@ -80,8 +80,14 @@ fi
 warn() {
   local fmt="$1"
   command shift 2>/dev/null
-  echo -e "$fmt\n" "${@}"
-  echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***\n----------------------------------\nSee above lines for error message\nScript NOT completed\n"
+  echo "$fmt"
+  echo "${@}"
+  echo
+  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
+  echo "-------------------------------------"
+  echo "See above lines for error message."
+  echo "Setup NOT completed."
+  echo
 }
 
 die () {

@@ -86,7 +86,7 @@ warn() {
   echo "*** ERROR ERROR ERROR ERROR ERROR ***"
   echo "-------------------------------------"
   echo "See above lines for error message."
-  echo "Setup NOT completed."
+  echo "Script did not complete."
   echo
 }
 

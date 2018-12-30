@@ -15,7 +15,7 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BrewPi Tools RMX. If not, see <https://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
 # These scripts were originally a part of brewpi-tools, an installer for
 # the BrewPi project (https://github.com/BrewPi). Legacy support (for the
@@ -36,10 +36,9 @@
 ############
 
 # Set up some project variables
-THISSCRIPT="installDependencies.sh"
+THISSCRIPT="fixPermissions.sh"
 VERSION="0.4.5.0"
 # These should stay the same
-GITPROJ="brewpi-script-rmx"
 PACKAGE="BrewPi-Script-RMX"
 
 # Support the standard --help and --version.
@@ -70,6 +69,17 @@ if test $# = 1; then
 fi
 
 echo -e "\n***Script $THISSCRIPT starting.***\n"
+
+# Make sure user pi is running with sudo
+if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
+if [[ $EUID -ne 0 ]]; then UIDERROR="root";
+elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
+if [[ ! $UIDERROR == ""  ]]; then
+  echo -e "\nThis script must be run by user 'pi' with sudo."
+  echo -e "Enter the following command as one line:"
+  echo -e "sudo . $THISSCRIPT\n" 1>&2
+  exit 1
+fi
 
 ############
 ### Functions to catch/display errors during setup

@@ -1,23 +1,80 @@
 #!/bin/bash
-# This bash script will update the CRON job that is used to start/restart/check BrewPi
+
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, scripts for
+# the BrewPi project (https://github.com/BrewPi). Legacy support (for the
+# very popular Arduino controller) seems to have been discontinued in
+# favor of new hardware.  My original intent was to simply make these
+# scripts work again since the original called for PHP5 explicity. I've
+# spent so much time making them work and re-writing the logic I'm
+# officialy calling it a re-mix.
+
+# All credit for the original concept, as well as the BrewPi project as
+# a whole, goes to Elco, Geo, Freeder, vanosg, routhcr, ajt2 and many
+# more contributors around the world. Apologies if I have missed anyone.
 
 ############
-### Functions to catch/display errors during setup
+### Init
 ############
-warn() {
-  local fmt="$1"
-  command shift 2>/dev/null
-  echo -e "$fmt\n" "${@}"
-  echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***\n----------------------------------\nSee above lines for error message\nScript NOT completed\n"
-}
 
-die () {
-  local st="$?"
-  warn "$@"
-  exit "$st"
-}
+# Set up some project variables
+THISSCRIPT="updateCron.sh"
+VERSION="0.4.5.0"
+# These should stay the same
+PACKAGE="BrewPi-Script-RMX"
 
-# the script path will one dir above the location of this bash file
+# Support the standard --help and --version.
+#
+# func_usage outputs to stdout the --help usage message.
+func_usage () {
+  echo -e "$PACKAGE $THISSCRIPT version $VERSION
+Usage: sudo . $THISSCRIPT"
+}
+# func_version outputs to stdout the --version message.
+func_version () {
+  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
+Copyright (C) 2018 Lee C. Bussy (@LBussy)
+This is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+<https://www.gnu.org/licenses/>
+There is NO WARRANTY, to the extent permitted by law."
+}
+if test $# = 1; then
+  case "$1" in
+    --help | --hel | --he | --h )
+      func_usage; exit 0 ;;
+    --version | --versio | --versi | --vers | --ver | --ve | --v )
+      func_version; exit 0 ;;
+  esac
+fi
+
+echo -e "\n***Script $THISSCRIPT starting.***\n"
+
+### Check if we have root privs to run
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   exit 1
+fi
+
+# The script will execute one dir above the location of this bash file
 unset CDPATH
 myPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 defaultScriptPath="$(dirname "$myPath")"
@@ -25,7 +82,7 @@ defaultScriptPath="$(dirname "$myPath")"
 ############
 ### Check for old crontab entry
 ############
-echo -e "\n***** Updating cron for the brewpi user... *****\n"
+echo -e "\n***** Updating cron for the brewpi user. *****\n"
 
 sudo crontab -u brewpi -l > /tmp/oldcron
 if [ -s /tmp/oldcron ]; then
@@ -43,14 +100,14 @@ if [ -s /tmp/oldcron ]; then
              echo -e "It looks like you have an old brewpi entry in your crontab."
              echo -e "The cron job to start/restart brewpi has been moved to cron.d"
              echo -e "This means the lines for brewpi in your crontab are not needed anymore."
-             echo -e "Nearly all users will want to comment out this line\n"
+             echo -e "Nearly all users will want to comment out this line.\n"
              firstLine=false
              echo "crontab line: $line"
              read -p "Do you want to comment out this line? [Y/n]: " yn </dev/tty
              case "$yn" in
-                 y | Y | yes | YES| Yes ) echo "Commenting line"; echo "# $line" >> /tmp/newcron;;
-                 n | N | no | NO | No ) echo -e "Keeping original line\n"; echo "$line" >> /tmp/newcron;;
-                 * ) echo "No valid choice received, assuming yes..."; echo "Commenting line"; echo "# $line" >> /tmp/newcron;;
+                 y | Y | yes | YES| Yes ) echo "Commenting line:\n"; echo "# $line" >> /tmp/newcron;;
+                 n | N | no | NO | No ) echo -e "Keeping original line:\n"; echo "$line" >> /tmp/newcron;;
+                 * ) echo "No valid choice entered, assuming yes."; echo "Commenting line:\n"; echo "# $line" >> /tmp/newcron;;
              esac
          esac
        fi
@@ -58,9 +115,9 @@ if [ -s /tmp/oldcron ]; then
      sudo crontab -u brewpi /tmp/newcron||die
      rm /tmp/newcron||warn
      if ! ${firstLine}; then
-         echo -e "Updated crontab to:"
+         echo -e "Updated crontab to:\n"
          sudo crontab -u brewpi -l||die
-         echo -e "Finished updating crontab"
+         echo -e "Finished updating crontab."
      fi
   fi
 fi
@@ -79,7 +136,8 @@ rm /tmp/oldcron||warn
 #   entry:wifichecker
 #   */10 * * * * $scriptpath/util/wifiChecker.sh 1>$stdoutpath 2>>$stderrpath &
 #
-# This script checks the available entries whether they are up-to-date.# If not, it can replace the entry with a new version.
+# This script checks the available entries whether they are up-to-date.
+# If not, it can replace the entry with a new version.
 # If the entry is not in entries (enabled or disabled), it needs to be disabled or added.
 # Known entries: brewpi wifichecker
 #
@@ -139,7 +197,7 @@ fi
 function checkEntry {
     entry=$1 # entry name
     newEntry=$2 # new cron job
-    echo "Checking entry for $entry ..."
+    echo "Checking entry for $entry."
     # find old entry for this name
     oldEntry=$(grep -A1 "entry:$entry" "$cronfile" | tail -n 1)
     # check whether it is up to date
@@ -147,14 +205,14 @@ function checkEntry {
         # if not up to date, prompt to replace
         echo -e "\nYour current cron entry:"
         if [ -z "$oldEntry" ]; then
-            echo "None"
+            echo "None."
         else
             echo "$oldEntry"
         fi
         echo -e "\nLatest version of this cron entry:"
         echo "$newEntry"
         echo -e "\n"
-        read -p "Your current cron entry differs from the latest version, would you like me to update? [Y/n]: " yn
+        read -p "Your current cron entry differs from the latest version, would you like me to update? [Y/n]: " yn </dev/tty
         if [ -z "$yn" ]; then
             yn="y" # no entry/enter = yes
         fi
@@ -162,12 +220,12 @@ function checkEntry {
             y | Y | yes | YES| Yes )
                 line=$(grep -n "entry:$entry" /etc/cron.d/brewpi | cut -d: -f 1)
                 if [ -z "$line" ]; then
-                    echo -e "\nAdding new cron entry to file"
+                    echo -e "\nAdding new cron entry to file."
                     # entry did not exist, add at end of file
                     echo "# entry:$entry" | sudo tee -a "$cronfile" > /dev/null
                     echo "$newEntry" | sudo tee -a "$cronfile" > /dev/null
                 else
-                    echo -e "\nReplacing cron entry on line $line with newest version"
+                    echo -e "\nReplacing cron entry on line $line with newest version."
                     # get line number to replace
                     cp "$cronfile" /tmp/brewpi.cron
                     # write head of old cron file until replaced line
@@ -179,11 +237,11 @@ function checkEntry {
                 fi
                 ;;
             * )
-                echo "Skipping entry for $entry"
+                echo "Skipping entry for $entry."
                 ;;
         esac
     fi
-    echo "Done checking entry $entry ..."
+    echo "Done checking entry $entry."
 }
 
 # Entry for brewpi.py
@@ -213,15 +271,15 @@ for entry in $entries; do
 done
 # If there was no entry for wifichecker, ask to add it or disable it
 if [ "$found" == false ] ; then
-    echo "No setting found for wifi check script"
+    echo "No setting found for wifi check script."
     if [ -n "$(ifconfig | grep wlan)" ]; then
-        echo -e "\nIt looks like you're running a wifi adapter on your Pi"
+        echo -e "\nIt looks like you're running a wifi adapter on your Pi."
     else
         echo -e "\nIt looks like you're not running a wifi adapter on your Pi."
     fi
-    echo "We recently added a utility script that can attempt to restart the "
+    echo "We recently added a utility script that can attempt to restart the"
     echo "WiFi connection on your Pi, if the connection were to drop."
-    read -p "Would you like to enable the cron entry? [Y/n]: " yn
+    read -p "Would you like to enable the cron entry? [Y/n]: " yn </dev/tty
     if [ -z "$yn" ]; then
         yn="y"
     fi
@@ -235,11 +293,10 @@ if [ "$found" == false ] ; then
         * )
             # update entries="..." to entries="... ~wifichecker"
             sudo sed -i '/entries=.*/ s/"$/ ~wifichecker"/' "$cronfile"
-            echo "Setting wifichecker to disabled"
+            echo "Setting wifichecker to disabled."
             ;;
     esac
 fi
-
 
 echo -e "Restarting cron"
 sudo /etc/init.d/cron restart||die

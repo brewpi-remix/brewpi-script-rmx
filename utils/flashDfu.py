@@ -35,7 +35,7 @@ import autoSerial
 import serial
 from programController import SerialProgrammer
 
-releases = gitHubReleases("https://api.github.com/repos/brewpi/firmware")
+releases = gitHubReleases("https://api.github.com/repos/lbussy/brewpi-firmware-rmx")
 
 serialPorts = []
 

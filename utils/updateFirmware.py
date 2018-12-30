@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi. If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import print_function
 import sys
 import os
@@ -34,7 +33,6 @@ def quitBrewPi(webPath):
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
 
-
 def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDevices = True):
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
@@ -44,7 +42,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     configFile = util.scriptPath() + '/settings/config.cfg'
     config = util.readCfgWithDefaults(configFile)
 
-    printStdErr("Stopping any running instances of BrewPi to check/update controller...")
+    printStdErr("Stopping any running instances of BrewPi to check/update controller.")
     quitBrewPi(config['wwwPath'])
 
     hwVersion = None
@@ -54,7 +52,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     ser = None
 
     ### Get version number
-    printStdErr("\nChecking current firmware version...")
+    printStdErr("\nChecking current firmware version.")
     try:
         ser = util.setupSerial(config)
         hwVersion = brewpiVersion.getVersionFromSerial(ser)
@@ -113,8 +111,9 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         restoreDevices = False
         restoreSettings = False
 
-    printStdErr("\nChecking GitHub for available release...")
-    releases = gitHubReleases("https://api.github.com/repos/BrewPi/firmware")
+    printStdErr("\nChecking GitHub for available release.")
+    #releases = gitHubReleases("https://api.github.com/repos/BrewPi/firmware")
+    releases = gitHubReleases("https://api.github.com/repos/lbussy/brewpi-firmware-rmx")
 
     availableTags = releases.getTags(beta)
     stableTags = releases.getTags(False)
@@ -158,7 +157,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
             try:
                 tag = compatibleTags[selection]
             except IndexError:
-                print("Not a valid choice. Try again")
+                print("Not a valid choice. Try again.")
                 continue
             break
     else:
@@ -192,7 +191,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False
 
-    printStdErr("Downloading firmware...")
+    printStdErr("Downloading firmware.")
     localFileName = None
     system1 = None
     system2 = None
@@ -232,7 +231,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         printStdErr("Downloading firmware failed")
         return -1
 
-    printStdErr("\nUpdating firmware...\n")
+    printStdErr("\nUpdating firmware.\n")
     result = programmer.programController(config, board, localFileName, system1, system2, useDfu,
                                           {'settings': restoreSettings, 'devices': restoreDevices})
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")

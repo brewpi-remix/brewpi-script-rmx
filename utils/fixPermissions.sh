@@ -34,7 +34,7 @@
 ############
 
 # Set up some project variables
-THISSCRIPT="fixPermissions"
+THISSCRIPT="fixPermissions.sh"
 VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"

@@ -184,19 +184,22 @@ fi
 
 if [ -z "$stdoutpath" ]; then
     stdoutpath="/home/brewpi/logs/stdout.txt"
-    echo "No previous setting for stdoutpath found, using default:\n$stdoutpath\n"
+    echo -e "No previous setting for stdoutpath found, using default:\n$stdoutpath\n"
     sudo sed -i '1istdoutpath="/home/brewpi/logs/stdout.txt"' "$cronfile"
 fi
 
 if [ -z "$stderrpath" ]; then
     stderrpath="/home/brewpi/logs/stdout.txt"
-    echo "No previous setting for stdoutpath found, using default:\n$stderrpath\n"
+    echo -e "No previous setting for stdoutpath found, using default:\n$stderrpath\n"
     sudo sed -i '1istderrpath="/home/brewpi/logs/stderr.txt"' "$cronfile"
 fi
 
 function checkEntry {
     entry=$1 # entry name
     newEntry=$2 # new cron job
+    echo "entry = $entry"
+    echo "newEntry = $newEntry"
+    exit 0
     echo -e "\nChecking entry for $entry."
     # find old entry for this name
     oldEntry=$(grep -A1 "entry:$entry" "$cronfile" | tail -n 1)
@@ -275,8 +278,8 @@ if [ "$found" == false ] ; then
   echo -e "\nNo setting found for wifi check script."
   if [ -n "$(ifconfig | grep wlan)" ]; then
     echo -e "\nIt looks like you're running a WiFi adapter on your Pi.  We recently"
-    echo -e "added a utility script that can attempt to restart the WiFi connection on"
-    echo -e "your Pi, if the connection were to drop.\n"
+    echo -e "added a utility script that can attempt to restart the WiFi connection"
+    echo -e "on your Pi, if the connection were to drop.\n"
     read -p "Would you like to enable the cron entry? [Y/n]: " yn </dev/tty
     if [ -z "$yn" ]; then
       yn="y"

@@ -28,13 +28,13 @@ import subprocess
 import platform
 import sys
 
-# print everything in this file to stderr so it ends up in the correct log file for the web UI
+# print everything in this file to stderr so it ends up in the
+# correct log file for the web UI
 def printStdErr(*objs):
     print("", *objs, file=stderr)
 
 def asbyte(v):
     return chr(v & 0xFF)
-
 
 class LightYModem:
     """
@@ -154,8 +154,8 @@ def loadBoardsFile(arduinohome):
     try:
         boardsFileContent = open(arduinohome + 'hardware/arduino/boards.txt', 'rb').readlines()
     except IOError:
-        printStdErr("Could not read boards.txt from Arduino, probably because Arduino has not been installed")
-        printStdErr("Please install it with: sudo apt-get install arduino-core")
+        printStdErr("Could not read boards.txt from Arduino, probably because Arduino has not been installed.")
+        printStdErr("Please install it with: 'sudo apt-get install arduino-core'")
     return boardsFileContent
 
 def programController(config, boardType, hexFile, system1File, system2File, useDfu, restoreWhat):
@@ -196,7 +196,7 @@ class SerialProgrammer:
         self.oldSettings = {}
 
     def program(self, hexFile, system1File, system2File, useDfu, restoreWhat):
-        printStdErr("****    %(a)s Program script started    ****" % msg_map)
+        printStdErr("\n****    %(a)s program script started    ****\n" % msg_map)
 
         self.parse_restore_settings(restoreWhat)
 
@@ -239,7 +239,7 @@ class SerialProgrammer:
             process = subprocess.Popen(command, shell=True)
             process.wait()
 
-            printStdErr("\nUpdating firmware over DFU finished\n")
+            printStdErr("\nUpdating firmware over DFU finished.\n")
 
         else:
             if not self.ser:
@@ -292,7 +292,7 @@ class SerialProgrammer:
         self.fetch_new_version()
         self.reset_settings()
         if self.restoreSettings or self.restoreDevices:
-            printStdErr("Now checking which settings and devices can be restored...")
+            printStdErr("Now checking which settings and devices can be restored.")
         if self.versionNew is None:
             printStdErr(("Warning: Cannot receive version number from controller after programming. "
                          "\nSomething must have gone wrong. Restoring settings/devices settings failed.\n"))
@@ -317,7 +317,7 @@ class SerialProgrammer:
         if self.restoreDevices:
             self.restore_devices()
 
-        printStdErr("****    Program script done!    ****")
+        printStdErr("\n****  %(a)s  program script done!    ****\n" % msg_map)
         self.ser.close()
         self.ser = None
         return 1
@@ -371,8 +371,8 @@ class SerialProgrammer:
                         "Your controller is either not programmed yet or running a very old version of BrewPi. " +
                         "It will be reset to defaults.")
         else:
-            printStdErr(msg+"Found " + version.toExtendedString() +
-                        " on port " + self.ser.name + "\n")
+            printStdErr(msg+"Found\n" + version.toExtendedString() +
+                        "\non port\n" + self.ser.name + "\n")
         return version
 
     def fetch_current_version(self):
@@ -386,7 +386,7 @@ class SerialProgrammer:
     def retrieve_settings_from_serial(self):
         ser = self.ser
         self.oldSettings.clear()
-        printStdErr("Requesting old settings from %(a)s..." % msg_map)
+        printStdErr("Requesting old settings from %(a)s." % msg_map)
         expected_responses = 2
         if not self.versionOld.isNewer("0.2.0"):  # versions older than 2.0.0 did not have a device manager
             expected_responses += 1
@@ -428,14 +428,14 @@ class SerialProgrammer:
     def delay(self, countDown):
         while countDown > 0:
             time.sleep(1)
+            printStdErr("Back up in " + str(countDown) + ".")
             countDown -= 1
-            printStdErr("Back up in " + str(countDown) + "...")
 
     def flash_file(self, hexFile):
-        raise Exception("not implemented")
+        raise Exception("Not implemented.")
 
     def reset_settings(self, setTestMode = False):
-        printStdErr("Resetting EEPROM to default settings")
+        printStdErr("Resetting EEPROM to default settings.")
         self.ser.write('E\n')
         if setTestMode:
             self.ser.write('j{mode:t}')
@@ -567,7 +567,7 @@ class ArduinoProgrammer(SerialProgrammer):
 
     def delay_serial_open(self):
         if self.boardType == "uno":
-            time.sleep(5)  # give the arduino some time to reboot in case of an Arduino UNO
+            time.sleep(10)  # give the arduino some time to reboot in case of an Arduino UNO
 
     def reset_leonardo(self):
         if self.ser:
@@ -605,7 +605,7 @@ class ArduinoProgrammer(SerialProgrammer):
                 [key, sign, val] = setting.rpartition('=')
                 boardSettings[key] = val
 
-        printStdErr("Checking hex file size with avr-size...")
+        printStdErr("Checking hex file size with avr-size.")
 
         # start programming the Arduino
         avrsizeCommand = avrsizehome + 'avr-size ' + "\"" + hexFile + "\""
@@ -649,7 +649,7 @@ class ArduinoProgrammer(SerialProgrammer):
                           ' -U ' + 'flash:w:' + "\"" + hexFileLocal + "\"" +
                           ' -C ' + avrconf)
 
-        printStdErr("Programming Arduino with avrdude: " + programCommand)
+        printStdErr("Programming Arduino with avrdude:\n" + programCommand)
 
 
         p = sub.Popen(programCommand, stdout=sub.PIPE, stderr=sub.PIPE, shell=True, cwd=hexFileDir)
@@ -664,7 +664,6 @@ class ArduinoProgrammer(SerialProgrammer):
             printStdErr("There was an error while programming.")
             return False
 
-        printStdErr("Giving the Arduino a few seconds to power up...")
-        self.delay(6)
+        printStdErr("Giving the Arduino a few seconds to power up.")
+        self.delay(15)
         return True
-

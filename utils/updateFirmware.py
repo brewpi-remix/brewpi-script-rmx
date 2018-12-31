@@ -182,7 +182,7 @@ update controller.")
 
     if hwVersion is not None and not hwVersion.isNewer(tag):
         if hwVersion.isEqual(tag):
-            printStdErr("You are already running version %s." % tag)
+            printStdErr("\n***You are already running version %s.***" % tag)
         else:
             printStdErr("Your current version is newer than %s." % tag)
 

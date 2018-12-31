@@ -124,7 +124,7 @@ fi
 rm /tmp/oldcron||warn
 
 ############
-# Update etc/cron.d/brewpi
+# Update /etc/cron.d/brewpi
 # Settings are stored in the cron file itself: active entries, scriptpath and stdout/stderr redirect paths
 #
 # Entries is a list of entries that should be active.

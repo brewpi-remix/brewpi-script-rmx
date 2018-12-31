@@ -272,7 +272,7 @@ for entry in $entries; do
 done
 # If there was no entry for wifichecker, ask to add it or disable it
 if [ "$found" == false ] ; then
-  echo "No setting found for wifi check script."
+  echo -e "\nNo setting found for wifi check script."
   if [ -n "$(ifconfig | grep wlan)" ]; then
     echo -e "\nIt looks like you're running a WiFi adapter on your Pi.  We recently"
     echo -e "added a utility script that can attempt to restart the WiFi connection on"
@@ -299,5 +299,5 @@ if [ "$found" == false ] ; then
     fi
 fi
 
-echo -e "Restarting cron"
+echo -e "\nRestarting cron."
 sudo /etc/init.d/cron restart||die

@@ -214,8 +214,7 @@ function checkEntry {
             echo "$oldEntry"
         fi
         echo -e "\nLatest version of this cron entry:"
-        echo "$newEntry"
-        echo -e "\n"
+        echo -e "$newEntry\n"
         print "Your current cron entry differs from the latest version, would you like me"
         read -p "to update? [Y/n]: " yn </dev/tty
         if [ -z "$yn" ]; then

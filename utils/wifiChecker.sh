@@ -17,17 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-script, scripts for
-# the BrewPi project (https://github.com/BrewPi). Legacy support (for the
-# very popular Arduino controller) seems to have been discontinued in
-# favor of new hardware.  My original intent was to simply make these
-# scripts work again since the original called for PHP5 explicity. I've
-# spent so much time making them work and re-writing the logic I'm
-# officialy calling it a re-mix.
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
 
-# All credit for the original concept, as well as the BrewPi project as
-# a whole, goes to Elco, Geo, Freeder, vanosg, routhcr, ajt2 and many
-# more contributors around the world. Apologies if I have missed anyone.
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
 
 ############
 ### Init
@@ -70,7 +68,7 @@ echo -e "\n***Script $THISSCRIPT starting.***\n"
 
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   echo "This script must be run as root: sudo ./$THISSCRIPT"
    exit 1
 fi
 

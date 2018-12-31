@@ -72,6 +72,7 @@ update controller.")
         if hwVersion is None:
             printStdErr("Unable to receive version from controller.\n\n"
                         "Is your controller unresponsive and do you wish to try restoring")
+            sys.stdin.flush()
             choice = raw_input("your firmware? [y/N]: ")
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 printStdErr("\nPlease make sure your controller is connected properly and try again.\n")
@@ -105,6 +106,7 @@ update controller.")
                     printStdErr("Please put your controller in DFU mode now by holding the setup button during reset,")
                     printStdErr("until the LED blinks yellow.")
                     printStdErr("Press Enter when ready.")
+                    sys.stdin.flush()
                     choice = raw_input()
                     useDfu = True # use dfu mode when board is not responding to serial
 
@@ -151,6 +153,7 @@ update controller.")
         while 1:
             try:
                 print("\nEnter the number [0-%d] of the version you want to program" % num_choices)
+                sys.stdin.flush()
                 choice = raw_input("[default = %d (%s)]: " %(default_choice, tag))
                 if choice == "":
                     break
@@ -180,6 +183,7 @@ update controller.")
             printStdErr("If you are encountering problems, you can reprogram anyway."
                         " Would you like to do this?"
                         "\nType yes to reprogram or just press enter to keep your current firmware: ")
+            sys.stdin.flush()
             choice = raw_input()
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 return 0
@@ -190,10 +194,12 @@ update controller.")
 
     if hwVersion is not None and userInput:
         printStdErr("Would you like to try to restore your settings after programming? [Y/n]: ")
+        sys.stdin.flush()
         choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
         printStdErr("Would you like to try to restore your configured devices after programming? [Y/n]: ")
+        sys.stdin.flush()
         choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False

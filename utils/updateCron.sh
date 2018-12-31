@@ -200,10 +200,6 @@ function checkEntry {
     echo -e "\nChecking entry for $entry."
     # find old entry for this name
     oldEntry=$(grep -A1 "entry:$entry" "$cronfile" | tail -n 1)
-    echo "entry = $entry"
-    echo "newEntry = $newEntry"
-    echo "oldEntry = $oldEntry"
-    exit 0
     # check whether it is up to date
     if [ "$oldEntry" != "$newEntry" ]; then
         # if not up to date, prompt to replace
@@ -215,7 +211,7 @@ function checkEntry {
         fi
         echo -e "\nLatest version of this cron entry:"
         echo -e "$newEntry\n"
-        print "Your current cron entry differs from the latest version, would you like me"
+        echo -e "\nYour current cron entry differs from the latest version, would you like me"
         read -p "to update? [Y/n]: " yn </dev/tty
         if [ -z "$yn" ]; then
             yn="y" # no entry/enter = yes

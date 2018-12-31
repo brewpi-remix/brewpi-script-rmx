@@ -221,7 +221,7 @@ function checkEntry {
             y | Y | yes | YES| Yes )
                 line=$(grep -n "entry:$entry" /etc/cron.d/brewpi | cut -d: -f 1)
                 if [ -z "$line" ]; then
-                    echo -e "\nAdding new cron entry to file."
+                    echo -e "\nAdding new cron entry to file.\n"
                     # entry did not exist, add at end of file
                     echo "# entry:$entry" | sudo tee -a "$cronfile" > /dev/null
                     echo "$newEntry" | sudo tee -a "$cronfile" > /dev/null

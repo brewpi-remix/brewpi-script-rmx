@@ -20,10 +20,12 @@ import sys
 import os
 import subprocess
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
+# append parent directory to be able to import files
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import autoSerial
 
-# print everything in this file to stderr so it ends up in the correct log file for the web UI
+# print everything in this file to stderr so it ends up in the correct
+# log file for the web UI
 def printStdErr(*objs):
     print("", *objs, file=sys.stderr)
 
@@ -33,7 +35,9 @@ def quitBrewPi(webPath):
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
 
-def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDevices = True):
+def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, \
+        restoreDevices = True):
+
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
     import brewpiVersion
@@ -42,7 +46,9 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     configFile = util.scriptPath() + '/settings/config.cfg'
     config = util.readCfgWithDefaults(configFile)
 
-    printStdErr("Stopping any running instances of BrewPi to check/update controller.")
+    printStdErr("\nStopping any running instances of BrewPi to check or \
+update controller.")
+
     quitBrewPi(config['wwwPath'])
 
     hwVersion = None
@@ -60,19 +66,19 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         shield = hwVersion.shield
         board = hwVersion.board
 
-        printStdErr("Found " + hwVersion.toExtendedString() + \
+        printStdErr("Found:\n" + hwVersion.toExtendedString() + \
                " on port " + ser.name + "\n")
     except:
         if hwVersion is None:
-            printStdErr("Unable to receive version from controller.\n"
-                        "Is your controller unresponsive and do you wish to try restoring your firmware? [y/N]: ")
-            choice = raw_input()
+            printStdErr("Unable to receive version from controller.\n\n"
+                        "Is your controller unresponsive and do you wish to try restoring")
+            choice = raw_input("your firmware? [y/N]: ")
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
-                printStdErr("Please make sure your controller is connected properly and try again.")
+                printStdErr("\nPlease make sure your controller is connected properly and try again.\n")
                 return 0
             port, name = autoSerial.detect_port()
             if not port:
-                printStdErr("Could not find compatible device in available serial ports.")
+                printStdErr("\nCould not find compatible device in available serial ports.\n")
                 return 0
             if "Particle" in name:
                 family = "Particle"

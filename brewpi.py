@@ -81,7 +81,7 @@ from backgroundserial import BackGroundSerial
 # Settings will be read from controller, initialize with same defaults as controller
 # This is mainly to show what's expected. Will all be overwritten on the first update from the controller
 
-compatibleHwVersion = "0.2.4"
+compatibleHwVersion = "0.2.10"
 
 # Control Settings
 cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
@@ -106,8 +106,9 @@ try:
     opts, args = getopt.getopt(sys.argv[1:], "hc:sqkfld",
                                ['help', 'config=', 'status', 'quit', 'kill', 'force', 'log', 'dontrunfile', 'checkstartuponly'])
 except getopt.GetoptError:
-    printStdErr("Unknown parameter, available Options: --help, --config <path to config file>, " +
-          "--status, --quit, --kill, --force, --log, --dontrunfile")
+    printStdErr("Unknown parameter, available Options: --help, --config <path to config file>,\n" +
+                "                                       --status, --quit, --kill, --force, --log,\n" +
+                "                                       --dontrunfile")
     sys.exit()
 
 configFile = None
@@ -118,16 +119,18 @@ logToFiles = False
 for o, a in opts:
     # print help message for command line options
     if o in ('-h', '--help'):
-        printStdErr("\n Available command line options: ")
-        printStdErr("--help: print this help message")
-        printStdErr("--config <path to config file>: specify a config file to use. When omitted settings/config.cf is used")
-        printStdErr("--status: check which scripts are already running")
-        printStdErr("--quit: ask all  instances of BrewPi to quit by sending a message to their socket")
-        printStdErr("--kill: kill all instances of BrewPi by sending SIGKILL")
+        printStdErr("\nAvailable command line options: ")
+        printStdErr("--help: Print this help message")
+        printStdErr("--config <path to config file>: Specify a config file to use. When omitted\n" +
+                    "                                 settings/config.cf is used")
+        printStdErr("--status: Check which scripts are already running")
+        printStdErr("--quit: Ask all instances of BrewPi to quit by sending a message to\n" + 
+                    "         their socket")
+        printStdErr("--kill: Kill all instances of BrewPi by sending SIGKILL")
         printStdErr("--force: Force quit/kill conflicting instances of BrewPi and keep this one")
-        printStdErr("--log: redirect stderr and stdout to log files")
-        printStdErr("--dontrunfile: check dontrunfile in www directory and quit if it exists")
-        printStdErr("--checkstartuponly: exit after startup checks, return 1 if startup is allowed")
+        printStdErr("--log: Redirect stderr and stdout to log files")
+        printStdErr("--dontrunfile: Check dontrunfile in www directory and quit if it exists")
+        printStdErr("--checkstartuponly: Exit after startup checks, return 1 if startup is allowed")
         exit()
     # supply a config file
     if o in ('-c', '--config'):

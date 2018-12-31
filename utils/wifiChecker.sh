@@ -66,28 +66,53 @@ if test $# = 1; then
   esac
 fi
 
-echo -e "\n***Script $THISSCRIPT starting.***\n"
+# Print banner if we are not running in cron
+pstree -s $$ | grep -q bash && CRON=false || CRON=true
+if [ "$CRON" = false ]; then
+  echo -e "\n***Script $THISSCRIPT starting.***\n"
+fi
+
+function log {
+  case $1 in
+    1 )
+        level="INFO"  ;;
+    2 )
+        level="WARN"  ;;
+    3 )
+        level="ERROR" ;;
+    * )
+        level="INFO"  ;;
+  esac
+  msg=$2
+  now=$(date '+%Y-%m-%d %H:%M:%S')
+  name=$(echo ${THISSCRIPT^} | awk -F'.' '{print $1}')
+  if [ "$level" = "INFO" ]; then
+    echo -e "$now $name $level: $msg"
+  else
+    echo -e "$now $name $level: $msg" >&2
+  fi
+}
 
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   log 3 "This script must be run as root: sudo ./$THISSCRIPT"
    exit 1
 fi
 
 ############
-### Functions to catch/display errors during setup
+### Functions to catch/display errors during runtime
 ############
 warn() {
   local fmt="$1"
   command shift 2>/dev/null
-  echo "$fmt"
-  echo "${@}"
-  echo
-  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
-  echo "-------------------------------------"
-  echo "See above lines for error message."
-  echo "Script did not complete."
-  echo
+  log 3 "$fmt"
+  log 3 "${@}"
+  log 3
+  log 3 "*** ERROR ERROR ERROR ERROR ERROR ***"
+  log 3 "-------------------------------------"
+  log 3 "See above lines for error message."
+  log 3 "Script did not complete."
+  log 3
 }
 
 die () {
@@ -102,44 +127,50 @@ MAX_FAILURES=3
 # Time to wait between failed attempts contacting the router
 INTERVAL=15
 
-if [ "$1" = "checkinterfaces" ]; then
-  ### Make sure auto wlan0 is added to /etc/network/interfaces, otherwise it causes trouble bringing the interface back up
-  grep "auto wlan0" /etc/network/interfaces > /dev/null
+# Start fails at 0
+fails=0
+# Get wireless lan device name
+wlan=$(cat /proc/net/wireless | perl -ne '/(\w+):/ && print $1')
+
+if [ "$1" = "--checkinterfaces" ]; then
+  # Make sure auto {$wlan} is added to /etc/network/interfaces,
+  # otherwise it causes trouble bringing the interface back up
+  grep "auto $wlan" /etc/network/interfaces > /dev/null
   if [ $? -ne 0 ]; then
-    printf '%s\n' 0a "auto wlan0" . w | ed -s /etc/network/interfaces
+    printf '%s\n' 0a "auto $wlan" . w | ed -s /etc/network/interfaces
   fi
   exit 0
 fi
 
-fails=0
+# Get gateway address
 gateway=$(/sbin/ip route | grep -m 1 default | awk '{ print $3 }')
 ### Sometimes network is so hosed, gateway IP is missing from ip route
 if [ -z "$gateway" ]; then
-  echo "BrewPi: wifiChecker: Cannot find gateway IP. Restarting wlan0 interface. ($(date))" 1>&2
-  /sbin/ifdown wlan0
-  /sbin/ifup wlan0
-  exit 0
+  log 3 "$Cannot find gateway IP."
+  let fails="MAX_FAILURES+1"
 fi
 
 while [ $fails -lt $MAX_FAILURES ]; do
-### Try pinging, and if host is up, exit
-  ping -c 1 -I wlan0 "$gateway" > /dev/null
+  ### Try pinging
+  ping -c 1 -I $wlan "$gateway" > /dev/null
   if [ $? -eq 0 ]; then
-    fails=0
-    echo "BrewPi: wifiChecker: Successfully pinged $gateway. ($(date))"
+    log 1 "Successfully pinged $gateway."
     break
   fi
-### If that didn't work...
-let fails=fails+1
+  ### If that didn't work...
+  let "fails=fails+1"
   if [ $fails -lt $MAX_FAILURES ]; then
-    echo "BrewPi: wifiChecker: Attempt $fails to reach $gateway failed. ($(date))" 1>&2
+    log 2 "$fails failure(s) to reach $gateway."
     sleep $INTERVAL
   fi
 done
 
-### Restart wlan0 interface
+### Restart wireless interface
 if [ $fails -ge $MAX_FAILURES ]; then
-  echo "BrewPi: wifiChecker: Unable to reach router. Restarting wlan0 interface. ($(date))" 1>&2
-  /sbin/ifdown wlan0
-  /sbin/ifup wlan0
+  log 3 "Unable to reach router. Restarting $wlan interface."
+  /sbin/ifdown $wlan
+  /sbin/ifup $wlan
+  exit 1
 fi
+
+exit 0

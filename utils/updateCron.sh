@@ -270,9 +270,10 @@ for entry in $entries; do
     fi
 done
 # If there was no entry for wifichecker, ask to add it or disable it
+wlan=$(cat /proc/net/wireless | perl -ne '/(\w+):/ && print $1')
 if [ "$found" == false ] ; then
   echo -e "\nNo setting found for wifi check script."
-  if [ -n "$(ifconfig | grep wlan)" ]; then
+  if [[ ! -z "$wlan" ]]; then
     echo -e "\nIt looks like you're running a WiFi adapter on your Pi.  We recently"
     echo -e "added a utility script that can attempt to restart the WiFi connection"
     echo -e "on your Pi, if the connection were to drop.\n"
@@ -282,16 +283,16 @@ if [ "$found" == false ] ; then
     fi
     case "$yn" in
       y | Y | yes | YES| Yes )
-        # update entries="..." to entries="... wifichecker"
-        sudo sed -i '/entries=.*/ s/"$/ wifichecker"/' "$cronfile"
-        checkEntry wifichecker "$wificheckcron"
-        sudo bash "$scriptpath"/utils/wifiChecker.sh checkinterfaces
-        ;;
+          # update entries="..." to entries="... wifichecker"
+          sudo sed -i '/entries=.*/ s/"$/ wifichecker"/' "$cronfile"
+          checkEntry wifichecker "$wificheckcron"
+          sudo bash "$scriptpath"/utils/wifiChecker.sh --checkinterfaces
+          ;;
       * )
-        # update entries="..." to entries="... ~wifichecker"
-        sudo sed -i '/entries=.*/ s/"$/ ~wifichecker"/' "$cronfile"
-        echo "Setting wifichecker to disabled."
-        ;;
+          # update entries="..." to entries="... ~wifichecker"
+          sudo sed -i '/entries=.*/ s/"$/ ~wifichecker"/' "$cronfile"
+          echo "Setting wifichecker to disabled."
+          ;;
     esac
     else
       echo -e "\nIt looks like you're not running a WiFi adapter on your Pi.\n"

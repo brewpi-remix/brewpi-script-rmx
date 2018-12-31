@@ -102,7 +102,8 @@ update controller.")
                     printStdErr("Assuming a Rev C shield. If this is not the case, please program your Arduino manually")
                     shield = 'RevC'
                 else:
-                    printStdErr("Please put your controller in DFU mode now by holding the setup button during reset, until the LED blinks yellow.")
+                    printStdErr("Please put your controller in DFU mode now by holding the setup button during reset,")
+                    printStdErr("until the LED blinks yellow.")
                     printStdErr("Press Enter when ready.")
                     choice = raw_input()
                     useDfu = True # use dfu mode when board is not responding to serial
@@ -118,7 +119,6 @@ update controller.")
         restoreSettings = False
 
     printStdErr("\nChecking GitHub for available release.")
-    #releases = gitHubReleases("https://api.github.com/repos/BrewPi/firmware")
     releases = gitHubReleases("https://api.github.com/repos/lbussy/brewpi-firmware-rmx")
 
     availableTags = releases.getTags(beta)
@@ -128,6 +128,7 @@ update controller.")
         url = None
         if family == "Arduino":
             url = releases.getBinUrl(tag, [board, shield, ".hex"])
+            # TODO:  Make sure this actually pulls firmware.
         elif family == "Spark" or family == "Particle":
             url = releases.getBinUrl(tag, [board, 'brewpi', '.bin'])
         if url is not None:
@@ -188,11 +189,11 @@ update controller.")
 
 
     if hwVersion is not None and userInput:
-        printStdErr("Would you like me to try to restore you settings after programming? [Y/n]: ")
+        printStdErr("Would you like to try to restore your settings after programming? [Y/n]: ")
         choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
-        printStdErr("Would you like me to try to restore your configured devices after programming? [Y/n]: ")
+        printStdErr("Would you like to try to restore your configured devices after programming? [Y/n]: ")
         choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False

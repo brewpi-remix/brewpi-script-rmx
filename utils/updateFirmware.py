@@ -67,7 +67,7 @@ update controller.")
         board = hwVersion.board
 
         printStdErr("Found:\n" + hwVersion.toExtendedString() + \
-               " on port " + ser.name + "\n")
+               "\non port" + ser.name + "\n")
     except:
         if hwVersion is None:
             printStdErr("Unable to receive version from controller.\n\n"
@@ -150,8 +150,8 @@ update controller.")
         num_choices = len(compatibleTags)
         while 1:
             try:
-                choice = raw_input("Enter the number [0-%d] of the version you want to program [default = %d (%s)]: " %
-                                   (num_choices, default_choice, tag))
+                print("\nEnter the number [0-%d] of the version you want to program" % num_choices)
+                choice = raw_input("[default = %d (%s)]: " %(default_choice, tag))
                 if choice == "":
                     break
                 else:

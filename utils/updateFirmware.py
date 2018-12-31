@@ -180,8 +180,8 @@ update controller.")
             printStdErr("Your current version is newer than %s." % tag)
 
         if userInput:
-            printStdErr("If you are encountering problems, you can reprogram anyway."
-                        " Would you like to do this?"
+            printStdErr("If you are encountering problems, you can reprogram anyway.\n"
+                        " Would you like to do this?\n"
                         "\nType yes to reprogram or just press enter to keep your current firmware: ")
             sys.stdin.flush()
             choice = raw_input()

@@ -84,7 +84,7 @@ defaultScriptPath="$(dirname "$myPath")"
 ############
 echo -e "\n***** Updating cron for the brewpi user. *****\n"
 
-sudo crontab -u brewpi -l > /tmp/oldcron
+sudo crontab -u brewpi -l > /tmp/oldcron 2> /dev/null
 if [ -s /tmp/oldcron ]; then
   if sudo grep -q "brewpi.py" /tmp/oldcron; then
      > /tmp/newcron||die
@@ -112,11 +112,11 @@ if [ -s /tmp/oldcron ]; then
          esac
        fi
      done < /tmp/oldcron
-     sudo crontab -u brewpi /tmp/newcron||die
+     sudo crontab -u brewpi /tmp/newcron||die 2> /dev/null
      rm /tmp/newcron||warn
      if ! ${firstLine}; then
          echo -e "Updated crontab to:\n"
-         sudo crontab -u brewpi -l||die
+         sudo crontab -u brewpi -l||die 2> file
          echo -e "Finished updating crontab."
      fi
   fi
@@ -178,26 +178,26 @@ fi
 
 if [ -z "$scriptpath" ]; then
     scriptpath="$defaultScriptPath"
-    echo "No previous setting for scriptpath found, using default $scriptpath"
+    echo -e "No previous setting for scriptpath found, using default:\n$scriptpath\n"
     sudo sed -i '1iscriptpath="/home/brewpi"' "$cronfile"
 fi
 
 if [ -z "$stdoutpath" ]; then
     stdoutpath="/home/brewpi/logs/stdout.txt"
-    echo "No previous setting for stdoutpath found, using default $stdoutpath"
+    echo "No previous setting for stdoutpath found, using default:\n$stdoutpath\n"
     sudo sed -i '1istdoutpath="/home/brewpi/logs/stdout.txt"' "$cronfile"
 fi
 
 if [ -z "$stderrpath" ]; then
     stderrpath="/home/brewpi/logs/stdout.txt"
-    echo "No previous setting for stdoutpath found, using default $stderrpath"
+    echo "No previous setting for stdoutpath found, using default:\n$stderrpath\n"
     sudo sed -i '1istderrpath="/home/brewpi/logs/stderr.txt"' "$cronfile"
 fi
 
 function checkEntry {
     entry=$1 # entry name
     newEntry=$2 # new cron job
-    echo "Checking entry for $entry."
+    echo -e "\nChecking entry for $entry."
     # find old entry for this name
     oldEntry=$(grep -A1 "entry:$entry" "$cronfile" | tail -n 1)
     # check whether it is up to date
@@ -212,7 +212,8 @@ function checkEntry {
         echo -e "\nLatest version of this cron entry:"
         echo "$newEntry"
         echo -e "\n"
-        read -p "Your current cron entry differs from the latest version, would you like me to update? [Y/n]: " yn </dev/tty
+        print "Your current cron entry differs from the latest version, would you like me"
+        read -p "to update? [Y/n]: " yn </dev/tty
         if [ -z "$yn" ]; then
             yn="y" # no entry/enter = yes
         fi
@@ -271,31 +272,31 @@ for entry in $entries; do
 done
 # If there was no entry for wifichecker, ask to add it or disable it
 if [ "$found" == false ] ; then
-    echo "No setting found for wifi check script."
-    if [ -n "$(ifconfig | grep wlan)" ]; then
-        echo -e "\nIt looks like you're running a wifi adapter on your Pi."
-    else
-        echo -e "\nIt looks like you're not running a wifi adapter on your Pi."
-    fi
-    echo "We recently added a utility script that can attempt to restart the"
-    echo "WiFi connection on your Pi, if the connection were to drop."
+  echo "No setting found for wifi check script."
+  if [ -n "$(ifconfig | grep wlan)" ]; then
+    echo -e "\nIt looks like you're running a WiFi adapter on your Pi.  We recently"
+    echo -e "added a utility script that can attempt to restart the WiFi connection on"
+    echo -e "your Pi, if the connection were to drop.\n"
     read -p "Would you like to enable the cron entry? [Y/n]: " yn </dev/tty
     if [ -z "$yn" ]; then
-        yn="y"
+      yn="y"
     fi
     case "$yn" in
-        y | Y | yes | YES| Yes )
-            # update entries="..." to entries="... wifichecker"
-            sudo sed -i '/entries=.*/ s/"$/ wifichecker"/' "$cronfile"
-            checkEntry wifichecker "$wificheckcron"
-            sudo bash "$scriptpath"/utils/wifiChecker.sh checkinterfaces
-            ;;
-        * )
-            # update entries="..." to entries="... ~wifichecker"
-            sudo sed -i '/entries=.*/ s/"$/ ~wifichecker"/' "$cronfile"
-            echo "Setting wifichecker to disabled."
-            ;;
+      y | Y | yes | YES| Yes )
+        # update entries="..." to entries="... wifichecker"
+        sudo sed -i '/entries=.*/ s/"$/ wifichecker"/' "$cronfile"
+        checkEntry wifichecker "$wificheckcron"
+        sudo bash "$scriptpath"/utils/wifiChecker.sh checkinterfaces
+        ;;
+      * )
+        # update entries="..." to entries="... ~wifichecker"
+        sudo sed -i '/entries=.*/ s/"$/ ~wifichecker"/' "$cronfile"
+        echo "Setting wifichecker to disabled."
+        ;;
     esac
+    else
+      echo -e "\nIt looks like you're not running a WiFi adapter on your Pi.\n"
+    fi
 fi
 
 echo -e "Restarting cron"

@@ -41,7 +41,7 @@ APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 \
   libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
   python-pip python-configobj"
 # Packages to be installed/check via pip
-PIPPACKAGES="install pyserial psutil simplejson configobj gitpython"
+PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
 # Website for network test
 GITTEST="https://github.com
 

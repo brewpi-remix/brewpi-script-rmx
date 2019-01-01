@@ -81,6 +81,7 @@ fi
 ############
 ### Functions to catch/display errors during setup
 ############
+
 warn() {
   local fmt="$1"
   command shift 2>/dev/null
@@ -103,6 +104,7 @@ die () {
 ############
 ### Check for network connection
 ###########
+
 echo -e "\nChecking for connection to GitHub.\n"
 ping -c 3 github.com &> /dev/null 1>&2
 if [ $? -ne 0 ]; then

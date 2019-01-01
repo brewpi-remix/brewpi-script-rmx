@@ -36,6 +36,12 @@ THISSCRIPT="installDependencies.sh"
 VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"
+# Packages to be instaled/checked via apt
+APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 \
+  libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
+  python-pip python-configobj"
+# Packages to be installed/check via pip
+PIPPACKAGES="install pyserial psutil simplejson configobj gitpython"
 
 # Support the standard --help and --version.
 #
@@ -125,10 +131,8 @@ if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
 fi
 
 # Now install any necessary packages if they are not installed
-packages="git arduino-core git-core pastebinit build-essential apache2 \
-  libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
-  python-pip python-configobj"
-for pkg in $packages; do
+echo -e "Checking and installing required dependencies via apt."
+for pkg in $APTPACKAGES; do
   pkgOk=$(dpkg-query -W --showformat='${Status}\n' $pkg | \
     grep "install ok installed")
   if [ -z "$pkgOk" ]; then
@@ -144,7 +148,7 @@ upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
   uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
 
 # Loop through the required packages and see if they need an upgrade
-for pkg in $packages; do
+for pkg in $APTPACKAGES; do
   if [[ $upgradesAvail == *"$pkg"* ]]; then
     echo -e "\nUpgrading '$pkg'.\n"
     apt-get install $pkg||die
@@ -160,4 +164,3 @@ echo -e "\nUpdating required python packages via pip.\n"
 pip install pyserial psutil simplejson configobj gitpython --upgrade
 
 echo -e "\n***** Done processing BrewPi dependencies. *****\n"
-

@@ -37,13 +37,11 @@ VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"
 # Packages to be installed/checked via apt
-APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 \
-  libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
-  python-pip python-configobj"
+APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj"
 # Packages to be installed/check via pip
 PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
 # Website for network test
-GITTEST="https://github.com
+GITTEST="https://github.com"
 
 # Support the standard --help and --version.
 #
@@ -141,7 +139,7 @@ for pkg in $APTPACKAGES; do
   if [ -z "$pkgOk" ]; then
     echo -e "\nInstalling '$pkg'.\n"
     apt-get install $pkg -y||die
-	echo
+        echo
   fi
 done
 
@@ -166,22 +164,16 @@ apt-get autoclean||die
 echo -e "\nChecking and installing required dependencies via pip.\n"
 pipcmd='pipInstalled=$(pip list --format=legacy)'
 eval $pipcmd
-echo "Got pipInstalled."
 pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
 eval $pipcmd
-echo "Cut pipInstalled."
-echo -e 'PIPPACKAGES = \n"$PIPPACKAGES"'
-echo -e 'pipInstalled = \n"$pipInstalled"'
-echo "Sleeping 10"
 for pkg in $PIPPACKAGES; do
   if [[ ! $pipInstalled == *"$pkg"* ]]; then
     echo -e "Installing '$pkg'."
-    echo "pip -q install $pkg --upgrade||die"
+    pip -q install $pkg --upgrade||die
   else
     echo -e "Checking for update to '$pkg'."
-    echo "pip -q install $pkg --upgrade||die"
+    pip -q install $pkg --upgrade||die
   fi
 done
-
 
 echo -e "\n***** Done processing BrewPi dependencies. *****\n"

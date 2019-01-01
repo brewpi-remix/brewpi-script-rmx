@@ -3,6 +3,8 @@ import simplejson as json
 import os
 from distutils.version import LooseVersion
 
+repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
+
 class gitHubReleases:
     def __init__(self, url):
         """ Gets all available releases using the GitHub API
@@ -152,7 +154,7 @@ class gitHubReleases:
 
 if __name__ == "__main__":
     # test code
-    releases = gitHubReleases("https://api.github.com/repos/lbussy/brewpi-firmware-rmx")
+    releases = gitHubReleases(repo)
     latest = releases.getLatestTag('core', False)
     print "Latest tag: " + latest
     print "Downloading binary for latest tag"

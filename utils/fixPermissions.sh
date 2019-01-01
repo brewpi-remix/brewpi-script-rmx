@@ -102,7 +102,7 @@ scriptPath="$(dirname "$myPath")"
 # Find web path based on Apache2 config
 echo -e "\nSearching for default web install location."
 webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-echo "Found $webPath in /etc/apache2/sites-enabled/000-default*.
+echo "Found $webPath in /etc/apache2/sites-enabled/000-default*."
 
 echo -e "\n***** Fixing file permissions for $webPath *****"
 sudo chown -R www-data:www-data "$webPath"||warn

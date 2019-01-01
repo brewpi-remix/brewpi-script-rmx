@@ -165,7 +165,9 @@ apt-get autoclean||die
 # Install any Python packages not installed, update those installed
 echo -e "\nChecking and installing required dependencies via pip.\n"
 pipInstalled=$(pip list --format=legacy)
+echo "Got pipInstalled."
 pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")
+echo "Cut pipInstalled."
 echo -e 'PIPPACKAGES = \n"$PIPPACKAGES"'
 echo -e 'pipInstalled = \n"$pipInstalled"'
 echo "Sleeping 10"

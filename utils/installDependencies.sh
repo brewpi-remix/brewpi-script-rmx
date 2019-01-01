@@ -172,7 +172,7 @@ for pkg in $PIPPACKAGES; do
     pip -q install $pkg --upgrade||die
   else
     echo -e "Checking for update to '$pkg'."
-	pip -q install $pkg --upgrade||die
+    pip -q install $pkg --upgrade||die
   fi
 done
 

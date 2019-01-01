@@ -15,28 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi. If not, see <http://www.gnu.org/licenses/>.
 
+repo="https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
+
 from __future__ import print_function
 import sys
 import os
 import subprocess
 
-# Firmware Repository
-repo="https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
-
-# append parent directory to be able to import files
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial
 
-# Replacement for raw_input which works when piped through shell
-def pipInput(prompt=""):
-    saved_stdin = sys.stdin
-    sys.stdin = open('/dev/tty', 'r')
-    result = raw_input(prompt)
-    sys.stdin = saved_stdin
-    return (result)
-
-# print everything in this file to stderr so it ends up in the correct
-# log file for the web UI
+# print everything in this file to stderr so it ends up in the correct log file for the web UI
 def printStdErr(*objs):
     print("", *objs, file=sys.stderr)
 
@@ -46,9 +35,8 @@ def quitBrewPi(webPath):
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
 
-def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, \
-        restoreDevices = True):
 
+def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDevices = True):
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
     import brewpiVersion
@@ -57,9 +45,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, \
     configFile = util.scriptPath() + '/settings/config.cfg'
     config = util.readCfgWithDefaults(configFile)
 
-    printStdErr("\nStopping any running instances of BrewPi to check or \
-update controller.")
-
+    printStdErr("Stopping any running instances of BrewPi to check/update controller...")
     quitBrewPi(config['wwwPath'])
 
     hwVersion = None
@@ -69,7 +55,7 @@ update controller.")
     ser = None
 
     ### Get version number
-    printStdErr("\nChecking current firmware version.")
+    printStdErr("\nChecking current firmware version...")
     try:
         ser = util.setupSerial(config)
         hwVersion = brewpiVersion.getVersionFromSerial(ser)
@@ -77,19 +63,19 @@ update controller.")
         shield = hwVersion.shield
         board = hwVersion.board
 
-        printStdErr("Found:\n" + hwVersion.toExtendedString() + \
-               "\non port" + ser.name + "\n")
+        printStdErr("Found " + hwVersion.toExtendedString() + \
+               " on port " + ser.name + "\n")
     except:
         if hwVersion is None:
-            printStdErr("Unable to receive version from controller.\n\n"
-                        "Is your controller unresponsive and do you wish to try restoring")
-            choice = pipInput("your firmware? [y/N]: ")
+            printStdErr("Unable to receive version from controller.\n"
+                        "Is your controller unresponsive and do you wish to try restoring your firmware? [y/N]: ")
+            choice = raw_input()
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
-                printStdErr("\nPlease make sure your controller is connected properly and try again.\n")
+                printStdErr("Please make sure your controller is connected properly and try again.")
                 return 0
             port, name = autoSerial.detect_port()
             if not port:
-                printStdErr("\nCould not find compatible device in available serial ports.\n")
+                printStdErr("Could not find compatible device in available serial ports.")
                 return 0
             if "Particle" in name:
                 family = "Particle"
@@ -113,10 +99,9 @@ update controller.")
                     printStdErr("Assuming a Rev C shield. If this is not the case, please program your Arduino manually")
                     shield = 'RevC'
                 else:
-                    printStdErr("Please put your controller in DFU mode now by holding the setup button during reset,")
-                    printStdErr("until the LED blinks yellow.")
+                    printStdErr("Please put your controller in DFU mode now by holding the setup button during reset, until the LED blinks yellow.")
                     printStdErr("Press Enter when ready.")
-                    choice = pipInput()
+                    choice = raw_input()
                     useDfu = True # use dfu mode when board is not responding to serial
 
     if ser:
@@ -124,14 +109,13 @@ update controller.")
         ser = None
 
     if hwVersion:
-        printStdErr("Current firmware version on controller:\n" + hwVersion.toString())
+        printStdErr("Current firmware version on controller: " + hwVersion.toString())
     else:
         restoreDevices = False
         restoreSettings = False
 
-    printStdErr("\nChecking GitHub for available release.")
+    printStdErr("\nChecking GitHub for available release...")
     releases = gitHubReleases(repo)
-
     availableTags = releases.getTags(beta)
     stableTags = releases.getTags(False)
     compatibleTags = []
@@ -153,28 +137,28 @@ update controller.")
     tag = compatibleTags[default_choice]
 
     if userInput:
-        printStdErr("\nAvailable releases:\n")
+        print("\nAvailable releases:\n")
         for i, menu_tag in enumerate(compatibleTags):
-            printStdErr("[%d] %s" % (i, menu_tag))
-        printStdErr("[" + str(len(compatibleTags)) + "] Cancel firmware update")
+            print("[%d] %s" % (i, menu_tag))
+        print ("[" + str(len(compatibleTags)) + "] Cancel firmware update")
         num_choices = len(compatibleTags)
         while 1:
             try:
-                printStdErr("\nEnter the number [0-%d] of the version you want to program." % num_choices)
-                choice = pipInput("[default = %d (%s)]: " %(default_choice, tag))
+                choice = raw_input("Enter the number [0-%d] of the version you want to program [default = %d (%s)]: " %
+                                   (num_choices, default_choice, tag))
                 if choice == "":
                     break
                 else:
                     selection = int(choice)
             except ValueError:
-                printStdErr("Use a number [0-%d]" % num_choices)
+                print("Use the number! [0-%d]" % num_choices)
                 continue
             if selection == num_choices:
                 return False # choice = skip updating
             try:
                 tag = compatibleTags[selection]
             except IndexError:
-                printStdErr("Not a valid choice. Try again.")
+                print("Not a valid choice. Try again")
                 continue
             break
     else:
@@ -182,28 +166,33 @@ update controller.")
 
     if hwVersion is not None and not hwVersion.isNewer(tag):
         if hwVersion.isEqual(tag):
-            printStdErr("\n***You are already running version %s.***" % tag)
+            printStdErr("You are already running version %s." % tag)
         else:
             printStdErr("Your current version is newer than %s." % tag)
 
         if userInput:
-            printStdErr("\nIf you are encountering problems, you can reprogram anyway.")
-            choice = pipInput("Would you like to do this? [y/N]: ")
+            printStdErr("If you are encountering problems, you can reprogram anyway."
+                        " Would you like to do this?"
+                        "\nType yes to reprogram or just press enter to keep your current firmware: ")
+            choice = raw_input()
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 return 0
         else:
             printStdErr("No update needed. Exiting.")
             exit(0)
 
+
     if hwVersion is not None and userInput:
-        choice = pipInput("Would you like to try to restore your settings after programming? [Y/n]: ") 
+        printStdErr("Would you like me to try to restore you settings after programming? [Y/n]: ")
+        choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
-        choice = pipInput("Would you like to try to restore your configured devices after\nprogramming? [Y/n]: ")
+        printStdErr("Would you like me to try to restore your configured devices after programming? [Y/n]: ")
+        choice = raw_input()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False
 
-    printStdErr("Downloading firmware.")
+    printStdErr("Downloading firmware...")
     localFileName = None
     system1 = None
     system2 = None
@@ -243,7 +232,7 @@ update controller.")
         printStdErr("Downloading firmware failed")
         return -1
 
-    printStdErr("\nUpdating firmware.\n")
+    printStdErr("\nUpdating firmware...\n")
     result = programmer.programController(config, board, localFileName, system1, system2, useDfu,
                                           {'settings': restoreSettings, 'devices': restoreDevices})
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
@@ -255,7 +244,7 @@ if __name__ == '__main__':
     try:
         opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent', 'dfu'])
     except getopt.GetoptError:
-        printStdErr("Unknown parameter, available options: \n" +
+        print ("Unknown parameter, available options: \n" +
               "--silent\t use default options, do not ask for user input \n" +
               "--beta\t\t include unstable (prerelease) releases \n")
         sys.exit()
@@ -273,5 +262,6 @@ if __name__ == '__main__':
         if o in ('-d', '--dfu'):
             useDfu = True
 
+
     result = updateFromGitHub(userInput=userInput, beta=beta, useDfu=useDfu)
-    exit(result)
+exit(result)

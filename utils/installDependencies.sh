@@ -166,6 +166,10 @@ apt-get autoclean||die
 echo -e "\nChecking and installing required dependencies via pip.\n"
 pipInstalled=$(pip list --format=legacy)
 pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")
+echo -e 'PIPPACKAGES = \n"$PIPPACKAGES"'
+echo -e 'pipInstalled = \n"$pipInstalled"'
+echo "Sleeping 10"
+sleep 10
 for pkg in $PIPPACKAGES; do
   if [[ ! $pipInstalled == *"$pkg"* ]]; then
     echo -e "Installing '$pkg'."

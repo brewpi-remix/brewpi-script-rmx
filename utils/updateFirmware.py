@@ -31,7 +31,7 @@ def pipInput(prompt=""):
     sys.stdin = open('/dev/tty', 'r')
     result = raw_input(prompt)
     sys.stdin = saved_stdin
-return (result)
+    return (result)
 
 # print everything in this file to stderr so it ends up in the correct log file for the web UI
 def printStdErr(*objs):

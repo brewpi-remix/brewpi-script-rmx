@@ -164,22 +164,24 @@ apt-get autoclean||die
 
 # Install any Python packages not installed, update those installed
 echo -e "\nChecking and installing required dependencies via pip.\n"
-pipInstalled=$(pip list --format=legacy)
+pipcmd='pipInstalled=$(pip list --format=legacy)'
+eval $pipcmd
 echo "Got pipInstalled."
-pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")
+pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
+eval $pipcmd
 echo "Cut pipInstalled."
 echo -e 'PIPPACKAGES = \n"$PIPPACKAGES"'
 echo -e 'pipInstalled = \n"$pipInstalled"'
 echo "Sleeping 10"
-sleep 10
 for pkg in $PIPPACKAGES; do
   if [[ ! $pipInstalled == *"$pkg"* ]]; then
     echo -e "Installing '$pkg'."
-    pip -q install $pkg --upgrade||die
+    echo "pip -q install $pkg --upgrade||die"
   else
     echo -e "Checking for update to '$pkg'."
-    pip -q install $pkg --upgrade||die
+    echo "pip -q install $pkg --upgrade||die"
   fi
 done
+
 
 echo -e "\n***** Done processing BrewPi dependencies. *****\n"

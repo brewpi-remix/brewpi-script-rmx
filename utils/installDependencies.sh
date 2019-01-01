@@ -111,8 +111,10 @@ fi
 echo -e "\nConnection to Internet sucessfull.\n"
 
 ############
-### Update required packages
+### Install and update required packages
 ############
+
+# Run 'apt-get update' if last run was > 1 week ago
 lastUpdate=$(stat -c %Y /var/lib/apt/lists)
 nowTime=$(date +%s)
 if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
@@ -122,25 +124,38 @@ if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
   echo
 fi
 
-echo -e "\n***** Processing BrewPi dependencies. *****\n"
+# Now install any necessary packages if they are not installed
+packages="git arduino-core git-core pastebinit build-essential apache2 \
+  libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
+  python-pip python-configobj"
+for pkg in $packages; do
+  pkgOk=$(dpkg-query -W --showformat='${Status}\n' $pkg | \
+    grep "install ok installed")
+  if [ -z "$pkgOk" ]; then
+    echo -e "\nInstalling '$pkg'.\n"
+    apt-get install $pkg -y||die
+	echo
+  fi
+done
 
-echo -e "Updating required apt packages.\n"
+# Get list of installed packages with updates available
+upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
+  grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
+  uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
 
-# Install support for Arduino
-apt-get install arduino-core -y
+# Loop through the required packages and see if they need an upgrade
+for pkg in $packages; do
+  if [[ $upgradesAvail == *"$pkg"* ]]; then
+    echo -e "\nUpgrading '$pkg'.\n"
+    apt-get install $pkg||die
+  fi
+done
 
-# Install general stuff
-apt-get install git-core pastebinit build-essential -y
+# Cleanup
+apt-get clean||die
+apt-get autoclean||die
 
-# Install Apache
-apt-get install apache2 -y
-
-# Install PHP
-apt-get install libapache2-mod-php php-cli php-common php-cgi php php-mbstring -y
-
-# Install Python
-apt-get install python-dev python-pip python-configobj -y
-
+# Work on Python packages
 echo -e "\nUpdating required python packages via pip.\n"
 pip install pyserial psutil simplejson configobj gitpython --upgrade
 

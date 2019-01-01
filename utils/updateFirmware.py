@@ -25,6 +25,14 @@ repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial
 
+# Replacement for raw_input which works when piped through shell
+def pipInput(prompt=""):
+    saved_stdin = sys.stdin
+    sys.stdin = open('/dev/tty', 'r')
+    result = raw_input(prompt)
+    sys.stdin = saved_stdin
+return (result)
+
 # print everything in this file to stderr so it ends up in the correct log file for the web UI
 def printStdErr(*objs):
     print("", *objs, file=sys.stderr)
@@ -34,8 +42,7 @@ def quitBrewPi(webPath):
     import BrewPiProcess
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
-
-
+    
 def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDevices = True):
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
@@ -69,7 +76,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         if hwVersion is None:
             printStdErr("Unable to receive version from controller.\n"
                         "Is your controller unresponsive and do you wish to try restoring your firmware? [y/N]: ")
-            choice = raw_input()
+            choice = pipInput()
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 printStdErr("Please make sure your controller is connected properly and try again.")
                 return 0
@@ -101,7 +108,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
                 else:
                     printStdErr("Please put your controller in DFU mode now by holding the setup button during reset, until the LED blinks yellow.")
                     printStdErr("Press Enter when ready.")
-                    choice = raw_input()
+                    choice = pipInput()
                     useDfu = True # use dfu mode when board is not responding to serial
 
     if ser:
@@ -144,7 +151,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         num_choices = len(compatibleTags)
         while 1:
             try:
-                choice = raw_input("Enter the number [0-%d] of the version you want to program [default = %d (%s)]: " %
+                choice = pipInput("Enter the number [0-%d] of the version you want to program [default = %d (%s)]: " %
                                    (num_choices, default_choice, tag))
                 if choice == "":
                     break
@@ -174,21 +181,20 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
             printStdErr("If you are encountering problems, you can reprogram anyway."
                         " Would you like to do this?"
                         "\nType yes to reprogram or just press enter to keep your current firmware: ")
-            choice = raw_input()
+            choice = pipInput()
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 return 0
         else:
             printStdErr("No update needed. Exiting.")
             exit(0)
 
-
     if hwVersion is not None and userInput:
         printStdErr("Would you like me to try to restore you settings after programming? [Y/n]: ")
-        choice = raw_input()
+        choice = pipInput()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
         printStdErr("Would you like me to try to restore your configured devices after programming? [Y/n]: ")
-        choice = raw_input()
+        choice = pipInput()
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False
 
@@ -261,7 +267,6 @@ if __name__ == '__main__':
             beta = True
         if o in ('-d', '--dfu'):
             useDfu = True
-
 
     result = updateFromGitHub(userInput=userInput, beta=beta, useDfu=useDfu)
 exit(result)

@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi. If not, see <http://www.gnu.org/licenses/>.
 
-repo="https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
-
 from __future__ import print_function
 import sys
 import os
 import subprocess
+
+repo="https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial

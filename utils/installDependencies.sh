@@ -36,12 +36,14 @@ THISSCRIPT="installDependencies.sh"
 VERSION="0.4.5.0"
 # These should stay the same
 PACKAGE="BrewPi-Script-RMX"
-# Packages to be instaled/checked via apt
+# Packages to be installed/checked via apt
 APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 \
   libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev \
   python-pip python-configobj"
 # Packages to be installed/check via pip
 PIPPACKAGES="install pyserial psutil simplejson configobj gitpython"
+# Website for network test
+GITTEST="https://github.com
 
 # Support the standard --help and --version.
 #

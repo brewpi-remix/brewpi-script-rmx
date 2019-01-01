@@ -159,8 +159,18 @@ done
 apt-get clean||die
 apt-get autoclean||die
 
-# Work on Python packages
-echo -e "\nUpdating required python packages via pip.\n"
-pip install pyserial psutil simplejson configobj gitpython --upgrade
+# Install any Python packages not installed, update those installed
+echo -e "\nChecking and installing required dependencies via pip.\n"
+pipInstalled=$(pip list --format=legacy)
+pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")
+for pkg in $PIPPACKAGES; do
+  if [[ ! $pipInstalled == *"$pkg"* ]]; then
+    echo -e "Installing '$pkg'."
+    pip -q install $pkg --upgrade||die
+  else
+    echo -e "Checking for update to '$pkg'."
+	pip -q install $pkg --upgrade||die
+  fi
+done
 
 echo -e "\n***** Done processing BrewPi dependencies. *****\n"

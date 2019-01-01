@@ -20,7 +20,7 @@ import sys
 import os
 import subprocess
 
-repo="https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
+repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial

@@ -108,17 +108,16 @@ die () {
 ###########
 
 echo -e "\nChecking for connection to GitHub.\n"
-ping -c 3 github.com &> /dev/null 1>&2
+wget -q --spider "$GITTEST"
 if [ $? -ne 0 ]; then
-  echo "----------------------------------------------"
-  echo "Could not ping github.com. Are you sure you"
-  echo "have a working Internet connection? Installer"
-  echo "will exit, because it needs to fetch code from"
-  echo "github.com."
-  echo
+  echo -e "--------------------------------------------------------------------\n" \
+          "Could not connect to GitHub.  Please check your network and try\n" \
+          "again. A connection to GitHub is required to download the\n" \
+          "$PACKAGE packages.\n"
   exit 1
+else
+  echo -e "Connection to GitHub ok.\n"
 fi
-echo -e "\nConnection to Internet sucessfull.\n"
 
 ############
 ### Install and update required packages

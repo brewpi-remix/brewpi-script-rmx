@@ -2,10 +2,10 @@
 # uncomment settings here, these override the settings in defaults.cfg
 
 # scriptPath = /home/brewpi/
-# wwwPath = /var/www/
+# wwwPath = /var/www/html
 # port = /dev/ttyACM0
 # altport = /dev/ttyACM1
-# boardType = leonardo
+# boardType = arduino
 # startupDelay = 1.0
 # debug = true
 

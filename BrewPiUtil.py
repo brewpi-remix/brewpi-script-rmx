@@ -101,7 +101,7 @@ def logMessage(message):
   """
   Prints a timestamped message to stderr
   """
-  printStdOut(time.strftime("%Y-%m-%d %H:%M:%S:  ") + message)
+  printStdErr(time.strftime("%b %d %Y %H:%M:%S   ") + message)
 
 def scriptPath():
   """

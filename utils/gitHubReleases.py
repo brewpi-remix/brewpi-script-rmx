@@ -52,7 +52,7 @@ class gitHubReleases:
         """
         try:
             f = urllib2.urlopen(url)
-            print "Downloading " + url
+            print "Downloading from:" + url
 
             # Open our local file for writing
             fileName = os.path.join(path, os.path.basename(url))

@@ -77,11 +77,11 @@ class BrewPiProcess:
             if conn:
                 conn.send('quit')
                 conn.close()  # do not shutdown the socket, other processes are still connected to it.
-                print "Quit message sent to BrewPi instance with pid %s!" % self.pid
+                print "Quit message sent to BrewPi instance with pid %s." % self.pid
                 return True
             else:
-                print "Could not connect to socket of BrewPi process, maybe it just started and is not\n"
-				      "listening yet."
+                print "Could not connect to socket of BrewPi process, maybe it just started and is not"
+                print "listening yet."
                 print "Could not send quit message to BrewPi instance with pid %d." % self.pid
                 print "Killing it instead."
                 self.kill()

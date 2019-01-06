@@ -215,7 +215,8 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ")
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
-        choice = pipeInput("\nWould you like me to try to restore your configured devices after programming?\n[Y/n]: ")
+        printStdOut("\nWould you like me to try to restore your configured devices after")
+        choice = pipeInput("programming? [Y/n]: ")
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False
 

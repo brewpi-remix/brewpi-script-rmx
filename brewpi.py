@@ -1,24 +1,37 @@
 #!/usr/bin/python
-# Copyright 2012 BrewPi
-# This file is part of BrewPi.
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
 
 from __future__ import print_function
 import sys
 
 from BrewPiUtil import printStdErr
+from BrewPiUtil import printStdOut
 from BrewPiUtil import logMessage
 
 # Check needed software dependencies to nudge users to fix their setup
@@ -65,7 +78,6 @@ except ImportError:
     printStdErr("BrewPi requires ConfigObj to run, please install it with 'sudo apt-get install python-configobj")
     sys.exit(1)
 
-
 #local imports
 import temperatureProfile
 import programController as programmer
@@ -77,7 +89,6 @@ import expandLogMessage
 import BrewPiProcess
 from backgroundserial import BackGroundSerial
 
-
 # Settings will be read from controller, initialize with same defaults as controller
 # This is mainly to show what's expected. Will all be overwritten on the first update from the controller
 
@@ -87,7 +98,7 @@ compatibleHwVersion = "0.2.10"
 cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
 
 # Control Constants
-cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
+cc = dict(tempFormat="F", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
           idleRangeH=1.000, idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199, coolTargetH=0.199,
           coolTargetL=-0.301, maxHeatTimeForEst="600", maxCoolTimeForEst="1200", fridgeFastFilt="1", fridgeSlowFilt="4",
           fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5", beerSlopeFilt="4", lah=0, hs=0)
@@ -124,7 +135,7 @@ for o, a in opts:
         printStdErr("--config <path to config file>: Specify a config file to use. When omitted\n" +
                     "                                 settings/config.cf is used")
         printStdErr("--status: Check which scripts are already running")
-        printStdErr("--quit: Ask all instances of BrewPi to quit by sending a message to\n" + 
+        printStdErr("--quit: Ask all instances of BrewPi to quit by sending a message to\n" +
                     "         their socket")
         printStdErr("--kill: Kill all instances of BrewPi by sending SIGKILL")
         printStdErr("--force: Force quit/kill conflicting instances of BrewPi and keep this one")
@@ -216,7 +227,6 @@ if logToFiles:
     sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # append to stderr file, unbuffered
     sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # overwrite stdout file on script start, unbuffered
 
-
 # userSettings.json is a copy of some of the settings that are needed by the web server.
 # This allows the web server to load properly, even when the script is not running.
 def changeWwwSetting(settingName, value):
@@ -291,7 +301,6 @@ def startBeer(beerName):
 
     changeWwwSetting('beerName', beerName)
 
-
 def startNewBrew(newName):
     global config
     if len(newName) > 1:     # shorter names are probably invalid
@@ -305,7 +314,6 @@ def startNewBrew(newName):
         return {'status': 1, 'statusMessage': "Invalid new brew name '%s', "
                                               "please enter a name with at least 2 characters" % urllib.unquote(newName)}
 
-
 def stopLogging():
     global config
     logMessage("Stopped data logging, as requested in web interface. " +
@@ -314,7 +322,6 @@ def stopLogging():
     config = util.configSet(configFile, 'dataLogging', 'stopped')
     changeWwwSetting('beerName', None)
     return {'status': 0, 'statusMessage': "Successfully stopped logging"}
-
 
 def pauseLogging():
     global config
@@ -325,7 +332,6 @@ def pauseLogging():
         return {'status': 0, 'statusMessage': "Successfully paused logging."}
     else:
         return {'status': 1, 'statusMessage': "Logging already paused or stopped."}
-
 
 def resumeLogging():
     global config
@@ -346,8 +352,7 @@ logMessage("Notification: Script started for beer '" + urllib.unquote(config['be
 # wait for 10 seconds to allow an Uno to reboot (in case an Uno is being used)
 time.sleep(float(config.get('startupDelay', 10)))
 
-
-logMessage("Checking software version on controller... ")
+logMessage("Checking software version on controller.")
 hwVersion = brewpiVersion.getVersionFromSerial(ser)
 if hwVersion is None:
     logMessage("Warning: Cannot receive version number from controller. " +
@@ -357,7 +362,7 @@ if hwVersion is None:
     lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller']
 else:
     logMessage("Found " + hwVersion.toExtendedString() + \
-               " on port " + ser.name + "\n")
+               " on port " + ser.name)
     if LooseVersion( hwVersion.toString() ) < LooseVersion(compatibleHwVersion):
         logMessage("Warning: minimum BrewPi version compatible with this script is " +
                    compatibleHwVersion +
@@ -367,12 +372,10 @@ else:
                    "does not match log version number received from controller." +
                    "controller version = " + str(hwVersion.log) +
                    ", local copy version = " + str(expandLogMessage.getVersion()))
-
 bg_ser = None
 
 if ser is not None:
     ser.flush()
-
     # set up background serial processing, which will continuously read data from serial and put whole lines in a queue
     bg_ser = BackGroundSerial(ser)
     bg_ser.start()
@@ -406,7 +409,6 @@ s.setblocking(1)  # set socket functions to be blocking
 s.listen(10)  # Create a backlog queue for up to 10 connections
 # blocking socket functions wait 'serialCheckInterval' seconds
 s.settimeout(serialCheckInterval)
-
 
 prevDataTime = 0.0  # keep track of time between new data requests
 prevTimeOut = time.time()
@@ -449,7 +451,6 @@ while run:
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
-
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
@@ -559,7 +560,7 @@ while run:
             # voluntary shutdown.
             # write a file to prevent the cron job from restarting the script
             logMessage("stopScript message received on socket. " +
-                       "Stopping script and writing dontrunfile to prevent automatic restart")
+                       "Stopping script and writing dontrunfile to prevent automatic restart.")
             run = 0
             dontrunfile = open(dontRunFilePath, "w")
             dontrunfile.write("1")
@@ -575,7 +576,7 @@ while run:
             # erase the log files for stderr and stdout
             open(util.scriptPath() + '/logs/stderr.txt', 'wb').close()
             open(util.scriptPath() + '/logs/stdout.txt', 'wb').close()
-            logMessage("Fresh start! Log files erased.")
+            logMessage("Fresh start, log files erased.")
             continue
         elif messageType == "interval":  # new interval received
             newInterval = int(value)
@@ -606,7 +607,7 @@ while run:
             logMessage("Changing date format config setting: " + value)
         elif messageType == "setActiveProfile":
             # copy the profile CSV file to the working directory
-            logMessage("Setting profile '%s' as active profile" % value)
+            logMessage("Setting profile '%s' as active profile." % value)
             config = util.configSet(configFile, 'profileName', value)
             changeWwwSetting('profileName', value)
             profileSrcFile = util.addSlash(config['wwwPath']) + "data/profiles/" + value + ".csv"
@@ -625,15 +626,15 @@ while run:
                 with file(profileDestFile, 'w') as modified:
                     modified.write(line1 + "," + value + "\n" + rest)
             except IOError as e:  # catch all exceptions and report back an error
-                error = "I/O Error(%d) updating profile: %s " % (e.errno, e.strerror)
+                error = "I/O Error(%d) updating profile: %s." % (e.errno, e.strerror)
                 conn.send(error)
                 printStdErr(error)
             else:
-                conn.send("Profile successfully updated")
+                conn.send("Profile successfully updated.")
                 if cs['mode'] is not 'p':
                     cs['mode'] = 'p'
                     bg_ser.write("j{mode:p}")
-                    logMessage("Notification: Profile mode enabled")
+                    logMessage("Notification: Profile mode enabled.")
                     raise socket.timeout  # go to serial communication to update controller
         elif messageType == "programController" or messageType == "programArduino":
             if bg_ser is not None:
@@ -650,7 +651,7 @@ while run:
                 restoreDevices = programParameters['restoreDevices']
                 programmer.programController(config, boardType, hexFile, None, None, False,
                                           {'settings': restoreSettings, 'devices': restoreDevices})
-                logMessage("New program uploaded to controller, script will restart")
+                logMessage("New program uploaded to controller, script will restart.")
             except json.JSONDecodeError:
                 logMessage("Error: cannot decode programming parameters: " + value)
                 logMessage("Restarting script without programming.")
@@ -694,7 +695,7 @@ while run:
             response_str = json.dumps(response)
             conn.send(response_str)
         elif messageType == "resetController":
-            logMessage("Resetting controller to factory defaults")
+            logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
         else:
             logMessage("Error: Received invalid message on socket: " + message)
@@ -730,7 +731,7 @@ while run:
 
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
             #something is wrong: controller is not responding to data requests
-            logMessage("Error: controller is not responding to new data requests")
+            logMessage("Error: controller is not responding to new data requests.")
 
 
         while True:
@@ -743,7 +744,7 @@ while run:
                     if line[0] == 'T':
                         # print it to stdout
                         if outputTemperature:
-                            print(time.strftime("%b %d %Y %H:%M:%S  ") + line[2:])
+                            print(time.strftime("%Y-%m-%d %H:%M:%S:  ") + line[2:])
 
                         # store time of last new data for interval check
                         prevDataTime = time.time()
@@ -766,7 +767,7 @@ while run:
                         #write csv file too
                         csvFile = open(localCsvFileName, "a")
                         try:
-                            lineToWrite = (time.strftime("%b %d %Y %H:%M:%S;") +
+                            lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S;") +
                                            json.dumps(newRow['BeerTemp']) + ';' +
                                            json.dumps(newRow['BeerSet']) + ';' +
                                            json.dumps(newRow['BeerAnn']) + ';' +
@@ -783,7 +784,7 @@ while run:
                         shutil.copyfile(localCsvFileName, wwwCsvFileName)
                     elif line[0] == 'D':
                         # debug message received, should already been filtered out, but print anyway here.
-                        logMessage("Finding a log message here should not be possible, report to the devs!")
+                        logMessage("Finding a log message here should not be possible, report to the devs.")
                         logMessage("Line received was: {0}".format(line))
                     elif line[0] == 'L':
                         # lcd content received

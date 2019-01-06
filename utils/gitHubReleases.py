@@ -1,3 +1,32 @@
+#!/usr/bin/python
+
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
 import urllib2
 import simplejson as json
 import os
@@ -23,7 +52,7 @@ class gitHubReleases:
         """
         try:
             f = urllib2.urlopen(url)
-            print "downloading " + url
+            print "Downloading " + url
 
             # Open our local file for writing
             fileName = os.path.join(path, os.path.basename(url))
@@ -93,10 +122,10 @@ class gitHubReleases:
 
         if path == None:
             path = os.path.join(os.path.dirname(__file__), "downloads")
-            
+
         downloadDir = os.path.join(os.path.abspath(path), tag)
         if not os.path.exists(downloadDir):
-            os.makedirs(downloadDir, 0777) # make sure files can be accessed by all in case the script ran as root
+            os.makedirs(downloadDir, 0777) # make sure files can be accessed by all in case the script was run as root
 
         fileName = self.download(downloadUrl, downloadDir)
         return fileName
@@ -167,3 +196,4 @@ if __name__ == "__main__":
 
     print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
     print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)
+

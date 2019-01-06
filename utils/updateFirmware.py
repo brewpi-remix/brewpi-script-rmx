@@ -49,15 +49,11 @@ def pipeInput(prompt=""):
 def printStdErr(*objs):
     if userInput:
         print(*objs, file=sys.stderr)
-    else:
-        print(*objs)
-    
+
 # print everything in this file to stdout so it ends up in the correct log file for the web UI
 def printStdOut(*objs):
     if userInput:
         print(*objs, file=sys.stdout)
-    else:
-        print(*objs)
 
 # Quits all running instances of BrewPi
 def quitBrewPi(webPath):

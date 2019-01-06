@@ -744,7 +744,7 @@ while run:
                     if line[0] == 'T':
                         # print it to stdout
                         if outputTemperature:
-                            print(time.strftime("%Y-%m-%d %H:%M:%S:  ") + line[2:])
+                            print(time.strftime("%b %d %Y %H:%M:%S  ") + line[2:])
 
                         # store time of last new data for interval check
                         prevDataTime = time.time()

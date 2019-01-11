@@ -1,18 +1,34 @@
-# Copyright 2013 BrewPi
-# This file is part of BrewPi.
+#!/usr/bin/python
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 from collections import namedtuple, OrderedDict
 from distutils.version import LooseVersion
@@ -92,8 +108,6 @@ class MigrateSettings:
                         break
         return keyValuePairs, oldSettingsCopy
 
-
-
 class TestSettingsMigrate(unittest.TestCase):
 
     def testMinVersion(self):
@@ -132,15 +146,12 @@ class TestSettingsMigrate(unittest.TestCase):
                          OrderedDict([('key2', 2)]),
                          "Should only return key2")
 
-
-
     def testAliases(self):
         ''' Test if aliases for old keys result in the new key being returned with the old value'''
         mg = MigrateSettings([ SettingMigrate('key1', '0', '1000', ['key1a', 'key1b'])])
         oldSettings = {'key1a': 1}
         restored, omitted = mg.getKeyValuePairs(oldSettings, '1', '1')
         self.assertEqual(restored, OrderedDict([('key1', 1)]))
-
 
     def testBrewPiFilters(self):
         ''' Test if filters are only restored when old version > 0.2. The filter format was different earlier'''
@@ -157,7 +168,6 @@ class TestSettingsMigrate(unittest.TestCase):
                             "Filter settings should be used when restoring from newer than version 0.2.0" +
                             ", failed on version " + oldVersion)
 
-
     def testPidMax(self):
         ''' Test if filters are only restored when old version > 0.2.4 It was not outputed correctly earlier'''
         mg = MigrateSettings()
@@ -171,7 +181,6 @@ class TestSettingsMigrate(unittest.TestCase):
             restored, omitted = mg.getKeyValuePairs(oldSettings, oldVersion, '2.0')
             self.assertTrue('pidMax' in restored,
                             "pidMax should be restored when restoring form version " + oldVersion)
-
 
     def testAllBrewPiSettings(self):
         ''' Test that when restoring from version 0.2.7 to 0.2.7 all settings are migrated'''
@@ -191,7 +200,6 @@ class TestSettingsMigrate(unittest.TestCase):
                 self.assertEqual(setting, 'tempFormat', "tempFormat should be restored as first setting")
             self.assertEqual(restored[setting], oldSettings[setting], "old value and restored value do not match")
             count += 1
-
 
 if __name__ == "__main__":
     unittest.main()

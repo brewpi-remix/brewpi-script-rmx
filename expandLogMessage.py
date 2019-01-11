@@ -1,18 +1,34 @@
-# Copyright 2012 BrewPi
-# This file is part of BrewPi.
+#!/usr/bin/python
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 import brewpiJson
 import simplejson as json
@@ -25,7 +41,6 @@ logMessagesFile = os.path.dirname(__file__) + '/LogMessages.h'
 errorDict = parseEnum.parseEnumInFile(logMessagesFile, 'errorMessages')
 infoDict = parseEnum.parseEnumInFile(logMessagesFile, 'infoMessages')
 warningDict = parseEnum.parseEnumInFile(logMessagesFile, 'warningMessages')
-
 
 def valToFunction(val):
     functions = ['None',  # 0
@@ -49,7 +64,6 @@ def valToFunction(val):
     else:
         return 'Unknown Device Function'
 
-
 def getVersion():
     hFile = open(logMessagesFile)
     for line in hFile:
@@ -58,7 +72,6 @@ def getVersion():
             return int(splitLine[1])  # return version number
     print "ERROR: could not find version number in log messages header file"
     return 0
-
 
 def expandLogMessage(logMessageJsonString):
     expanded = ""
@@ -108,7 +121,6 @@ def expandLogMessage(logMessageJsonString):
 
     return expanded
 
-
 def filterOutLogMessages(input_string):
     # removes log messages from string received from Serial
     # log messages are sometimes printed in the middle of a JSON string, which causes decode errors
@@ -119,7 +131,6 @@ def filterOutLogMessages(input_string):
 
     return (stripped, log_messages)
 
-
 if __name__ == '__main__':
     # Quick dirty test (this code will be removed when ControlBox is ready anyway
     test_string = 'd:[{"i":0,"t":4,"c":1,"b":0,"f":2,"h":1,"d":0,"p":17,"v":0.0,"x":0}D:{"logType":"I","logID":22,"V":["3AB0122100000098"]}\r\n,{"i":2,"t":5,"c":1,"b":0,"f":8,"h":3,"d":0,"p":0,"v":0,"x":0,"a":"3AB0122100000098","n":1}]'
@@ -128,3 +139,4 @@ if __name__ == '__main__':
     print('messages: {0}'.format(messages))
 
 getVersion()
+

@@ -27,6 +27,9 @@
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits. */
+
 from __future__ import print_function
 import sys
 
@@ -56,26 +59,28 @@ try:
     import serial
     if LooseVersion(serial.VERSION) < LooseVersion("3.0"):
         printStdErr("BrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION) +
-                             "Please upgrade pyserial via pip, by running:\n" +
-                             "  sudo pip install pyserial --upgrade\n" +
-                             "If you do not have pip installed, install it with:\n" +
-                             "  sudo apt-get install build-essential python-dev python-pip\n")
+                    "Please upgrade pyserial via pip, by running:\n" +
+                    "  'sudo pip install pyserial --upgrade'\n" +
+                    "If you do not have pip installed, install it with:\n" +
+                    "  'sudo apt install python-pip'\n")
         sys.exit(1)
 except ImportError:
     printStdErr("BrewPi requires PySerial to run, please install it via pip, by running:\n" +
-                             "  sudo pip install pyserial --upgrade\n" +
-                             "If you do not have pip installed, install it with:\n" +
-                             "  sudo apt-get install build-essential python-dev python-pip\n")
+                "  'sudo pip install pyserial --upgrade'\n" +
+                "If you do not have pip installed, install it with:\n" +
+                "  'sudo apt install python-pip'\n")
     sys.exit(1)
 try:
     import simplejson as json
 except ImportError:
-    printStdErr("BrewPi requires simplejson to run, please install it with 'sudo apt-get install python-simplejson")
+    printStdErr("BrewPi requires simplejson to run, please install it with:\n" +
+                    "  'sudo apt install python-simplejson'")
     sys.exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
-    printStdErr("BrewPi requires ConfigObj to run, please install it with 'sudo apt-get install python-configobj")
+    printStdErr("BrewPi requires ConfigObj to run, please install it with:\n" +
+                "  'sudo apt install python-configobj")
     sys.exit(1)
 
 #local imports
@@ -95,10 +100,10 @@ from backgroundserial import BackGroundSerial
 compatibleHwVersion = "0.2.10"
 
 # Control Settings
-cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
+cs = dict(mode='b', beerSet=70.0, fridgeSet=70.0, heatEstimator=0.2, coolEstimator=5)
 
 # Control Constants
-cc = dict(tempFormat="F", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
+cc = dict(tempFormat="F", tempSetMin=33.0, tempSetMax=80.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
           idleRangeH=1.000, idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199, coolTargetH=0.199,
           coolTargetL=-0.301, maxHeatTimeForEst="600", maxCoolTimeForEst="1200", fridgeFastFilt="1", fridgeSlowFilt="4",
           fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5", beerSlopeFilt="4", lah=0, hs=0)
@@ -118,8 +123,8 @@ try:
                                ['help', 'config=', 'status', 'quit', 'kill', 'force', 'log', 'dontrunfile', 'checkstartuponly'])
 except getopt.GetoptError:
     printStdErr("Unknown parameter, available Options: --help, --config <path to config file>,\n" +
-                "                                       --status, --quit, --kill, --force, --log,\n" +
-                "                                       --dontrunfile")
+                "                                      --status, --quit, --kill, --force, --log,\n" +
+                "                                      --dontrunfile")
     sys.exit()
 
 configFile = None
@@ -131,23 +136,23 @@ for o, a in opts:
     # print help message for command line options
     if o in ('-h', '--help'):
         printStdErr("\nAvailable command line options: ")
-        printStdErr("--help: Print this help message")
-        printStdErr("--config <path to config file>: Specify a config file to use. When omitted\n" +
-                    "                                 settings/config.cf is used")
-        printStdErr("--status: Check which scripts are already running")
-        printStdErr("--quit: Ask all instances of BrewPi to quit by sending a message to\n" +
-                    "         their socket")
-        printStdErr("--kill: Kill all instances of BrewPi by sending SIGKILL")
-        printStdErr("--force: Force quit/kill conflicting instances of BrewPi and keep this one")
-        printStdErr("--log: Redirect stderr and stdout to log files")
-        printStdErr("--dontrunfile: Check dontrunfile in www directory and quit if it exists")
-        printStdErr("--checkstartuponly: Exit after startup checks, return 1 if startup is allowed")
+        printStdErr("  --help: Print this help message")
+        printStdErr("  --config <path to config file>: Specify a config file to use. When omitted\n" +
+                    "                                  settings/config.cf is used")
+        printStdErr("  --status: Check which scripts are already running")
+        printStdErr("  --quit: Ask all instances of BrewPi to quit by sending a message to\n" +
+                    "          their socket")
+        printStdErr("  --kill: Kill all instances of BrewPi by sending SIGKILL")
+        printStdErr("  --force: Force quit/kill conflicting instances of BrewPi and keep this one")
+        printStdErr("  --log: Redirect stderr and stdout to log files")
+        printStdErr("  --dontrunfile: Check dontrunfile in www directory and quit if it exists")
+        printStdErr("  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed")
         exit()
     # supply a config file
     if o in ('-c', '--config'):
         configFile = os.path.abspath(a)
         if not os.path.exists(configFile):
-            sys.exit('ERROR: Config file "%s" was not found!' % configFile)
+            sys.exit('ERROR: Config file "%s" was not found.' % configFile)
     # send quit instruction to all running instances of BrewPi
     if o in ('-s', '--status'):
         allProcesses = BrewPiProcess.BrewPiProcesses()
@@ -156,30 +161,30 @@ for o, a in opts:
         if running:
             pprint(running)
         else:
-            printStdErr("No BrewPi scripts running")
+            printStdErr("No BrewPi scripts running.")
         exit()
     # quit/kill running instances, then keep this one
     if o in ('-q', '--quit'):
-        logMessage("Asking all BrewPi Processes to quit on their socket")
+        logMessage("Asking all BrewPi processes to quit on their socket.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.quitAll()
         time.sleep(2)
         exit()
     # send SIGKILL to all running instances of BrewPi
     if o in ('-k', '--kill'):
-        logMessage("Killing all BrewPi Processes")
+        logMessage("Killing all BrewPi processes.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.killAll()
         exit()
     # close all existing instances of BrewPi by quit/kill and keep this one
     if o in ('-f', '--force'):
-        logMessage("Closing all existing processes of BrewPi and keeping this one")
+        logMessage("Closing all existing processes of BrewPi and keeping this one.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         if len(allProcesses.update()) > 1:  # if I am not the only one running
             allProcesses.quitAll()
             time.sleep(2)
             if len(allProcesses.update()) > 1:
-                printStdErr("Asking the other processes to quit nicely did not work. Killing them with force!")
+                printStdErr("Asking the other processes to quit did not work. Forcing them now.")
     # redirect output of stderr and stdout to files in log directory
     if o in ('-l', '--log'):
         logToFiles = True
@@ -207,8 +212,8 @@ allProcesses.update()
 myProcess = allProcesses.me()
 if allProcesses.findConflicts(myProcess):
     if not checkDontRunFile:
-        logMessage("Another instance of BrewPi is already running, which will conflict with this instance. " +
-                   "This instance will exit")
+        logMessage("Another instance of BrewPi is already running, which will conflict with this\n" +
+                   "instance. This instance will exit.")
     exit(0)
 
 if checkStartupOnly:
@@ -223,7 +228,8 @@ day = ""
 
 if logToFiles:
     logPath = util.addSlash(util.scriptPath()) + 'logs/'
-    logMessage("Redirecting output to log files in %s, output will not be shown in console" % logPath)
+    logMessage("Redirecting output to log files in %s, output will not " +
+               "be shown in console." % logPath)
     sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # append to stderr file, unbuffered
     sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # overwrite stdout file on script start, unbuffered
 
@@ -236,7 +242,7 @@ def changeWwwSetting(settingName, value):
         try:
             wwwSettings = json.load(wwwSettingsFile)  # read existing settings
         except json.JSONDecodeError:
-            logMessage("Error in decoding userSettings.json, creating new empty json file")
+            logMessage("Error while decoding userSettings.json, creating new empty json file.")
             wwwSettings = {}  # start with a fresh file when the json is corrupt.
     else:
         wwwSettingsFile = open(wwwSettingsFileName, 'w+b')  # create new file
@@ -311,22 +317,22 @@ def startNewBrew(newName):
         return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.unquote(newName) +
                                               "Please reload the page."}
     else:
-        return {'status': 1, 'statusMessage': "Invalid new brew name '%s', "
-                                              "please enter a name with at least 2 characters" % urllib.unquote(newName)}
+        return {'status': 1, 'statusMessage': "Invalid new brew name '%s', please enter\n" +
+                                              "a name with at least 2 characters" % urllib.unquote(newName)}
 
 def stopLogging():
     global config
-    logMessage("Stopped data logging, as requested in web interface. " +
-               "BrewPi will continue to control temperatures, but will not log any data.")
+    logMessage("Stopped data logging as requested in web interface. BrewPi will continue to " +
+               "control temperatures, but will not log any data.")
     config = util.configSet(configFile, 'beerName', None)
     config = util.configSet(configFile, 'dataLogging', 'stopped')
     changeWwwSetting('beerName', None)
-    return {'status': 0, 'statusMessage': "Successfully stopped logging"}
+    return {'status': 0, 'statusMessage': "Successfully stopped logging."}
 
 def pauseLogging():
     global config
-    logMessage("Paused logging data, as requested in web interface. " +
-               "BrewPi will continue to control temperatures, but will not log any data until resumed.")
+    logMessage("Paused logging data, as requested in web interface. BrewPi will continue to " +
+               "control temperatures, but will not log any data until resumed.")
     if config['dataLogging'] == 'active':
         config = util.configSet(configFile, 'dataLogging', 'paused')
         return {'status': 0, 'statusMessage': "Successfully paused logging."}
@@ -349,8 +355,8 @@ if not ser:
     exit(1)
 
 logMessage("Notification: Script started for beer '" + urllib.unquote(config['beerName']) + "'")
-# wait for 10 seconds to allow an Uno to reboot (in case an Uno is being used)
-time.sleep(float(config.get('startupDelay', 10)))
+# wait for 15 seconds to allow an Uno to reboot (in case an Uno is being used)
+time.sleep(float(config.get('startupDelay', 15)))
 
 logMessage("Checking software version on controller.")
 hwVersion = brewpiVersion.getVersionFromSerial(ser)
@@ -359,19 +365,19 @@ if hwVersion is None:
                "Your controller is either not programmed or running a very old version of BrewPi. " +
                "Please upload a new version of BrewPi to your controller.")
     # script will continue so you can at least program the controller
-    lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller']
+    lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller.']
 else:
     logMessage("Found " + hwVersion.toExtendedString() + \
                " on port " + ser.name)
     if LooseVersion( hwVersion.toString() ) < LooseVersion(compatibleHwVersion):
         logMessage("Warning: minimum BrewPi version compatible with this script is " +
                    compatibleHwVersion +
-                   " but version number received is " + hwVersion.toString())
+                   " but version number received is " + hwVersion.toString() + ".")
     if int(hwVersion.log) != int(expandLogMessage.getVersion()):
         logMessage("Warning: version number of local copy of logMessages.h " +
-                   "does not match log version number received from controller." +
-                   "controller version = " + str(hwVersion.log) +
-                   ", local copy version = " + str(expandLogMessage.getVersion()))
+                   "does not match log version number received from controller. " +
+                   "Controller version = " + str(hwVersion.log) +
+                   ", local copy version = " + str(expandLogMessage.getVersion()) + ".")
 bg_ser = None
 
 if ser is not None:
@@ -505,7 +511,7 @@ while run:
             try:
                 newTemp = float(value)
             except ValueError:
-                logMessage("Cannot convert temperature '" + value + "' to float")
+                logMessage("Cannot convert temperature '" + value + "' to float.")
                 continue
             if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
                 cs['mode'] = 'b'
@@ -514,7 +520,7 @@ while run:
                 bg_ser.write("j{mode:b, beerSet:" + json.dumps(cs['beerSet']) + "}")
                 logMessage("Notification: Beer temperature set to " +
                            str(cs['beerSet']) +
-                           " degrees in web interface")
+                           " degrees in web interface.")
                 raise socket.timeout  # go to serial communication to update controller
             else:
                 logMessage("Beer temperature setting " + str(newTemp) +
@@ -525,7 +531,7 @@ while run:
             try:
                 newTemp = float(value)
             except ValueError:
-                logMessage("Cannot convert temperature '" + value + "' to float")
+                logMessage("Cannot convert temperature '" + value + "' to float.")
                 continue
 
             if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
@@ -533,8 +539,8 @@ while run:
                 cs['fridgeSet'] = round(newTemp, 2)
                 bg_ser.write("j{mode:f, fridgeSet:" + json.dumps(cs['fridgeSet']) + "}")
                 logMessage("Notification: Fridge temperature set to " +
-                           str(cs['fridgeSet']) +
-                           " degrees in web interface")
+                           str(cs['fridgeSet'] + ".") +
+                           " degrees in web interface.")
                 raise socket.timeout  # go to serial communication to update controller
             else:
                 logMessage("Fridge temperature setting " + str(newTemp) +
@@ -544,7 +550,7 @@ while run:
         elif messageType == "setOff":  # cs['mode'] set to OFF
             cs['mode'] = 'o'
             bg_ser.write("j{mode:o}")
-            logMessage("Notification: Temperature control disabled")
+            logMessage("Notification: Temperature control disabled.")
             raise socket.timeout
         elif messageType == "setParameters":
             # receive JSON key:value pairs to set parameters on the controller
@@ -554,12 +560,12 @@ while run:
                 if 'tempFormat' in decoded:
                     changeWwwSetting('tempFormat', decoded['tempFormat'])  # change in web interface settings too.
             except json.JSONDecodeError:
-                logMessage("Error: invalid JSON parameter string received: " + value)
+                logMessage("Error: Invalid JSON parameter.  String received: " + value)
             raise socket.timeout
         elif messageType == "stopScript":  # exit instruction received. Stop script.
             # voluntary shutdown.
             # write a file to prevent the cron job from restarting the script
-            logMessage("stopScript message received on socket. " +
+            logMessage("'stopScript' message received on socket. " +
                        "Stopping script and writing dontrunfile to prevent automatic restart.")
             run = 0
             dontrunfile = open(dontRunFilePath, "w")
@@ -567,7 +573,7 @@ while run:
             dontrunfile.close()
             continue
         elif messageType == "quit":  # quit instruction received. Probably sent by another brewpi script instance
-            logMessage("quit message received on socket. Stopping script.")
+            logMessage("'quit' message received on socket. Stopping script.")
             run = 0
             # Leave dontrunfile alone.
             # This instruction is meant to restart the script or replace it with another instance.
@@ -584,10 +590,10 @@ while run:
                 try:
                     config = util.configSet(configFile, 'interval', float(newInterval))
                 except ValueError:
-                    logMessage("Cannot convert interval '" + value + "' to float")
+                    logMessage("Cannot convert interval '" + value + "' to float.")
                     continue
                 logMessage("Notification: Interval changed to " +
-                           str(newInterval) + " seconds")
+                           str(newInterval) + " seconds.")
         elif messageType == "startNewBrew":  # new beer name
             newName = value
             result = startNewBrew(newName)
@@ -681,7 +687,7 @@ while run:
             try:
                 configStringJson = json.loads(value)  # load as JSON to check syntax
             except json.JSONDecodeError:
-                logMessage("Error: invalid JSON parameter string received: " + value)
+                logMessage("Error: Invalid JSON parameter string received: " + value)
                 continue
             bg_ser.write("U" + json.dumps(configStringJson))
             deviceList['listState'] = ""  # invalidate local copy
@@ -731,7 +737,7 @@ while run:
 
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
             #something is wrong: controller is not responding to data requests
-            logMessage("Error: controller is not responding to new data requests.")
+            logMessage("Error: Controller is not responding to new data requests.")
 
 
         while True:
@@ -744,7 +750,8 @@ while run:
                     if line[0] == 'T':
                         # print it to stdout
                         if outputTemperature:
-                            print(time.strftime("%b %d %Y %H:%M:%S  ") + line[2:])
+                            print(time.strftime("%Y-%m-%d %H:%M:%S   ") + line[2:]) # This is format: "2019-01-08 16:50:15"
+                            #print(time.strftime("%b %d %Y %H:%M:%S  ") + line[2:]) # This is format: "Jan 08 2019 16:31:56"
 
                         # store time of last new data for interval check
                         prevDataTime = time.time()
@@ -827,7 +834,7 @@ while run:
                     expandedMessage = expandLogMessage.expandLogMessage(message)
                     logMessage("Controller debug message: " + expandedMessage)
                 except Exception, e:  # catch all exceptions, because out of date file could cause errors
-                    logMessage("Error while expanding log message '" + message + "'" + str(e))
+                    logMessage("Error while expanding log message: '" + message + "'" + str(e))
 
         # Check for update from temperature profile
         if cs['mode'] == 'p':

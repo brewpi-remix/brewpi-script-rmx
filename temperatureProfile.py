@@ -1,32 +1,47 @@
-# Copyright 2012 BrewPi/Elco Jacobs.
-# This file is part of BrewPi.
+#!/usr/bin/python
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 import time
 import csv
 import sys
 import BrewPiUtil as util
 
-
 # also defined in brewpi.py. TODO: move to shared import
 def logMessage(message):
-    print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message
-
+    print >> sys.stderr, time.strftime("%Y-%m-%d %H:%M:%S   ") + message # This is format: "2019-01-08 16:50:15"
+    #print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message # This is format: "Jan 08 2019 16:31:56"
 
 def getNewTemp(scriptPath):
-    temperatureReader = csv.reader(	open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rb'),
+    temperatureReader = csv.reader(     open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rb'),
                                     delimiter=',', quoting=csv.QUOTE_ALL)
     temperatureReader.next()  # discard the first row, which is the table header
     prevTemp = None
@@ -35,13 +50,12 @@ def getNewTemp(scriptPath):
     prevDate = None
     nextDate = None
 
-
     now = time.mktime(time.localtime())  # get current time in seconds since epoch
 
     for row in temperatureReader:
         dateString = row[0]
         try:
-            date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
+		    date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
         except ValueError:
             continue  # skip dates that cannot be parsed
 

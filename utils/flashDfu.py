@@ -1,18 +1,34 @@
-# Copyright 2015 BrewPi
-# This file is part of BrewPi.
+#!/usr/bin/python
 
-# BrewPi is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# BrewPi is distributed in the hope that it will be useful,
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
 # You should have received a copy of the GNU General Public License
-# along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 import sys
 # Check needed software dependencies to nudge users to fix their setup
@@ -53,8 +69,6 @@ def printHelp():
         print "--testmode\t set controller to test mode after flashing"
         print "--noreset\t do not reset EEPROM after flashing"
 
-
-
 # Read in command line arguments
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hf:t:ma",
@@ -75,9 +89,6 @@ system1 = None
 system2 = None
 # binary to flash
 binFile = None
-
-
-
 
 for o, a in opts:
     # print help message for command line options
@@ -320,6 +331,5 @@ while(True):
                 else:
                     print "Automatically rebooting in DFU mode is not supported for {0}".format(name)
 
-
-
     time.sleep(1)
+

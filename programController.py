@@ -27,6 +27,9 @@
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 from __future__ import print_function
 import subprocess as sub
 import time
@@ -41,13 +44,11 @@ import subprocess
 import platform
 import sys
 
-# print everything in this file to stderr so it ends up in the
-# correct log file for the web UI
+# Log to stderr.txt
 def printStdErr(*objs):
     print(*objs, file=sys.stderr)
 
-# print everything in this file to stderr so it ends up in the
-# correct log file for the web UI
+# Log to stdout.txt
 def printStdOut(*objs):
     print(*objs, file=sys.stdout)
 
@@ -156,7 +157,6 @@ class LightYModem:
 
         return response
 
-
 def fetchBoardSettings(boardsFile, boardType):
     boardSettings = {}
     for line in boardsFile:
@@ -165,7 +165,6 @@ def fetchBoardSettings(boardsFile, boardType):
             [key, sign, val] = setting.rpartition('=')
             boardSettings[key] = val
     return boardSettings
-
 
 def loadBoardsFile(arduinohome):
     boardsFileContent = None
@@ -179,7 +178,6 @@ def loadBoardsFile(arduinohome):
 def programController(config, boardType, hexFile, system1File, system2File, useDfu, restoreWhat):
     programmer = SerialProgrammer.create(config, boardType)
     return programmer.program(hexFile, system1File, system2File, useDfu, restoreWhat)
-
 
 def json_decode_response(line):
     try:
@@ -300,7 +298,7 @@ class SerialProgrammer:
                     return False
 
         printStdOut("Waiting for device to reset.")
-        time.sleep(10) # give time to reboot
+        time.sleep(15) # give time to reboot
 
         if not self.open_serial_with_retry(self.config, 57600, 0.2):
             printStdOut("Error opening serial port after programming. Program script will exit. Settings are not restored.")
@@ -428,9 +426,9 @@ class SerialProgrammer:
                     expected_responses -= 1
                     self.oldSettings['installedDevices'] = json_decode_response(line)
 
-
     def save_settings_to_file(self):
-        oldSettingsFileName = 'settings-' + time.strftime("%b-%d-%Y-%H-%M-%S") + '.json'
+        oldSettingsFileName = 'settings-' + time.strftime("%Y-%m-%d-%H-%M-%S") + '.json' # This is format" "2019-01-08-16-50-15"
+        #oldSettingsFileName = 'settings-' + time.strftime("%b-%d-%Y-%H-%M-%S") + '.json' # This is format: "Jan-08-2019-16-31-56"
         settingsBackupDir = util.scriptPath() + '/settings/controller-backup/'
         if not os.path.exists(settingsBackupDir):
             os.makedirs(settingsBackupDir, 0777)
@@ -486,7 +484,6 @@ class SerialProgrammer:
         printStdOut("Omitting these settings: " + json.dumps(omitted.items()))
 
         self.send_restored_settings(restored)
-
 
     def get_combined_settings_dict(self, oldSettings):
         combined = oldSettings.get('controlConstants').copy() # copy keys/values from controlConstants
@@ -557,7 +554,6 @@ class SerialProgrammer:
                     break
         printStdOut("Restoring installed devices done.")
 
-
 class SparkProgrammer(SerialProgrammer):
     def __init__(self, config, boardType):
         SerialProgrammer.__init__(self, config)
@@ -599,7 +595,6 @@ class ArduinoProgrammer(SerialProgrammer):
         else:
             printStdOut("Could not open serial port at 1200 baud to reset Arduino Leonardo")
             return False
-
 
     def flash_file(self, hexFile):
         config, boardType = self.config, self.boardType

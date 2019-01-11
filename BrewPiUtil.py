@@ -27,6 +27,9 @@
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 from __future__ import print_function
 import time
 import sys
@@ -87,7 +90,7 @@ def configSet(configFile, settingName, value):
     config.write()
   except IOError as e:
     logMessage("I/O error(%d) while updating %s: %s \n" % (e.errno, configFile, e.strerror))
-    logMessage("Your permissions likely are not set correctly.  To fix\n" + 
+    logMessage("Your permissions likely are not set correctly.  To fix\n" +
                "this, run 'sudo ./fixPermissions.sh' from your Tools directory.")
   return readCfgWithDefaults(configFile)  # return updated ConfigObj
 
@@ -101,7 +104,8 @@ def logMessage(message):
   """
   Prints a timestamped message to stderr
   """
-  printStdErr(time.strftime("%b %d %Y %H:%M:%S   ") + message)
+  printStdOut(time.strftime("%Y-%m-%d %H:%M:%S   ") + message) # This is format: "2019-01-08 16:50:15"
+  #printStdErr(time.strftime("%b %d %Y %H:%M:%S   ") + message) # This is format: "Jan 08 2019 16:31:56"
 
 def scriptPath():
   """
@@ -161,7 +165,7 @@ def setupSerial(config, baud_rate=57600, time_out=0.1):
     ser.flushOutput()
   else:
     logMessage("Error(s) while opening serial port: \n" + error)
-  
+
   # yes this is monkey patching, but I don't see how to replace the methods on a dynamically instantiated type any other way
   if dumpSerial:
     ser.readOriginal = ser.read

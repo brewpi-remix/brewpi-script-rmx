@@ -11,7 +11,7 @@
 #
 # BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -26,6 +26,9 @@
 # many more contributors around the world. My apologies if I have
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 import urllib2
 import simplejson as json
@@ -196,4 +199,3 @@ if __name__ == "__main__":
 
     print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
     print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)
-

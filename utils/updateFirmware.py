@@ -27,6 +27,9 @@
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 from __future__ import print_function
 import sys
 import os
@@ -45,12 +48,12 @@ def pipeInput(prompt=""):
     sys.stdin = saved_stdin
     return (result)
 
-# print everything in this file to stderr so it ends up in the correct log file for the web UI
+# Log to stderr.txt
 def printStdErr(*objs):
     if userInput:
         print(*objs, file=sys.stderr)
 
-# print everything in this file to stdout so it ends up in the correct log file for the web UI
+# Log to stdout.txt
 def printStdOut(*objs):
     if userInput:
         print(*objs, file=sys.stdout)
@@ -278,8 +281,8 @@ if __name__ == '__main__':
         opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent', 'dfu'])
     except getopt.GetoptError:
         print ("Unknown parameter, available options: \n" +
-               "--silent\t use default options, do not ask for user input\n" +
-               "--beta\t\t include unstable (prerelease) releases\n")
+               "\t--silent\t use default options, do not ask for user input\n" +
+               "\t--beta\t\t include unstable (prerelease) releases\n")
         sys.exit()
 
     userInput = True

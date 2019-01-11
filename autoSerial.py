@@ -1,6 +1,34 @@
-"""
-Automatically finds a compatible device (Photon, Core, Arduino), modified from Matthews work in brewpi-connector
-"""
+#!/usr/bin/python
+
+# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+#
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
+
+# These scripts were originally a part of brewpi-script, a part of
+# the BrewPi project. Legacy support (for the very popular Arduino
+# controller) seems to have been discontinued in favor of new hardware.
+
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
+
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
 
 from __future__ import absolute_import
 from serial.tools import list_ports
@@ -35,7 +63,6 @@ def find_compatible_serial_ports(bootLoader = False):
                 continue
             yield (p[0], name)
 
-
 def find_all_serial_ports():
     """
     :return: a list of serial port info tuples
@@ -43,7 +70,6 @@ def find_all_serial_ports():
     """
     all_ports = list_ports.comports()
     return iter(all_ports)
-
 
 def detect_port(bootLoader = False):
     """
@@ -71,7 +97,6 @@ def configure_serial_for_device(s, d):
     # for now, all devices connect at 57600 baud with defaults for parity/stop bits etc.
     s.setBaudrate(57600)
 
-
 if __name__ == '__main__':
     print "All ports:"
     for p in find_all_serial_ports():
@@ -84,3 +109,4 @@ if __name__ == '__main__':
     for p in find_compatible_serial_ports():
         print p
     print "Selected port: {0}".format(detect_port())
+

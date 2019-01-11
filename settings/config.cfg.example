@@ -9,9 +9,9 @@
 # startupDelay = 1.0
 # debug = true
 
-
 # On a standard pi installation, the defaults should work.
-# If you are using a different linux flavor or Windows, you can set the tool locations here
+# If you are using a different linux flavor or Windows, you can
+# set the tool locations here
 
 # arduinoHome = c:/arduino-1.0.4/
 # avrdudeHome = # location of avr tools, defaults to arduinohome/hardware/tools
@@ -22,4 +22,3 @@
 # useInetSocket=true
 # socketPort=6332
 # socketHost=127.0.0.1
-

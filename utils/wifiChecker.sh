@@ -27,6 +27,9 @@
 # missed anyone; those were the names listed as contributors on the
 # Legacy branch.
 
+# See: 'original-license.md' for notes about the original project's
+# license and credits.
+
 ############
 ### Init
 ############

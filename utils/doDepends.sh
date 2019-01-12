@@ -80,7 +80,7 @@ for pkg in ${APTPACKAGES,,}; do
   pkgOk=$(dpkg-query -W --showformat='${Status}\n' ${pkg,,} | \
     grep "install ok installed")
   if [ -z "$pkgOk" ]; then
-    echo -e "\nInstalling '$pkg'."
+    echo -e "\nInstalling '$pkg'.\n"
     apt install ${pkg,,} -y||die
         echo
   fi
@@ -94,7 +94,7 @@ upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
 # Loop through the required packages and see if they need an upgrade
 for pkg in ${APTPACKAGES,,}; do
   if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
-    echo -e "\nUpgrading '$pkg'."
+    echo -e "\nUpgrading '$pkg'.\n"
     apt upgrade ${pkg,,} -y||die
   fi
 done

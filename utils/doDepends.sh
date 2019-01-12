@@ -164,7 +164,7 @@ for pkg in ${APTPACKAGES,,}; do
 done
 
 # Cleanup
-echo -e "\nCleaning up local repositories."
+echo -e "Cleaning up local repositories."
 apt clean -y||die
 apt autoclean -y||die
 apt autoremove --purge -y||die

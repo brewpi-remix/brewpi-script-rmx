@@ -34,97 +34,21 @@
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.5.0"
-# These should stay the same
-PACKAGE="BrewPi-Script-RMX"
-SCRIPTNAME="${THISSCRIPT%%.*}"
+GITROOT="$(git rev-parse --show-toplevel)"
 
-# Support the standard --help and --version.
-#
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
-}
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
-fi
+# Get project constants
+. "$GITROOT/inc/const.inc"
 
-############
-### Make sure user pi is running with sudo
-############
+# Get help and version functionality
+. "$GITROOT/inc/help.inc"
 
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "This script must be run by user 'pi' with sudo:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
-  exit 1
-fi
-# Get the pi user's home directory
-_shadow="$((getent passwd $REALUSER) 2>&1)"
-if [ $? -eq 0 ]; then
-  homepath="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo "Unable to retrieve $REALUSER's home directory. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
-# Get the brewpi user's home directory
-_shadow="$((getent passwd brewpi) 2>&1)"
-if [ $? -eq 0 ]; then
-  defaultScriptPath="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo "Unable to retrieve brewpi's home directory. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
+# Get help and version functionality
+. "$GITROOT/inc/asroot.inc"
 
-############
-### Start the script
-############
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
 
-echo -e "\n***Script $THISSCRIPT starting.***\n"
-
-echo -e "Updating cron for the brewpi user.\n"
-
-############
-### Functions to catch/display errors during setup
-############
-warn() {
-  local fmt="$1"
-  command shift 2>/dev/null
-  echo -e "$fmt"
-  echo -e "${@}"
-  echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***"
-  echo -e "-------------------------------------"
-  echo -e "See above lines for error message."
-  echo -e "Setup NOT completed.\n"
-}
-die () {
-  local st="$?"
-  warn "$@"
-  exit "$st"
-}
+echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
 ### doCronEntry:  Prompts to create or update crontab entry.  Two arguments:
@@ -136,7 +60,7 @@ function doCronEntry {
   #   $2 = Cron tab entry
   entry=$1
   newEntry=$2
-  echo -e "Checking entry for $entry."
+  echo -e "\nChecking entry for $entry."
   # find old entry for this name
   oldEntry=$(grep -A1 "entry:$entry" "$cronfile" | tail -n 1)
   # check whether it is up to date
@@ -150,37 +74,37 @@ function doCronEntry {
     fi
     echo -e "\nLatest version of this cron entry:"
     echo -e "$newEntry"
-    echo -e "\nYour current cron entry differs from the latest version, would you like me"
-    read -p "to update it? [Y/n]: " yn </dev/tty
-    if [ -z "$yn" ]; then
-      yn="y" # no entry/enter = yes
+    while true; do
+	    echo -e "\nYour current cron entry differs from the latest version, would you like me"
+        read -p "to create or update it? [Y/n]: " yn  < /dev/tty
+        case $yn in
+            '' ) doUpdate=1; break ;;
+            [Yy]* ) doUpdate=1; break ;;
+            [Nn]* ) break ;;
+            * ) echo -e "\nEnter [y]es or [n]o." ;;
+        esac
+    done
+    if [ ! -z $doUpdate ]; then
+      line=$(grep -n "entry:$entry" /etc/cron.d/brewpi | cut -d: -f 1)
+      if [ -z "$line" ]; then
+        echo -e "\nAdding new cron entry to file."
+        # entry did not exist, add at end of file
+        echo "# entry:$entry" | tee -a "$cronfile" > /dev/null
+        echo "$newEntry" | tee -a "$cronfile" > /dev/null
+      else
+        echo -e "\nReplacing cron entry on line $line with newest version."
+        # get line number to replace
+        cp "$cronfile" /tmp/brewpi.cron
+        # write head of old cron file until replaced line
+        head -"$line" /tmp/brewpi.cron | tee "$cronfile" > /dev/null
+        # write replacement
+        echo "$newEntry" | tee -a "$cronfile" > /dev/null
+        # write remainder of old file
+        tail -n +$((line+2)) /tmp/brewpi.cron | tee -a "$cronfile" > /dev/null
+      fi
     fi
-    case "$yn" in
-      y | Y | yes | YES| Yes )
-        line=$(grep -n "entry:$entry" /etc/cron.d/brewpi | cut -d: -f 1)
-        if [ -z "$line" ]; then
-          echo -e "\nAdding new cron entry to file.\n"
-          # entry did not exist, add at end of file
-          echo "# entry:$entry" | tee -a "$cronfile" > /dev/null
-          echo "$newEntry" | tee -a "$cronfile" > /dev/null
-        else
-          echo -e "\nReplacing cron entry on line $line with newest version."
-          # get line number to replace
-          cp "$cronfile" /tmp/brewpi.cron
-          # write head of old cron file until replaced line
-          head -"$line" /tmp/brewpi.cron | tee "$cronfile" > /dev/null
-          # write replacement
-          echo "$newEntry" | tee -a "$cronfile" > /dev/null
-          # write remainder of old file
-          tail -n +$((line+2)) /tmp/brewpi.cron | tee -a "$cronfile" > /dev/null
-        fi
-        ;;
-      * )
-        echo -e "\nSkipping entry for $entry.\n"
-        ;;
-    esac
   fi
-  echo -e "Done checking entry $entry."
+  echo -e "\nDone checking entry $entry."
 }
 
 ############
@@ -271,39 +195,38 @@ cronfile="/etc/cron.d/brewpi"
 # make sure it exists
 touch "$cronfile"
 
-# get variables from old cron job. First grep gets the line, second one the
-# string; tr removes the quotes. In cron file: entries="brewpi wifi"
-entries=$(grep -m1 'entries=".*"' /etc/cron.d/brewpi | grep -oE '".*"' | tr -d \")
-scriptpath=$(grep -m1 'scriptpath=".*"' /etc/cron.d/brewpi | grep -oE '".*"' | tr -d \")
-stdoutpath=$(grep -m1 'stdoutpath=".*"' /etc/cron.d/brewpi | grep -oE '".*"' | tr -d \")
-stderrpath=$(grep -m1 'stderrpath=".*"' /etc/cron.d/brewpi | grep -oE '".*"' | tr -d \")
+# Get variables from old cron job.
+entries=$(grep -m1 'entries=' /etc/cron.d/brewpi) && entries=${entries##*=}
+scriptpath=$(grep -m1 'scriptpath=' /etc/cron.d/brewpi) && scriptpath=${scriptpath##*=}
+stdoutpath=$(grep -m1 'stdoutpath=' /etc/cron.d/brewpi) && stdoutpath=${stdoutpath##*=}
+stderrpath=$(grep -m1 'stderrpath=' /etc/cron.d/brewpi) && stderrpath=${stderrpath##*=}
 
 # if the variables did not exist, add the defaults
 if [ -z "$entries" ]; then
   entries="brewpi"
-  echo -e "No cron file present, or it is an old version, starting fresh.\n"
+  echo -e "\nNo cron file present, or it is an old version, starting fresh."
   rm -f "$cronfile"
   echo "entries=\"brewpi\"" | tee "$cronfile" > /dev/null
 fi
 
 if [ -z "$scriptpath" ]; then
-  scriptpath="$defaultScriptPath"
-  echo -e "No previous setting for scriptpath found, using default:\n$scriptpath.\n"
+  scriptpath="$GITROOT"
+  echo -e "\nNo previous setting for scriptpath found, using default:\n$scriptpath."
   entry="1iscriptpath=$scriptpath"
   sed -i "$entry" "$cronfile"
 fi
 
 if [ -z "$stdoutpath" ]; then
-  stdoutpath="/home/brewpi/logs/stdout.txt"
-  echo -e "No previous setting for stdoutpath found, using default:\n$stdoutpath.\n"
-  entry="1istdoutpath=$scriptpath/logs/stdout.txt"
+  stdoutpath="$GITROOT/logs/stdout.txt"
+  echo -e "\nNo previous setting for stdoutpath found, using default:\n$stdoutpath."
+  entry="1istdoutpath=$stdoutpath"
   sed -i "$entry" "$cronfile"
 fi
 
 if [ -z "$stderrpath" ]; then
-  stderrpath="/home/brewpi/logs/stdout.txt"
-  echo -e "No previous setting for stderrpath found, using default:\n$stderrpath.\n"
-  entry="1istderrpath=$scriptpath/logs/stderr.txt"
+  stderrpath="$GITROOT/logs/stderr.txt"
+  echo -e "\nNo previous setting for stderrpath found, using default:\n$stderrpath."
+  entry="1istderrpath=$stderrpath"
   sed -i "$entry" "$cronfile"
 fi
 
@@ -311,35 +234,29 @@ fi
 brewpicron='* * * * * brewpi python $scriptpath/brewpi.py --checkstartuponly --dontrunfile $scriptpath/brewpi.py 1>/dev/null 2>>$stderrpath; [ $? != 0 ] && python -u $scriptpath/brewpi.py 1>$stdoutpath 2>>$stderrpath &'
 wificheckcron='*/10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/wifiChecker.sh 1>>$stdoutpath 2>>$stderrpath &'
 
-# Entry for brewpi.py
-found=false
+# Entry for brewpi
 for entry in $entries; do
-  # entry for brewpi.py
-  if [ "$entry" == "brewpi" ] ; then
-    found=true
+  if [[ $entry =~ .*brewpi* ]]; then
     doCronEntry brewpi "$brewpicron"
-    break
   fi
 done
 
 # Entry for WiFi check script
-found=false
+foundWiFi=false
 for entry in $entries; do
-  if [ "$entry" == "wifi" ] ; then
-    # check whether cron entry is up to date
-    found=true
+  if [[ $entry =~ .*~wifi* ]]; then
+    foundWiFi=true
+    echo -e "\nWiFi disabled."
+  elif [[ $entry =~ .*wifi* ]]; then
+    # Check whether cron entry is up to date
+    foundWiFi=true
     doCronEntry wifi "$wificheckcron"
-    break
-  elif [ "$entry" == "~wifi" ] ; then
-    echo "WiFi checker is disabled."
-    found=true
-    break
   fi
 done
 
 # If there was no entry for wifi, ask to add it or disable it
 wlan=$(cat /proc/net/wireless | perl -ne '/(\w+):/ && print $1')
-if [ "$found" == false ]; then
+if [ "$foundWiFi" == false ]; then
   echo -e "\nNo setting found for wifi check script."
   if [[ ! -z "$wlan" ]]; then
     echo -e "\nIt looks like you're running a WiFi adapter on your Pi.  Some users"
@@ -363,10 +280,12 @@ if [ "$found" == false ]; then
        ;;
     esac
   else
-    echo -e "\nIt looks like you're not running a WiFi adapter on your Pi.\n"
+    echo -e "\nIt looks like you're not running a WiFi adapter on your Pi."
   fi
 fi
 
 echo -e "\nRestarting cron:"
 /etc/init.d/cron restart||die
+
+echo -e "\n***Script $THISSCRIPT complete.***"
 

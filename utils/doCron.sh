@@ -34,7 +34,7 @@
 ### Init
 ############
 
-# Change to current dir so we can get the got info
+# Change to current dir so we can get the git info
 cd "$(dirname "$0")"
 GITROOT="$(git rev-parse --show-toplevel)"
 

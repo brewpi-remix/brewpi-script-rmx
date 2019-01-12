@@ -34,90 +34,47 @@
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT="runAfterUpdate.sh"
-VERSION="0.4.5.0"
-# These should stay the same
-PACKAGE="BrewPi-Script-RMX"
+GITROOT="$(git rev-parse --show-toplevel)"
 
-# Support the standard --help and --version.
-#
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
-}
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
+# Get project constants
+. "$GITROOT/inc/const.inc"
+
+# Get help and version functionality
+. "$GITROOT/inc/help.inc"
+
+# Get help and version functionality
+. "$GITROOT/inc/asroot.inc"
+
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
+
+echo -e "\n***Script $THISSCRIPT starting.***"
+
+############
+### Cleanup compiler files and empty directories
+############
+
+# Delete old .pyc files
+echo -e "\nCleaning up BrewPi script directory."
+numPYC=$( find "$GITROOT" -name "*.pyc" | wc -l | tr -d ' ' )
+if [ $numPYC -gt 0 ]; then
+  find "$GITROOT" -name "*.pyc" -delete
+  echo -e "Deleted $numPYC old .pyc files."
 fi
-
-echo -e "\n***Script $THISSCRIPT starting.***\n"
-
-### Check if we have root privs to run
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
-   exit 1
+#  Delete empty directories from script directory
+echo -e "\nCleaning up empty directories."
+numEmptyDirs=$( find "$GITROOT" -type d -empty | wc -l | tr -d ' ' )
+if [ $numEmptyDirs -gt 0 ]; then
+ find "$GITROOT" -type d -empty -delete
+ echo -e "Deleted $numEmptyDirs empty directories."
 fi
 
 ############
-### Functions to catch/display errors during setup
+### Do the needfull via the other scripts
 ############
-warn() {
-  local fmt="$1"
-  command shift 2>/dev/null
-  echo "$fmt"
-  echo "${@}"
-  echo
-  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
-  echo "-------------------------------------"
-  echo "See above lines for error message."
-  echo "Script did not complete."
-  echo
-}
 
-die () {
-  local st="$?"
-  warn "$@"
-  exit "$st"
-}
+sudo bash "$GITROOT/utils/doDepends.sh" # Install or upgrade dependencies
+sudo bash "$GITROOT/utils/doCron.sh"    # Set up or upgrade cron
+sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
 
-# The script path will execute one dir above the location of this bash file
-unset CDPATH
-myPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-scriptPath="$myPath/.."
-
-#!/usr/bin/env bash
-
-# Delete old .pyc files and empty directories from script directory
-printf "\nCleaning up BrewPi script directory.\n"
-NUM_PYC_FILES=$( find "$scriptPath" -name "*.pyc" | wc -l | tr -d ' ' )
-if [ $NUM_PYC_FILES -gt 0 ]; then
-    find "$scriptPath" -name "*.pyc" -delete
-    printf "Deleted $NUM_PYC_FILES old .pyc files\n"
-fi
-
-NUM_EMPTY_DIRS=$( find "$scriptPath" -type d -empty | wc -l | tr -d ' ' )
-if [ $NUM_EMPTY_DIRS -gt 0 ]; then
-    find "$scriptPath" -type d -empty -delete
-    printf "Deleted $NUM_EMPTY_DIRS empty directories.\n"
-fi
-
-sudo bash "$myPath"/installDependencies.sh
-sudo bash "$myPath"/updateCron.sh
-sudo bash "$myPath"/fixPermissions.sh
+echo -e "\n***Script $THISSCRIPT complete.***\n"

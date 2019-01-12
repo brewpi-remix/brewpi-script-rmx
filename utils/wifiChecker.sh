@@ -34,7 +34,8 @@
 ### Init
 ############
 
-cd "$scriptpath"
+# Change to current dir so we can get the got info
+cd "$(dirname "$0")"
 GITROOT="$(git rev-parse --show-toplevel)"
 
 # Get project constants

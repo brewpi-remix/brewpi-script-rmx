@@ -31,7 +31,7 @@
 # license and credits.
 
 ############
-### Include file to check privildges and permissions
+### Include file to check privilges and permissions
 ############
 
 ### Check if we have root privs to run

@@ -2,7 +2,7 @@
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+# This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
 # BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -28,128 +28,48 @@
 # Legacy branch.
 
 # See: 'original-license.md' for notes about the original project's
-# license and credits
+# license and credits.
 
 ############
 ### Init
 ############
 
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.5.0"
-# These should stay the same
-PACKAGE="BrewPi-Script-RMX"
+GITROOT="$(git rev-parse --show-toplevel)"
 
-# Support the standard --help and --version.
-#
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
-}
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
-fi
+# Get project constants
+. "$GITROOT/inc/const.inc"
 
-############
-### Make sure user pi is running with sudo
-############
+# Get help and version functionality
+. "$GITROOT/inc/help.inc"
 
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "This script must be run by user 'pi' with sudo:"
-  echo -e "sudo . $THISSCRIPT\n" 1>&2
-  exit 1
-fi
+# Get help and version functionality
+. "$GITROOT/inc/asroot.inc"
 
-############
-### Start the script
-############
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
+
 echo -e "\n***Script $THISSCRIPT starting.***"
-
-############
-### Functions to catch/display errors during setup
-############
-warn() {
-  local fmt="$1"
-  command shift 2>/dev/null
-  echo "$fmt"
-  echo "${@}"
-  echo
-  echo "*** ERROR ERROR ERROR ERROR ERROR ***"
-  echo "-------------------------------------"
-  echo "See above lines for error message."
-  echo "Script did not complete."
-  echo
-}
-
-die () {
-  local st="$?"
-  warn "$@"
-  exit "$st"
-}
-
-############
-### Get some directories
-############
-
-# Get the pi user's home directory
-_shadow="$((getent passwd $REALUSER) 2>&1)"
-if [ $? -eq 0 ]; then
-  homepath="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo "Unable to retrieve $REALUSER's home directory. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
-
-# Get the brewpi user's home directory
-_shadow="$((getent passwd brewpi) 2>&1)"
-if [ $? -eq 0 ]; then
-  scriptPath="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo "Unable to retrieve brewpi's home directory. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
-
-# Find web path based on Apache2 config
-webPath="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-if [ "$webPath" == "" ]; then
-  echo "Unable to retrieve html path. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
 
 ############
 ### Fix permissions
 ############
 
-echo -e "\nFixing file permissions for $webPath."
-chown -R www-data:www-data "$webPath"||warn
-chmod -R g+rwx "$webPath"||warn
-find "$webPath" -type d -exec chmod g+rwxs {} \;||warn
+echo -e "\nFixing file permissions for $WEBPATH."
+chown -R www-data:www-data "$WEBPATH"||warn
+find "$WEBPATH" -type d -exec chmod 750 {} \;||warn
+find "$WEBPATH" -type f -exec chmod 640 {} \;||warn
+find "$WEBPATH/data" -type d -exec chmod 770 {} \;||warn
+find "$WEBPATH/data" -type f -exec chmod 660 {} \;||warn
+find "$WEBPATH" -type f -name "*.json" -exec chmod 660 {} \;||warn
+chmod 775 "$WEBPATH/"||warn
 
-echo -e "\nFixing file permissions for $scriptPath."
-chown -R brewpi:brewpi "$scriptPath"||warn
-chmod -R g+rwx "$scriptPath"||warn
-find "$scriptPath" -type d -exec chmod g+rwxs {} \;||warn
+echo -e "\nFixing file permissions for $GITROOT."
+chown -R brewpi:brewpi "$GITROOT"||warn
+find "$GITROOT" -type d -exec chmod 775 {} \;||warn
+find "$GITROOT" -type f -exec chmod 660 {} \;||warn
+find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+
+echo -e "\n***Script $THISSCRIPT complete.***"
+
+exit 0
 

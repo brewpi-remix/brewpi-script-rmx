@@ -2,7 +2,7 @@
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
+# This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
 #
 # BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -28,110 +28,72 @@
 # Legacy branch.
 
 # See: 'original-license.md' for notes about the original project's
-# license and credits
-
-# Set up some project variables
-THISSCRIPT=$(basename "$0")
-VERSION="0.4.5.0"
-# These should stay the same
-PACKAGE="BrewPi-Script-RMX"
-GITPROJ=${PACKAGE,,}
-SCRIPTNAME="${THISSCRIPT%%.*}"
-
-# Support the standard --help and --version.
-#
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT    {run as user 'pi'}"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-There is NO WARRANTY, to the extent permitted by law."
-}
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
-fi
+# license and credits.
 
 ############
-### Make sure user pi is running with sudo
+### Init
 ############
 
-if [ $SUDO_USER ]; then REALUSER=$SUDO_USER; else REALUSER=$(whoami); fi
-if [[ $EUID -ne 0 ]]; then UIDERROR="root";
-elif [[ $REALUSER != "pi" ]]; then UIDERROR="pi"; fi
+GITROOT="$(git rev-parse --show-toplevel)"
 
-if [[ ! $UIDERROR == ""  ]]; then
-  echo -e "This script must be run by user 'pi' with sudo:"
-  echo -e "'sudo ./updateToolsRepo.sh'\n" 1>&2
-  exit 1
-fi
+# Get project constants
+. "$GITROOT/inc/const.inc"
 
-# Get the brewpi user's home directory
-_shadow="$((getent passwd brewpi) 2>&1)"
-if [ $? -eq 0 ]; then
-  scriptPath="$(echo $_shadow | cut -d':' -f6)"
-else
-  echo "Unable to retrieve brewpi's home directory. Manual install"
-  echo "may be necessary."
-  exit 1
-fi
+# Get help and version functionality
+. "$GITROOT/inc/help.inc"
 
-# Change directory to where the repo is
-unset CDPATH
-myPath=$scriptPath
-cd "$myPath"
+# Get help and version functionality
+. "$GITROOT/inc/asroot.inc"
+
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
+
+# Network test
+. "$GITROOT/inc/error.inc"
+
+echo -e "\n***Script $THISSCRIPT starting.***"
 
 # Make sure git is installed
-PKG_OK=$(dpkg-query -W --showformat='${Status}\n' git|grep "install ok installed")
-if [ "" == "$PKG_OK" ]; then
-  echo "Error:  No git found."
-  exit 1
-else
-  # See if we can get the active branch
-  active_branch=$(git symbolic-ref -q HEAD)
-  if [ $? -eq 0 ]; then
-    active_branch=${active_branch##refs/heads/}
+"$GITROOT/utils/doDepends.sh"
 
-    # Check local against remote
-    git fetch
-    changes=$(git log HEAD..origin/"$active_branch" --oneline)
+# Change directory to where the repo is
+pushd "$PWD" &> /dev/null
+cd "$GITROOT"
 
-    if [ -z "$changes" ]; then
-        # no changes
-        echo "$myPath is up to date."
-        exit 0
-    fi
+# See if we can get the active branch
+active_branch=$(git symbolic-ref -q HEAD)
+if [ $? -eq 0 ]; then
+  active_branch=${active_branch##refs/heads/}
 
+  # Check local against remote
+  git fetch
+  changes=$(git log HEAD..origin/"$active_branch" --oneline)
+  if [ -z "$changes" ]; then
+    # no changes
+    echo "$myPath is up to date."
+    exit 0
+  else
     echo "$myPath is not up to date, updating from GitHub."
-    git pull;
+    git pull
     if [ $? -ne 0 ]; then
       # Not able to make a pull because of changed local files
-      echo -e "\nAn error occurred during git pull. Please update $myPath"
-      echo -e "manually.  You can stash your local changes and then pull with:"
-      echo -e "cd $myPath; sudo git stash; sudo git pull\n"
-      echo -e "Under normal conditions you should never see this message.  If"
-      echo -e "you have no idea what is going on, restarting the entire process"
-      echo -e "should reset things to normal.\n"
+      echo -e "\nAn error occurred during git pull. Please update $myPath manually.  You can"
+      echo -e "stash your local changes and then pull with:"
+      echo -e "'cd $myPath; sudo git stash; sudo git pull'"
+      echo -e "\nUnder normal conditions (like, so long as you are not making script changes)"
+      echo -e "you should never see this message.  If you have no idea what is going on,"
+      echo -e "restarting the entire process or reinstalling should reset things to normal."
+      popd
       exit 1
     fi
-    cd - # Go back where we started
-  else
-    # No local repository found
-        echo -e "\nNo local repository found."
-    exit 1
   fi
+else
+  # No local repository found
+  echo -e "\nNo local repository found."
+  popd
+  exit 1
 fi
+
+# Back to where we started
+popd
 

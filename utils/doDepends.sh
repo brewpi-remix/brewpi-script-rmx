@@ -57,7 +57,7 @@ fi
 . "$GITROOT/inc/error.inc"
 
 # Network test
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/nettest.inc"
 
 # Packages to be installed/checked via apt
 APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml"

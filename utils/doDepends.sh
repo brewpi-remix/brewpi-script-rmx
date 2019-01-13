@@ -34,9 +34,15 @@
 ### Init
 ############
 
-# Change to current dir so we can get the git info
-cd "$(dirname "$0")"
-GITROOT="$(git rev-parse --show-toplevel)"
+# Change to current dir (assumed to be in a repo) so we can get the git info
+pushd . &> /dev/null || exit 1
+cd "$(dirname "$0")" || exit 1 # Move to where the script is
+GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+if [ -z "$GITROOT" ]; then
+  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  popd &> /dev/null || exit 1
+  exit 1
+fi
 
 # Get project constants
 . "$GITROOT/inc/const.inc"
@@ -96,14 +102,17 @@ for pkg in ${APTPACKAGES,,}; do
   if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
     echo -e "\nUpgrading '$pkg'.\n"
     apt upgrade ${pkg,,} -y||die
+	doCleanup=1
   fi
 done
 
-# Cleanup
-echo -e "\nCleaning up local repositories."
-apt clean -y||warn
-apt autoclean -y||warn
-apt autoremove --purge -y||warn
+# Cleanup if we updated packages
+if [ -n "$doCleanup" ]; then
+  echo -e "\nCleaning up local repositories."
+  apt clean -y||warn
+  apt autoclean -y||warn
+  apt autoremove --purge -y||warn
+fi
 
 # Install any Python packages not installed, update those installed
 echo -e "\nChecking and installing required dependencies via pip."

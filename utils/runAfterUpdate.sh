@@ -34,9 +34,15 @@
 ### Init
 ############
 
-# Change to current dir so we can get the git info
-cd "$(dirname "$0")"
-GITROOT="$(git rev-parse --show-toplevel)"
+# Change to current dir (assumed to be in a repo) so we can get the git info
+pushd . &> /dev/null || exit 1
+cd "$(dirname "$0")" || exit 1 # Move to where the script is
+GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+if [ -z "$GITROOT" ]; then
+  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  popd &> /dev/null || exit 1
+  exit 1
+fi
 
 # Get project constants
 . "$GITROOT/inc/const.inc"

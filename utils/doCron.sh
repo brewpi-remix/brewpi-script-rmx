@@ -83,7 +83,7 @@ function doCronEntry {
     echo -e "\nLatest version of this cron entry:"
     echo -e "$newEntry"
     while true; do
-	    echo -e "\nYour current cron entry differs from the latest version, would you like me"
+            echo -e "\nYour current cron entry differs from the latest version, would you like me"
         read -p "to create or update it? [Y/n]: " yn  < /dev/tty
         case $yn in
             '' ) doUpdate=1; break ;;
@@ -129,7 +129,7 @@ function doCronEntry {
 #
 # Each entry is two lines, one comment with the entry name, one for the actual entry:
 #   entry:wifi
-#   */10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/wifiChecker.sh 1>>$stdoutpath 2>>$stderrpath &
+#   */10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/checkWiFi.sh 1>>$stdoutpath 2>>$stderrpath &
 #
 # This script checks whether the available entries are up-to-date.  If not,
 # it can replace the entry with a new version.  If the entry is not in
@@ -146,7 +146,7 @@ function doCronEntry {
 #   # entry:brewpi
 #   * * * * * brewpi python $scriptpath/brewpi.py --checkstartuponly --dontrunfile $scriptpath/brewpi.py 1>/dev/null 2>>$stderrpath; [ $? != 0 ] && python -u $scriptpath/brewpi.py 1>$stdoutpath 2>>$stderrpath &
 #   # entry:wifi
-#   */10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/wifiChecker.sh 1>>$stdoutpath 2>>$stderrpath &
+#   */10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/checkWiFi.sh 1>>$stdoutpath 2>>$stderrpath &
 #
 ############
 
@@ -240,7 +240,7 @@ fi
 
 # crontab entries
 brewpicron='* * * * * brewpi python $scriptpath/brewpi.py --checkstartuponly --dontrunfile $scriptpath/brewpi.py 1>/dev/null 2>>$stderrpath; [ $? != 0 ] && python -u $scriptpath/brewpi.py 1>$stdoutpath 2>>$stderrpath &'
-wificheckcron='*/10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/wifiChecker.sh 1>>$stdoutpath 2>>$stderrpath &'
+wificheckcron='*/10 * * * * root sudo -u brewpi touch $stdoutpath $stderrpath; $scriptpath/utils/checkWiFi.sh 1>>$stdoutpath 2>>$stderrpath &'
 
 # Entry for brewpi
 for entry in $entries; do

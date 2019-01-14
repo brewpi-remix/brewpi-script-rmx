@@ -81,7 +81,6 @@ fi
 ### Do the needfull via the other scripts
 ############
 
-sudo bash "$GITROOT/utils/doDepends.sh" # Install or upgrade dependencies
 sudo bash "$GITROOT/utils/doCron.sh"    # Set up or upgrade cron
 sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
 

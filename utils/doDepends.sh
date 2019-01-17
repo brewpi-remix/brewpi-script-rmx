@@ -112,6 +112,8 @@ if [ -n "$doCleanup" ]; then
   apt clean -y||warn
   apt autoclean -y||warn
   apt autoremove --purge -y||warn
+else
+  echo -e "\nNo apt updates to apply."
 fi
 
 # Install any Python packages not installed, update those installed
@@ -131,4 +133,6 @@ for pkg in ${PIPPACKAGES,,}; do
 done
 
 echo -e "\n***Script $THISSCRIPT complete.***"
+
+exit 0
 

@@ -70,6 +70,10 @@ echo -e "\n***Script $THISSCRIPT starting.***"
 # Make sure all dependencies are installed and updated
 "$GITROOT/utils/doDepends.sh"
 
+# Change into script directory so stuff works
+pushd . &> /dev/null || exit 1
+cd "$(dirname "$0")" || exit 1 # Move to where the script is
+
 ############
 ### Function: whatRepo
 ### Argument: String representing a directory
@@ -155,7 +159,7 @@ function updateRepo() {
 # Get app locations based on local config
 scriptPath="$(whatRepo .)"
 wwwPath="$(getVal wwwPath $scriptPath)"
-toolPath=$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)
+toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
 
 declare -i didUpdate=0 # Hold a counter for having to do git pulls
 declare -a repoArray=("$toolPath" "$scriptPath" "$wwwPath" )
@@ -167,6 +171,9 @@ for doRepo in "${repoArray[@]}"; do
 done
 # If we did a pull, run doCleanup.sh to clean things up
 if [ "$didUpdate" -ge 1 ]; then "$GITROOT/utils/doCleanup.sh"; fi
+
+# Move back to where we started
+popd &> /dev/null || exit 1
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 

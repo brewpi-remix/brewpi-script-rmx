@@ -67,7 +67,7 @@ PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
 echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
-### Install and update required packages
+### Check last apt update date
 ############
 
 # Run 'apt update' if last run was > 1 week ago
@@ -80,6 +80,39 @@ if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
   echo
 fi
 
+############
+### Remove php5 packages if installed
+############
+
+echo -e "\nChecking for previously installed php5 packages."
+# Get list of installed packages
+php5packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php5')"
+if [[ -z "$php5packages" ]] ; then
+  echo -e "\nNo php5 packages found."
+else
+  echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
+  echo -e "proceeding as BrewPi requires php7 and will install it during the install"
+  read -p "process.  Would you like to clean this  up? before proceeding?  [Y/n]: " yn  < /dev/tty
+  case $yn in
+    [Nn]* )
+      echo -e "\nUnable to proceed with php5 installed, exiting.";
+      exit 1;;
+    * )
+      php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
+      # Loop through the php5 packages that we've found
+      for pkg in ${php_packages,,}; do
+        echo -e "\nRemoving '$pkg'.\n"
+        #sudo apt remove --purge $pkg -y
+      done
+	  echo -e "\nCleanup of the php environment complete."
+      ;;
+  esac
+fi
+
+############
+### Install and update required packages
+############
+
 # Now install any necessary packages if they are not installed
 echo -e "\nChecking and installing required dependencies via apt."
 for pkg in ${APTPACKAGES,,}; do
@@ -88,7 +121,7 @@ for pkg in ${APTPACKAGES,,}; do
   if [ -z "$pkgOk" ]; then
     echo -e "\nInstalling '$pkg'.\n"
     apt install ${pkg,,} -y||die
-        echo
+    echo
   fi
 done
 
@@ -97,12 +130,12 @@ upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
   grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
   uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
 
-# Loop through the required packages and see if they need an upgrade
+# Loop through only the required packages and see if they need an upgrade
 for pkg in ${APTPACKAGES,,}; do
   if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
     echo -e "\nUpgrading '$pkg'.\n"
     apt upgrade ${pkg,,} -y||die
-	doCleanup=1
+    doCleanup=1
   fi
 done
 
@@ -127,7 +160,7 @@ for pkg in ${PIPPACKAGES,,}; do
     echo -e "\nInstalling '$pkg'."
     pip install $pkg||die
   else
-    echo -e "\nChecking for update to '$pkg'."
+    echo -e "\nChecking for update to '$pkg'.\n"
     pip install $pkg --upgrade||die
   fi
 done

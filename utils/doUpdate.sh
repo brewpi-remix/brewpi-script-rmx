@@ -59,6 +59,9 @@ fi
 # Network test
 . "$GITROOT/inc/nettest.inc"
 
+# Read configuration
+. "$GITROOT/inc/config.inc"
+
 # Go back where we were when this all started
 popd &> /dev/null || exit 1
 
@@ -132,8 +135,8 @@ function updateRepo() {
           popd &> /dev/null || exit 1
           return 1
         else
-		  ((didUpdate++))
-		fi
+          ((didUpdate++))
+        fi
       fi
     else
       # No local repository found
@@ -149,8 +152,14 @@ function updateRepo() {
   fi
 }
 
+# Get app locations based on local config
+scriptPath="$(whatRepo .)"
+wwwPath="$(getVal wwwPath $scriptPath)"
+toolPath=$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)
+
 declare -i didUpdate=0 # Hold a counter for having to do git pulls
-declare -a repoArray=("/home/pi/brewpi-tools-rmx" "/home/brewpi" "/var/www/html" )
+declare -a repoArray=("$toolPath" "$scriptPath" "$wwwPath" )
+
 # Loop through repos and update as necessary
 for doRepo in "${repoArray[@]}"; do
   echo -e "\nChecking $doRepo for necessary updates."
@@ -162,3 +171,4 @@ if [ "$didUpdate" -ge 1 ]; then "$GITROOT/utils/doCleanup.sh"; fi
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
+

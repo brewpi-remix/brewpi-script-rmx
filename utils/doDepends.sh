@@ -61,6 +61,8 @@ fi
 
 # Packages to be installed/checked via apt
 APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml"
+# nginx packages to be uninstalled via apt if present
+NGINXPACKAGES="libgd-tools, fcgiwrap, nginx-doc, ssl-cert, fontconfig-config, fonts-dejavu-core, libfontconfig1, libgd3, libjbig0, libnginx-mod-http-auth-pam, libnginx-mod-http-dav-ext, libnginx-mod-http-echo, libnginx-mod-http-geoip, libnginx-mod-http-image-filter, libnginx-mod-http-subs-filter, libnginx-mod-http-upstream-fair, libnginx-mod-http-xslt-filter, libnginx-mod-mail, libnginx-mod-stream, libtiff5, libwebp6, libxpm4, libxslt1.1, nginx, nginx-common, nginx-full"
 # Packages to be installed/check via pip
 PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
 
@@ -92,7 +94,7 @@ if [[ -z "$php5packages" ]] ; then
 else
   echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
   echo -e "proceeding as BrewPi requires php7 and will install it during the install"
-  read -p "process.  Would you like to clean this  up? before proceeding?  [Y/n]: " yn  < /dev/tty
+  read -p "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
   case $yn in
     [Nn]* )
       echo -e "\nUnable to proceed with php5 installed, exiting.";
@@ -102,9 +104,37 @@ else
       # Loop through the php5 packages that we've found
       for pkg in ${php_packages,,}; do
         echo -e "\nRemoving '$pkg'.\n"
-        #sudo apt remove --purge $pkg -y
+        sudo apt remove --purge $pkg -y
       done
 	  echo -e "\nCleanup of the php environment complete."
+      ;;
+  esac
+fi
+
+############
+### Remove nginx packages if installed
+############
+
+echo -e "\nChecking for previously installed nginx packages."
+# Get list of installed packages
+nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
+if [[ -z "$nginxPackage" ]] ; then
+  echo -e "\nNo nginx packages found."
+else
+  echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
+  echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
+  read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+  case $yn in
+    [Nn]* )
+      echo -e "\nUnable to proceed with nginx installed, exiting.";
+      exit 1;;
+    * )
+      # Loop through the php5 packages that we've found
+      for pkg in ${NGINXPACKAGES,,}; do
+        echo -e "\nRemoving '$pkg'.\n"
+        sudo apt remove --purge $pkg -y
+      done
+	  echo -e "\nCleanup of the nginx environment complete."
       ;;
   esac
 fi
@@ -168,4 +198,3 @@ done
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
-

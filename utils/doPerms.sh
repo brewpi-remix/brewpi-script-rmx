@@ -50,28 +50,39 @@ GITROOT="$(git rev-parse --show-toplevel)"
 # Get error handling functionality
 . "$GITROOT/inc/error.inc"
 
+# Read configuration
+. "$GITROOT/inc/config.inc"
+
 echo -e "\n***Script $THISSCRIPT starting.***"
+
+############
+### Get paths
+############
+
+# Get app locations based on local config
+scriptPath="$(whatRepo .)"
+wwwPath="$(getVal wwwPath $scriptPath)"
+toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
 
 ############
 ### Fix permissions
 ############
 
-echo -e "\nFixing file permissions for $WEBPATH."
-chown -R www-data:www-data "$WEBPATH"||warn
-find "$WEBPATH" -type d -exec chmod 750 {} \;||warn
-find "$WEBPATH" -type f -exec chmod 640 {} \;||warn
-find "$WEBPATH/data" -type d -exec chmod 770 {} \;||warn
-find "$WEBPATH/data" -type f -exec chmod 660 {} \;||warn
-find "$WEBPATH" -type f -name "*.json" -exec chmod 660 {} \;||warn
-chmod 775 "$WEBPATH/"||warn
+echo -e "\nFixing file permissions for $wwwPath."
+chown -R www-data:www-data "$wwwPath"||warn
+find "$wwwPath" -type d -exec chmod 750 {} \;||warn
+find "$wwwPath" -type f -exec chmod 640 {} \;||warn
+find "$wwwPath/data" -type d -exec chmod 770 {} \;||warn
+find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
+find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
+chmod 775 "$wwwPath/"||warn
 
-echo -e "\nFixing file permissions for $GITROOT."
-chown -R brewpi:brewpi "$GITROOT"||warn
-find "$GITROOT" -type d -exec chmod 775 {} \;||warn
-find "$GITROOT" -type f -exec chmod 660 {} \;||warn
-find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+echo -e "\nFixing file permissions for $scriptPath."
+chown -R brewpi:brewpi "$scriptPath"||warn
+find "$scriptPath" -type d -exec chmod 775 {} \;||warn
+find "$scriptPath" -type f -exec chmod 660 {} \;||warn
+find "$scriptPath" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
-

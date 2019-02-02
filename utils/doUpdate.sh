@@ -75,26 +75,6 @@ pushd . &> /dev/null || exit 1
 cd "$(dirname "$0")" || exit 1 # Move to where the script is
 
 ############
-### Function: whatRepo
-### Argument: String representing a directory
-### Return: Location of .git within that tree, or blank if there is none
-############
-
-function whatRepo() {
-  local thisRepo="$1"
-  if [ ! -d "$thisRepo" ]; then
-    return # Not a directory
-  elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
-    return # Not part of a repo
-  fi
-  pushd . &> /dev/null || exit 1
-  cd "$thisRepo" || exit 1
-  local thisReturn=$(git rev-parse --show-toplevel)
-  popd &> /dev/null || exit 1
-  echo "$thisReturn"
-}
-
-############
 ### Function: updateRepo
 ### Argument: String representing a directory
 ### Return: Success
@@ -178,4 +158,3 @@ popd &> /dev/null || exit 1
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
-

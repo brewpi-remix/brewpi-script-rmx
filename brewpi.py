@@ -212,8 +212,7 @@ allProcesses.update()
 myProcess = allProcesses.me()
 if allProcesses.findConflicts(myProcess):
     if not checkDontRunFile:
-        logMessage("Another instance of BrewPi is already running, which will conflict with this\n" +
-                   "instance. This instance will exit.")
+        logMessage("Another instance of BrewPi is already running, which will conflict with this instance. This instance will exit.")
     exit(0)
 
 if checkStartupOnly:

@@ -62,7 +62,6 @@ echo -e "\n***Script $THISSCRIPT starting.***"
 # Get app locations based on local config
 scriptPath="$(whatRepo .)"
 wwwPath="$(getVal wwwPath $scriptPath)"
-toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
 
 ############
 ### Fix permissions

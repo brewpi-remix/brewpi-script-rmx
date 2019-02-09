@@ -131,10 +131,10 @@ func_createdaemon () {
 }
 
 brewpicheck=$(basename "$GITROOT")
-func_createdaemon "doWiFi.sh" "wificheck" "root"
 func_createdaemon "doBrewPi.sh" "$brewpicheck" "brewpi"
+sleep 3 # Let BrewPi touch the stdout and stderr first so perms are ok
+func_createdaemon "doWiFi.sh" "wificheck" "root"
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0
-

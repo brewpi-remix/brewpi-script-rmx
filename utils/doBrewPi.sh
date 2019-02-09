@@ -66,7 +66,7 @@ stdErr="$GITROOT/logs/stderr.txt"
 while :
 do
   if ! python "$script" --checkstartuponly --dontrunfile
-    then python -u "$script" 1>"$stdOut" 2>>"$stdErr"
+    then python -u "$script" 1>>"$stdOut" 2>>"$stdErr"
   fi
   sleep 10
 done

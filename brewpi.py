@@ -145,7 +145,7 @@ for o, a in opts:
         printStdErr("  --kill: Kill all instances of BrewPi by sending SIGKILL")
         printStdErr("  --force: Force quit/kill conflicting instances of BrewPi and keep this one")
         printStdErr("  --log: Redirect stderr and stdout to log files")
-        printStdErr("  --dontrunfile: Check dontrunfile in www directory and quit if it exists")
+        printStdErr("  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists")
         printStdErr("  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed")
         exit()
     # supply a config file
@@ -565,7 +565,7 @@ while run:
             # voluntary shutdown.
             # write a file to prevent the cron job from restarting the script
             logMessage("'stopScript' message received on socket. " +
-                       "Stopping script and writing dontrunfile to prevent automatic restart.")
+                       "Stopping script and writing do_not_run_brewpi to prevent automatic restart.")
             run = 0
             dontrunfile = open(dontRunFilePath, "w")
             dontrunfile.write("1")

@@ -36,6 +36,6 @@
 
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
-   echo -e "This script must be run as root: sudo ./$THISSCRIPT" 1>&2
+   echo -e "\nThis script must be run as root: sudo ./$THISSCRIPT" 1>&2
    exit 1
 fi

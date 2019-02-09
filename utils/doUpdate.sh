@@ -44,23 +44,57 @@ if [ -z "$GITROOT" ]; then
   exit 1
 fi
 
+############
+### Init
+############
+
+# Change to current dir (assumed to be in a repo) so we can get the git info
+pushd . &> /dev/null || exit 1
+cd "$(dirname "$0")" || exit 1 # Move to where the script is
+GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+if [ -z "$GITROOT" ]; then
+  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  popd &> /dev/null || exit 1
+  exit 1
+fi
+
 # Get project constants
 . "$GITROOT/inc/const.inc"
 
-# Get help and version functionality
-. "$GITROOT/inc/help.inc"
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
 
 # Get help and version functionality
 . "$GITROOT/inc/asroot.inc"
 
-# Get error handling functionality
-. "$GITROOT/inc/error.inc"
+# Get help and version functionality
+. "$GITROOT/inc/help.inc" "$@"
 
 # Network test
 . "$GITROOT/inc/nettest.inc"
 
 # Read configuration
 . "$GITROOT/inc/config.inc"
+
+############
+### Function: whatRepo
+### Argument: String representing a directory
+### Return: Location of .git within that tree, or blank if there is none
+############
+
+function whatRepo() {
+  local thisRepo="$1"
+  if [ ! -d "$thisRepo" ]; then
+    return # Not a directory
+  elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
+    return # Not part of a repo
+  fi
+  pushd . &> /dev/null || exit 1
+  cd "$thisRepo" || exit 1
+  local thisReturn=$(git rev-parse --show-toplevel)
+  popd &> /dev/null || exit 1
+  echo "$thisReturn"
+}
 
 # Go back where we were when this all started
 popd &> /dev/null || exit 1
@@ -109,7 +143,7 @@ function updateRepo() {
         if [ $retval -ne 0 ]; then
           # Not able to make a pull, probably because of changed local files
           echo -e "\nAn error occurred during the git pull. Please update this repo manually:"
-                echo -e "$thisRepo"
+          echo -e "$thisRepo"
           echo -e "\nIf this is a result of having made local changes, you can stash your local"
           echo -e "changes and then pull the current GitHub repo with:"
           echo -e "'cd $thisRepo; sudo git stash; sudo git pull'"
@@ -137,12 +171,11 @@ function updateRepo() {
 }
 
 # Get app locations based on local config
-scriptPath="$(whatRepo .)"
 wwwPath="$(getVal wwwPath $scriptPath)"
-toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
+toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx &> /dev/null)"
 
 declare -i didUpdate=0 # Hold a counter for having to do git pulls
-declare -a repoArray=("$toolPath" "$scriptPath" "$wwwPath" )
+declare -a repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
 
 # Loop through repos and update as necessary
 for doRepo in "${repoArray[@]}"; do

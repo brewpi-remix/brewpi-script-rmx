@@ -44,17 +44,31 @@ if [ -z "$GITROOT" ]; then
   exit 1
 fi
 
+############
+### Init
+############
+
+# Change to current dir (assumed to be in a repo) so we can get the git info
+pushd . &> /dev/null || exit 1
+cd "$(dirname "$0")" || exit 1 # Move to where the script is
+GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+if [ -z "$GITROOT" ]; then
+  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  popd &> /dev/null || exit 1
+  exit 1
+fi
+
 # Get project constants
 . "$GITROOT/inc/const.inc"
 
-# Get help and version functionality
-. "$GITROOT/inc/help.inc"
+# Get error handling functionality
+. "$GITROOT/inc/error.inc"
 
 # Get help and version functionality
 . "$GITROOT/inc/asroot.inc"
 
-# Get error handling functionality
-. "$GITROOT/inc/error.inc"
+# Get help and version functionality
+. "$GITROOT/inc/help.inc" "$@"
 
 echo -e "\n***Script $THISSCRIPT starting.***"
 

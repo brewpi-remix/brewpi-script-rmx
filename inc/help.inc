@@ -36,13 +36,14 @@
 
 # func_usage outputs to stdout the --help usage message.
 func_usage () {
-  echo -e "$PACKAGE $THISSCRIPT version $VERSION
-Usage: sudo . $THISSCRIPT"
+  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
+Usage: sudo ./$THISSCRIPT"
 }
 # func_version outputs to stdout the --version message.
 func_version () {
   echo -e "$THISSCRIPT ($PACKAGE) $VERSION
 Copyright (C) 2018 Lee C. Bussy (@LBussy)
+
 This is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License,
@@ -51,11 +52,9 @@ or (at your option) any later version.
 
 There is NO WARRANTY, to the extent permitted by law."
 }
-if test $# = 1; then
-  case "$1" in
-    --help | --hel | --he | --h )
-      func_usage; exit 0 ;;
-    --version | --versio | --versi | --vers | --ver | --ve | --v )
-      func_version; exit 0 ;;
-  esac
+
+if [ -n "$1" ]; then
+  arg="${1//-}" # Strip out all dashes
+  if [[ "$arg" == "h"* ]]; then func_usage; exit 0; fi
+  if [[ "$arg" == "v"* ]]; then func_version; exit 0; fi
 fi

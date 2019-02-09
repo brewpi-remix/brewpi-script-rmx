@@ -103,7 +103,7 @@ func_createdaemon () {
     esac
   fi
   echo -e "\nCreating unit file for $daemonName."
-  echo -e "# Created for version $VERSION" > "$unitFile"
+  echo -e "# Created for BrewPi version $VERSION" > "$unitFile"
   echo -e "[Unit]" >> "$unitFile"
   echo -e "Description=BrewPi service for: $daemonName" >> "$unitFile"
   echo -e "Documentation=https://github.com/lbussy/brewpi-tools-rmx/blob/master/README.md" >> "$unitFile"

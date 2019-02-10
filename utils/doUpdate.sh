@@ -178,10 +178,10 @@ main() {
     echo -e "\nChecking $doRepo for necessary updates."
     updateRepo "$doRepo" || warn
   done
-  # If we did a pull, run doCleanup.sh to clean things up
+  # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
   if [ "$didUpdate" -ge 1 ]; then
-    "$GITROOT/utils/doDepends.sh" # Install/update all dependencies
-    "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc and local apt cache
+    "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
+    "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc files and empty dirs
   fi
   popd &> /dev/null || die # Move back to where we started
   echo -e "\n***Script $THISSCRIPT complete.***"

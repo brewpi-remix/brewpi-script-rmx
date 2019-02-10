@@ -62,11 +62,15 @@ fi
 script="$GITROOT/brewpi.py"
 stdOut="$GITROOT/logs/stdout.txt"
 stdErr="$GITROOT/logs/stderr.txt"
+touch "$stdOut"
+touch "$stdErr"
+sudo chown brewpi:brewpi "$GITROOT/logs/std*.txt"
+sudo chmod 660 "$GITROOT/logs/std*.txt"
 
 while :
 do
   if ! python "$script" --checkstartuponly --dontrunfile
-    then python -u "$script" 1>>"$stdOut" 2>>"$stdErr"
+    then python -u "$script" 1>"$stdOut" 2>>"$stdErr"
   fi
   sleep 10
 done

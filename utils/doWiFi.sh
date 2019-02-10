@@ -123,7 +123,7 @@ func_ping() {
     # Try pinging
     ping -c 1 -I "$wlan" "$gateway" > /dev/null
     if [ "$?" -eq 0 ]; then
-      log 1 "Successful ping of $gateway."
+      #log 1 "Successful ping of $gateway."
       fails="$MAX_FAILURES"
       echo true
     else

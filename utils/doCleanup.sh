@@ -92,10 +92,10 @@ if [ $numEmptyDirs -gt 0 ]; then
 fi
 
 ############
-### Do the needfull via the other scripts
+### Do the needful via the other scripts
 ############
 
-sudo bash "$GITROOT/utils/doCron.sh"    # Set up or upgrade cron
+sudo bash "$GITROOT/utils/doDaemon.sh"  # Set up or upgrade cron
 sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
 
 echo -e "\n***Script $THISSCRIPT complete.***\n"

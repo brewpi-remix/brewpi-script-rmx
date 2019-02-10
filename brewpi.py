@@ -100,17 +100,17 @@ from backgroundserial import BackGroundSerial
 compatibleHwVersion = "0.2.10"
 
 # Control Settings
-cs = dict(mode='b', beerSet=70.0, fridgeSet=70.0, heatEstimator=0.2, coolEstimator=5)
+cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
 
 # Control Constants
-cc = dict(tempFormat="F", tempSetMin=33.0, tempSetMax=80.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
+cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
           idleRangeH=1.000, idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199, coolTargetH=0.199,
           coolTargetL=-0.301, maxHeatTimeForEst="600", maxCoolTimeForEst="1200", fridgeFastFilt="1", fridgeSlowFilt="4",
           fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5", beerSlopeFilt="4", lah=0, hs=0)
 
 # Control variables
 cv = dict(beerDiff=0.000, diffIntegral=0.000, beerSlope=0.000, p=0.000, i=0.000, d=0.000, estPeak=0.000,
-          negPeakEst=0.000, posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
+negPeakEst=0.000, posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
 
 # listState = "", "d", "h", "dh" to reflect whether the list is up to date for installed (d) and available (h)
 deviceList = dict(listState="", installed=[], available=[])
@@ -212,7 +212,7 @@ allProcesses.update()
 myProcess = allProcesses.me()
 if allProcesses.findConflicts(myProcess):
     if not checkDontRunFile:
-        logMessage("Another instance of BrewPi is already running, which will conflict with this instance. This instance will exit.")
+        logMessage("A conflicting BrewPi is running. This instance will exit.")
     exit(0)
 
 if checkStartupOnly:
@@ -856,4 +856,3 @@ if ser:
 if conn:
     conn.shutdown(socket.SHUT_RDWR)  # close socket
     conn.close()
-

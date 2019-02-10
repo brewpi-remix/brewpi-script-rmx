@@ -62,10 +62,6 @@ fi
 script="$GITROOT/brewpi.py"
 stdOut="$GITROOT/logs/stdout.txt"
 stdErr="$GITROOT/logs/stderr.txt"
-touch "$stdOut"
-touch "$stdErr"
-sudo chown brewpi:brewpi "$GITROOT/logs/std*.txt"
-sudo chmod 660 "$GITROOT/logs/std*.txt"
 
 while :
 do
@@ -74,4 +70,3 @@ do
   fi
   sleep 10
 done
-

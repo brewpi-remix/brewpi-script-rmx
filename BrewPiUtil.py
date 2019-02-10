@@ -68,7 +68,14 @@ def readCfgWithDefaults(cfg):
   if not cfg:
     cfg = addSlash(sys.path[0]) + 'settings/config.cfg'
 
-  defaultCfg = scriptPath() + '/settings/defaults.cfg'
+  # Added to fix default config file detection for multi-chamber
+  if cfg:
+    defaultCfg = os.path.dirname(cfg) + '/defaults.cfg'
+
+  #  Conditional line added to fix default config file detection for multi-chamber
+  if not defaultCfg:
+    defaultCfg = scriptPath() + '/settings/defaults.cfg'
+    
   config = configobj.ConfigObj(defaultCfg)
 
   if cfg:
@@ -114,7 +121,7 @@ def scriptPath():
   """
   return os.path.dirname(__file__)
 
-def removeDontRunFile(path='/var/www/do_not_run_brewpi'):
+def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):
   if os.path.isfile(path):
     os.remove(path)
     if not sys.platform.startswith('win'):  # cron not available

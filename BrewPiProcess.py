@@ -73,7 +73,7 @@ class BrewPiProcess:
 
     def quit(self):
         """
-        Sends a friendly quit message to this BrewPi process over its socket to aks the process to exit.
+        Sends a friendly quit message to this BrewPi process over its socket to ask the process to exit.
         """
         if self.sock is not None:
             conn = self.sock.connect()
@@ -155,6 +155,8 @@ class BrewPiProcesses():
         try:
             bp.pid = process._pid
             cfg = [s for s in process.cmdline() if '.cfg' in s]  # get config file argument
+            # Get brewpi.py file argument so we can grab path to fix multi-chamber bug
+            bps = [s for s in process.cmdline() if 'brewpi.py' in s]
         except psutil.NoSuchProcess:
             # process no longer exists
             return None
@@ -162,7 +164,10 @@ class BrewPiProcesses():
             cfg = cfg[0]  # add full path to config file
         else:
             # use default config file location
-            cfg = util.scriptPath() + "/settings/config.cfg"
+            # Added use of cfgpath to fix multi-chamber bug
+            # Get path from arguments and use that to build default path to config
+            cfgpath = os.path.dirname(str(bps).translate(None, '\[\]\'')) + '/settings/'
+            cfg = cfgpath + "config.cfg"
         bp.cfg = util.readCfgWithDefaults(cfg)
         bp.port = bp.cfg['port']
         bp.sock = BrewPiSocket.BrewPiSocket(bp.cfg)
@@ -194,7 +199,7 @@ class BrewPiProcesses():
         bool: True means there are conflicts, False means no conflict
         """
 
-                # some OS's (OS X) do not allow processes to read info from other processes.
+        # some OS's (OS X) do not allow processes to read info from other processes.
         matching = []
         try:
             matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'flashDfu.py'in s for s in p.cmdline())]
@@ -306,4 +311,3 @@ def testQuitAll():
     allScripts.update()
     print ("Running instances of BrewPi after asking them to quit:")
     pprint.pprint(allScripts)
-

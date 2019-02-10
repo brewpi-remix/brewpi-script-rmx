@@ -43,20 +43,8 @@ if [ -z "$GITROOT" ]; then
   popd &> /dev/null || exit 1
   exit 1
 fi
-
-############
-### Init
-############
-
-# Change to current dir (assumed to be in a repo) so we can get the git info
-pushd . &> /dev/null || exit 1
-cd "$(dirname "$0")" || exit 1 # Move to where the script is
-GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
-  popd &> /dev/null || exit 1
-  exit 1
-fi
+# Go back where we were when this all started
+popd &> /dev/null || exit 1
 
 # Get project constants
 . "$GITROOT/inc/const.inc"
@@ -95,18 +83,6 @@ function whatRepo() {
   popd &> /dev/null || exit 1
   echo "$thisReturn"
 }
-
-# Go back where we were when this all started
-popd &> /dev/null || exit 1
-
-echo -e "\n***Script $THISSCRIPT starting.***"
-
-# Make sure all dependencies are installed and updated
-"$GITROOT/utils/doDepends.sh"
-
-# Change into script directory so stuff works
-pushd . &> /dev/null || exit 1
-cd "$(dirname "$0")" || exit 1 # Move to where the script is
 
 ############
 ### Function: updateRepo
@@ -170,24 +146,46 @@ function updateRepo() {
   fi
 }
 
-# Get app locations based on local config
-wwwPath="$(getVal wwwPath $scriptPath)"
-toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx &> /dev/null)"
+############
+### Set up repos
+############
 
-declare -i didUpdate=0 # Hold a counter for having to do git pulls
-declare -a repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
+func_getrepos() {
+  # Get app locations based on local config
+  wwwPath="$(getVal wwwPath $GITROOT)"
+  toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
+  if [ -z "$toolPath" ]; then
+    echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
+    repoArray=("$GITROOT" "$wwwPath" )
+  else
+    repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
+  fi
+}
 
-# Loop through repos and update as necessary
-for doRepo in "${repoArray[@]}"; do
-  echo -e "\nChecking $doRepo for necessary updates."
-  updateRepo "$doRepo" || echo -e "\nError updating: $doRepo"
-done
-# If we did a pull, run doCleanup.sh to clean things up
-if [ "$didUpdate" -ge 1 ]; then "$GITROOT/utils/doCleanup.sh"; fi
+############
+### Main
+############
 
-# Move back to where we started
-popd &> /dev/null || exit 1
+main() {
+  echo -e "\n***Script $THISSCRIPT starting.***"
+  declare -i didUpdate=0 # Hold a counter for having to do git pulls
+  declare -a repoArray # Hold repositories to update
+  pushd . &> /dev/null || die # Change into script directory so stuff works
+  cd "$(dirname "$0")" || die # Move to where the script is
+  func_getrepos # Get array of repos to update 
+  # Loop through repos and update as necessary
+  for doRepo in "${repoArray[@]}"; do
+    echo -e "\nChecking $doRepo for necessary updates."
+    updateRepo "$doRepo" || warn
+  done
+  # If we did a pull, run doCleanup.sh to clean things up
+  if [ "$didUpdate" -ge 1 ]; then
+    "$GITROOT/utils/doDepends.sh" # Install/update all dependencies
+    "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc and local apt cache
+  fi
+  popd &> /dev/null || die # Move back to where we started
+  echo -e "\n***Script $THISSCRIPT complete.***"
+}
 
-echo -e "\n***Script $THISSCRIPT complete.***"
-
+main
 exit 0

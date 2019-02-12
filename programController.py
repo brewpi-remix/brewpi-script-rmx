@@ -671,12 +671,12 @@ class ArduinoProgrammer(SerialProgrammer):
         printStdOut("Result of invoking avrdude:\n" + errors)
 
         if("bytes of flash verified" in errors):
-            printStdOut("Avrdude done, programming succesful.")
+            printStdOut("Avrdude done, programming successful.")
         else:
             printStdOut("There was an error while programming.")
             return False
 
         printStdOut("Giving the Arduino a few seconds to power up.")
-        self.delay(30)
+        self.delay(10)
         return True
 

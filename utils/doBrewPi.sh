@@ -68,5 +68,5 @@ do
   if ! python "$script" --checkstartuponly --dontrunfile
     then python -u "$script" 1>"$stdOut" 2>>"$stdErr"
   fi
-  sleep 10
+  sleep 5
 done

@@ -58,6 +58,20 @@ fi
 echo -e "\n***Script $THISSCRIPT starting.***"
 
 ############
+### Compare source and target
+### Arguments are $source and $target
+### Return eq, lt, gt based on "version" comparison
+############
+
+function compare() {
+  local src="$1"
+  local tgt="$2"
+  if [ "$src" == "$tgt" ]; then echo "eq"
+  elif [ "$(printf '%s\n' "$tgt" "$src" | sort -V | head -n1)" = "$tgt" ]; then echo "gt"
+  else echo "lt"; fi
+}
+
+############
 ### Remove /etc/cron.d/brewpi
 ############
 
@@ -76,6 +90,45 @@ func_removecron() {
 }
 
 ############
+### Check existence and version of any current unit files
+### Required:  daemonName - Name of Unit
+### Returns:  0 to execute, 255 to skip
+############
+
+func_checkdaemon() {
+  local daemonName="${1,,}"
+  local unitFile="/etc/systemd/system/$daemonName.service"
+  if [ -f "$unitFile" ]; then
+    src=$(grep "^# Created for BrewPi version" "$unitFile")
+    src=${src##* }
+    verchk=$(compare $src $VERSION)
+    if [ "$verchk" == "lt" ]; then
+      echo -e "\nUnit file for $daemonName.service exists but is an older version" > /dev/tty
+      read -p "($src vs. $VERSION). Upgrade to newest? [Y/n]: " yn < /dev/tty
+      case "$yn" in
+        [Nn]* ) 
+          return 255;;
+        * )
+          return 0 ;; # Do overwrite
+      esac
+    elif [ "$verchk" == "eq" ]; then
+      echo -e "\nUnit file for $daemonName.service exists and is the same version ($src vs. $VERSION)." > /dev/tty
+      read -p "Overwrite anyway? [y/N]: " yn < /dev/tty
+      case "$yn" in
+        [Yy]* ) return 0;; # Do overwrite
+        * ) return 255;;
+      esac
+    elif [ "$verchk" == "gt" ]; then
+      echo -e "\nVersion of $daemonName.service file is newer than the version being installed."
+      echo -e "Skipping."
+      return 255
+    fi
+  else
+    return 0
+  fi
+}
+
+############
 ### Create systemd unit file
 ### Required:
 ###   scriptName - Name of script to run under Bash
@@ -88,20 +141,12 @@ func_createdaemon () {
   local daemonName="${2,,}"
   local userName="$3"
   local unitFile="/etc/systemd/system/$daemonName.service"
-  if [ -f "$unitFile" ]; then
-    echo
-    read -p "Unit file for $daemonName seems to already exist. Overwrite with newest? [Y/n]: " yn < /dev/tty
-    case $yn in
-      [Nn]* ) return ;;
-      * )
-        echo -e "\nStopping $daemonName daemon.";
-        systemctl stop "$daemonName";
-        echo -e "Disabling $daemonName daemon.";
-        systemctl disable "$daemonName";
-        echo -e "Removing unit file $unitFile";
-        rm "$unitFile";;
-    esac
-  fi
+  echo -e "\nStopping $daemonName daemon.";
+  systemctl stop "$daemonName";
+  echo -e "Disabling $daemonName daemon.";
+  systemctl disable "$daemonName";
+  echo -e "Removing unit file $unitFile";
+  rm "$unitFile"
   echo -e "\nCreating unit file for $daemonName."
   echo -e "# Created for BrewPi version $VERSION" > "$unitFile"
   echo -e "[Unit]" >> "$unitFile"
@@ -123,17 +168,25 @@ func_createdaemon () {
   echo -e "Reloading systemd config."
   systemctl daemon-reload
   echo -e "Enabling $daemonName daemon."
-  enable="systemctl enable $daemonName"
-  eval "$enable"
+  eval "systemctl enable $daemonName"
   echo -e "Starting $daemonName daemon."
-  restart="systemctl restart $daemonName"
-  eval "$restart"
+  eval "systemctl restart $daemonName"
 }
 
+VERSION="0.5.1"
+
+# Handle BrewPi Unit file setup
 brewpicheck=$(basename "$GITROOT")
-func_createdaemon "doBrewPi.sh" "$brewpicheck" "brewpi"
-sleep 3 # Let BrewPi touch the stdout and stderr first so perms are ok
-func_createdaemon "doWiFi.sh" "wificheck" "root"
+func_checkdaemon "$brewpicheck"
+if [[ $? == 0 ]]; then
+  echo -e "DEBUG:  (re)Doing brewpi unit."
+  func_createdaemon "doBrewPi.sh" "$brewpicheck" "brewpi"
+  sleep 3 # Let BrewPi touch the stdout and stderr first so perms are ok
+fi
+
+# Handle WiFi Unit file setup
+func_checkdaemon "wificheck"
+if [[ $? == 0 ]]; then func_createdaemon "doWiFi.sh" "wificheck" "root"; fi
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 

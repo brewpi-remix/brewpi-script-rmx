@@ -179,7 +179,6 @@ VERSION="0.5.1"
 brewpicheck=$(basename "$GITROOT")
 func_checkdaemon "$brewpicheck"
 if [[ $? == 0 ]]; then
-  echo -e "DEBUG:  (re)Doing brewpi unit."
   func_createdaemon "doBrewPi.sh" "$brewpicheck" "brewpi"
   sleep 3 # Let BrewPi touch the stdout and stderr first so perms are ok
 fi

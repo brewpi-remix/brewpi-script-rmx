@@ -112,8 +112,8 @@ func_checkdaemon() {
           return 0 ;; # Do overwrite
       esac
     elif [ "$verchk" == "eq" ]; then
-      echo -e "\nUnit file for $daemonName.service exists and is the same version ($src vs. $VERSION)." > /dev/tty
-      read -p "Overwrite anyway? [y/N]: " yn < /dev/tty
+      echo -e "\nUnit file for $daemonName.service exists and is the same version" > /dev/tty
+      read -p "($src vs. $VERSION). Overwrite anyway? [y/N]: " yn < /dev/tty
       case "$yn" in
         [Yy]* ) return 0;; # Do overwrite
         * ) return 255;;

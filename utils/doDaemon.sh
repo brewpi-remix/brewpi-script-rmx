@@ -106,7 +106,7 @@ func_checkdaemon() {
       echo -e "\nUnit file for $daemonName.service exists but is an older version" > /dev/tty
       read -p "($src vs. $VERSION). Upgrade to newest? [Y/n]: " yn < /dev/tty
       case "$yn" in
-        [Nn]* ) 
+        [Nn]* )
           return 255;;
         * )
           return 0 ;; # Do overwrite
@@ -141,12 +141,14 @@ func_createdaemon () {
   local daemonName="${2,,}"
   local userName="$3"
   local unitFile="/etc/systemd/system/$daemonName.service"
-  echo -e "\nStopping $daemonName daemon.";
-  systemctl stop "$daemonName";
-  echo -e "Disabling $daemonName daemon.";
-  systemctl disable "$daemonName";
-  echo -e "Removing unit file $unitFile";
-  rm "$unitFile"
+  if [-f "$unitfile" ]; then
+    echo -e "\nStopping $daemonName daemon.";
+    systemctl stop "$daemonName";
+    echo -e "Disabling $daemonName daemon.";
+    systemctl disable "$daemonName";
+    echo -e "Removing unit file $unitFile";
+    rm "$unitFile"
+  fi
   echo -e "\nCreating unit file for $daemonName."
   echo -e "# Created for BrewPi version $VERSION" > "$unitFile"
   echo -e "[Unit]" >> "$unitFile"
@@ -172,8 +174,6 @@ func_createdaemon () {
   echo -e "Starting $daemonName daemon."
   eval "systemctl restart $daemonName"
 }
-
-VERSION="0.5.1"
 
 # Handle BrewPi Unit file setup
 brewpicheck=$(basename "$GITROOT")

@@ -141,7 +141,7 @@ func_createdaemon () {
   local daemonName="${2,,}"
   local userName="$3"
   local unitFile="/etc/systemd/system/$daemonName.service"
-  if [-f "$unitfile" ]; then
+  if [ -f "$unitfile" ]; then
     echo -e "\nStopping $daemonName daemon.";
     systemctl stop "$daemonName";
     echo -e "Disabling $daemonName daemon.";

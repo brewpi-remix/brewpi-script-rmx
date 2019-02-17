@@ -166,6 +166,8 @@ func_getrepos() {
 
 main() {
   echo -e "\n***Script $THISSCRIPT starting.***"
+  arg="${1//-}" # Strip out all dashes
+  if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   declare -i didUpdate=0 # Hold a counter for having to do git pulls
   declare -a repoArray # Hold repositories to update
   pushd . &> /dev/null || die # Change into script directory so stuff works
@@ -178,12 +180,14 @@ main() {
   done
   # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
   if [ "$didUpdate" -ge 1 ]; then
-    "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
+    if [ ! "$quick" == "true" ]; then
+      "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
+    fi
     "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc files and empty dirs
   fi
   popd &> /dev/null || die # Move back to where we started
   echo -e "\n***Script $THISSCRIPT complete.***"
 }
 
-main
+main "$@"
 exit 0

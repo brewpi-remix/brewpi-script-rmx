@@ -98,4 +98,4 @@ fi
 sudo bash "$GITROOT/utils/doDaemon.sh"  # Set up or upgrade cron
 sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
 
-echo -e "\n***Script $THISSCRIPT complete.***\n"
+echo -e "\n***Script $THISSCRIPT complete.***"

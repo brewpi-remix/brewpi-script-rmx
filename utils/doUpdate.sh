@@ -43,8 +43,6 @@ if [ -z "$GITROOT" ]; then
   popd &> /dev/null || exit 1
   exit 1
 fi
-# Go back where we were when this all started
-popd &> /dev/null || exit 1
 
 # Get project constants
 . "$GITROOT/inc/const.inc"

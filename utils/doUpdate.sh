@@ -2,7 +2,7 @@
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
 # BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-script, an installer for
+# These scripts were originally a part of brewpi-script, a part of
 # the BrewPi project. Legacy support (for the very popular Arduino
 # controller) seems to have been discontinued in favor of new hardware.
 
@@ -36,7 +36,7 @@
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$(dirname "$0")" || exit 1 # Move to where the script is
+cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
   echo -e "\nERROR:  Unable to find my repository, did you move this file?"
@@ -170,9 +170,9 @@ main() {
   if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
   declare -i didUpdate=0 # Hold a counter for having to do git pulls
   declare -a repoArray # Hold repositories to update
-  pushd . &> /dev/null || die # Change into script directory so stuff works
-  cd "$(dirname "$0")" || die # Move to where the script is
-  func_getrepos # Get array of repos to update 
+  pushd . &> /dev/null || die # Store current directory
+  cd "$(dirname $(readlink -e $0))" || die # Move to where the script is
+  func_getrepos # Get array of repos to update
   # Loop through repos and update as necessary
   for doRepo in "${repoArray[@]}"; do
     echo -e "\nChecking $doRepo for necessary updates."

@@ -2,29 +2,30 @@
 
 # Copyright (C) 2018  Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Tools Remix (BrewPi-Tools-RMX).
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
-# BrewPi Tools RMX is free software: you can redistribute it and/or
+# BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
 #
-# BrewPi Tools RMX is distributed in the hope that it will be useful,
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BrewPi Tools RMX. If not, see <https://www.gnu.org/licenses/>.
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-tools, an installer for
+# These scripts were originally a part of brewpi-script, a part of
 # the BrewPi project. Legacy support (for the very popular Arduino
 # controller) seems to have been discontinued in favor of new hardware.
 
-# All credit for the original brewpi-tools goes to @elcojacobs,
-# @vanosg, @routhcr, @ajt2 and I'm sure many more contributors around
-# the world. My apologies if I have missed anyone; those were the names
-# listed as contributors on the Legacy branch.
+# All credit for the original brewpi-script goes to @elcojacobs,
+# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
+# many more contributors around the world. My apologies if I have
+# missed anyone; those were the names listed as contributors on the
+# Legacy branch.
 
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
@@ -35,7 +36,7 @@
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$(dirname "$0")" || exit 1 # Move to where the script is
+cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
   echo -e "\nERROR:  Unable to find my repository, did you move this file?"
@@ -106,14 +107,14 @@ func_checkdaemon() {
       echo -e "\nUnit file for $daemonName.service exists but is an older version" > /dev/tty
       read -p "($src vs. $VERSION). Upgrade to newest? [Y/n]: " yn < /dev/tty
       case "$yn" in
-        [Nn]* ) 
+        [Nn]* )
           return 255;;
         * )
           return 0 ;; # Do overwrite
       esac
     elif [ "$verchk" == "eq" ]; then
-      echo -e "\nUnit file for $daemonName.service exists and is the same version ($src vs. $VERSION)." > /dev/tty
-      read -p "Overwrite anyway? [y/N]: " yn < /dev/tty
+      echo -e "\nUnit file for $daemonName.service exists and is the same version" > /dev/tty
+      read -p "($src vs. $VERSION). Overwrite anyway? [y/N]: " yn < /dev/tty
       case "$yn" in
         [Yy]* ) return 0;; # Do overwrite
         * ) return 255;;
@@ -141,12 +142,14 @@ func_createdaemon () {
   local daemonName="${2,,}"
   local userName="$3"
   local unitFile="/etc/systemd/system/$daemonName.service"
-  echo -e "\nStopping $daemonName daemon.";
-  systemctl stop "$daemonName";
-  echo -e "Disabling $daemonName daemon.";
-  systemctl disable "$daemonName";
-  echo -e "Removing unit file $unitFile";
-  rm "$unitFile"
+  if [ -f "$unitfile" ]; then
+    echo -e "\nStopping $daemonName daemon.";
+    systemctl stop "$daemonName";
+    echo -e "Disabling $daemonName daemon.";
+    systemctl disable "$daemonName";
+    echo -e "Removing unit file $unitFile";
+    rm "$unitFile"
+  fi
   echo -e "\nCreating unit file for $daemonName."
   echo -e "# Created for BrewPi version $VERSION" > "$unitFile"
   echo -e "[Unit]" >> "$unitFile"
@@ -172,8 +175,6 @@ func_createdaemon () {
   echo -e "Starting $daemonName daemon."
   eval "systemctl restart $daemonName"
 }
-
-VERSION="0.5.1"
 
 # Handle BrewPi Unit file setup
 brewpicheck=$(basename "$GITROOT")

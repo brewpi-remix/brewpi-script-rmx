@@ -37,7 +37,7 @@ import subprocess
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial
 
-# Firware repository URL
+# Firmware repository URL
 firmRepo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 # Replacement for raw_input which works when piped through shell

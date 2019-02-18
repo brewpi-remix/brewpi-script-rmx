@@ -149,7 +149,7 @@ class gitHubReleases:
 
     def containsSystemImage(self, tag):
         """
-        Check wether the release contains a new system image for the Photon
+        Check whether the release contains a new system image for the Photon
         :param tag: release tag
         :return: True if release contains a system image
         """

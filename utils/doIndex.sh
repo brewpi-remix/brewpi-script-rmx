@@ -110,12 +110,6 @@ func_createlinks() {
     echo -e "\nCreating link to $link in $rootWeb."
     ln -sf "$wwwPath/$link" "$rootWeb/$(basename $link)"
   done
-  # Loop through links and do perms
-  for link in $INDEXLINKS; do
-    echo -e "\nSetting permissions on $(basename $link) in $rootWeb."
-    chown www-data:www-data "$rootWeb/$(basename $link)"
-    chmod 640 "$rootWeb/$(basename $link)"
-  done
 }
 
 ############

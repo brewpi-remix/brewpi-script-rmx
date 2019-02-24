@@ -36,7 +36,8 @@
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$( cd $(dirname $0) ; pwd -P )" || exit 1 # Move to where the script is
+SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+cd "$SCRIPTPATH" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
   echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"

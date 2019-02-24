@@ -35,9 +35,8 @@
 ############
 
 # Set up some project constants
-THISSCRIPT="$(basename $(realpath $0))"
+THISSCRIPT="$(basename "$0")"
 SCRIPTNAME="${THISSCRIPT%%.*}"
-SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
 VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
 GITROOT="$(git rev-parse --show-toplevel)"
 GITURL="$(git config --get remote.origin.url)"

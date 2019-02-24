@@ -35,9 +35,9 @@
 ############
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
-# Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$( cd $(dirname $0) ; pwd -P )" || exit 1 # Move to where the script is
+SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+cd "$SCRIPTPATH" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
   echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
@@ -46,19 +46,19 @@ if [ -z "$GITROOT" ]; then
 fi
 
 # Get project constants
-. "$GITROOT/inc/const.inc"
+. "$GITROOT/inc/const.inc" "$@"
 
 # Get error handling functionality
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/error.inc" "$@"
 
 # Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
+. "$GITROOT/inc/asroot.inc" "$@"
 
 # Get help and version functionality
 . "$GITROOT/inc/help.inc" "$@"
 
 # Read configuration
-. "$GITROOT/inc/config.inc"
+. "$GITROOT/inc/config.inc" "$@"
 
 echo -e "\n***Script $THISSCRIPT starting.***"
 

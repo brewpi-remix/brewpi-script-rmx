@@ -101,6 +101,7 @@ chown -R brewpi:brewpi "$GITROOT"||warn
 find "$GITROOT" -type d -exec chmod 775 {} \;||warn
 find "$GITROOT" -type f -exec chmod 660 {} \;||warn
 find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 

@@ -30,10 +30,6 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-############
-### Init
-############
-
 ### User-editable settings ###
 # Time (in seconds) in between tests when running in CRON or Daemon mode
 declare -i LOOP=600
@@ -43,14 +39,16 @@ declare -i MAX_FAILURES=3
 # Time (in seconds)to wait between failed attempts contacting the router
 declare -i INTERVAL=10
 
-### User-editable settings ###
+############
+### Init
+############
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
+cd "$( cd $(dirname $0) ; pwd -P )" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
   popd &> /dev/null || exit 1
   exit 1
 fi

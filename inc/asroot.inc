@@ -36,6 +36,16 @@
 
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
-   echo -e "\nThis script must be run as root: sudo ./$THISSCRIPT" 1>&2
-   exit 1
+  sudo -n true 2> /dev/null
+  if [[ ${?} == "0" ]]; then
+    echo -e "\nNot runing as root, relaunching correctly.\n"
+    sleep 2
+    eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
+    exit $?
+  else
+    # sudo not available, give instructions
+    echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
+    exit 1
+  fi
 fi
+

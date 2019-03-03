@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -348,7 +348,7 @@ def resumeLogging():
         return {'status': 1, 'statusMessage': "Logging was not paused."}
 
 # bytes are read from nonblocking serial into this buffer and processed when the buffer contains a full line.
-ser = util.setupSerial(config, time_out=0)
+ser = util.setupSerial(config)
 
 if not ser:
     exit(1)

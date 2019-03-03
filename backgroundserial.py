@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
     config_file = util.addSlash(sys.path[0]) + 'settings/config.cfg'
     config = util.readCfgWithDefaults(config_file)
-    ser = util.setupSerial(config, time_out=0)
+    ser = util.setupSerial(config)
     if not ser:
         printStdErr("Could not open Serial Port")
         exit()
@@ -206,4 +206,3 @@ if __name__ == '__main__':
         time.sleep(5)
 
     print("Successes: {0}, Fails: {1}".format(success,fail))
-

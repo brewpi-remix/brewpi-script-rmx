@@ -88,6 +88,7 @@ find "$GITROOT" -type d -exec chmod 775 {} \;||warn
 find "$GITROOT" -type f -exec chmod 660 {} \;||warn
 find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
 find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
+find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 

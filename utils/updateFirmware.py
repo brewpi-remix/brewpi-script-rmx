@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -54,7 +54,7 @@ def printStdErr(*objs):
         print(*objs, file=sys.stderr)
 
 # Log to stdout.txt
-def printStdOut(*objs):
+def printStdErr(*objs):
     if userInput:
         print(*objs, file=sys.stdout)
 
@@ -73,7 +73,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     configFile = util.scriptPath() + '/settings/config.cfg'
     config = util.readCfgWithDefaults(configFile)
 
-    printStdOut("\nStopping any running instances of BrewPi to check/update controller.")
+    printStdErr("\nStopping any running instances of BrewPi to check/update controller.")
     quitBrewPi(config['wwwPath'])
 
     hwVersion = None
@@ -83,7 +83,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     ser = None
 
     ### Get version number
-    printStdOut("\nChecking current firmware version.")
+    printStdErr("\nChecking current firmware version.")
     try:
         ser = util.setupSerial(config)
         hwVersion = brewpiVersion.getVersionFromSerial(ser)
@@ -91,20 +91,20 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         shield = hwVersion.shield
         board = hwVersion.board
 
-        printStdOut("\nFound the following controller:\n" + hwVersion.toExtendedString() + \
+        printStdErr("\nFound the following controller:\n" + hwVersion.toExtendedString() + \
                     "\non port " + ser.name)
     except:
         if hwVersion is None:
-            printStdOut("\nUnable to receive version from controller.\n"
+            printStdErr("\nUnable to receive version from controller.\n"
                         "\nIs your controller unresponsive and do you wish to try restoring your")
             choice = pipeInput("firmware? [y/N]: ")
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
-                printStdOut("\nPlease make sure your controller is connected properly and try again.")
+                printStdErr("\nPlease make sure your controller is connected properly and try again.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
             port, name = autoSerial.detect_port()
             if not port:
-                printStdOut("\nCould not find compatible device in available serial ports.")
+                printStdErr("\nCould not find compatible device in available serial ports.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
             if "Particle" in name:
@@ -121,20 +121,20 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
                     board = 'uno'
 
             if board is None:
-                printStdOut("\nUnable to connect to controller, perhaps it is disconnected or otherwise\n"
+                printStdErr("\nUnable to connect to controller, perhaps it is disconnected or otherwise\n"
                             "unavailable.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return -1
             else:
-                printStdOut("\nWill try to restore the firmware on your %s." % name)
+                printStdErr("\nWill try to restore the firmware on your %s." % name)
                 if family == "Arduino":
-                    printStdOut("\nAssuming a Rev C shield. If this is not the case, please program your Arduino\n"
+                    printStdErr("\nAssuming a Rev C shield. If this is not the case, please program your Arduino\n"
                                 "manually.")
                     shield = 'RevC'
                 else:
-                    printStdOut("\nPlease put your controller in DFU mode now by holding the setup button during\n"
+                    printStdErr("\nPlease put your controller in DFU mode now by holding the setup button during\n"
                                 "reset, until the LED blinks yellow.")
-                    printStdOut("\nPress Enter when ready.")
+                    printStdErr("\nPress Enter when ready.")
                     choice = pipeInput()
                     useDfu = True # use dfu mode when board is not responding to serial
 
@@ -143,12 +143,12 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         ser = None
 
     if hwVersion:
-        printStdOut("\nCurrent firmware version on controller:\n" + hwVersion.toString())
+        printStdErr("\nCurrent firmware version on controller:\n" + hwVersion.toString())
     else:
         restoreDevices = False
         restoreSettings = False
 
-    printStdOut("\nChecking GitHub for available release.")
+    printStdErr("\nChecking GitHub for available release.")
     releases = gitHubReleases(firmRepo)
     availableTags = releases.getTags(beta)
     stableTags = releases.getTags(False)
@@ -163,7 +163,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
             compatibleTags.append(tag)
 
     if len(compatibleTags) == 0:
-        printStdOut("\nNo compatible releases found for %s %s" % (family, board))
+        printStdErr("\nNo compatible releases found for %s %s" % (family, board))
         util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
         return -1
 
@@ -198,34 +198,34 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
                 continue
             break
     else:
-        printStdOut("\nLatest version on GitHub: " + tag)
+        printStdErr("\nLatest version on GitHub: " + tag)
 
     if hwVersion is not None and not hwVersion.isNewer(tag):
         if hwVersion.isEqual(tag):
-            printStdOut("\nYou are already running version %s." % tag)
+            printStdErr("\nYou are already running version %s." % tag)
         else:
-            printStdOut("\nYour current version is newer than %s." % tag)
+            printStdErr("\nYour current version is newer than %s." % tag)
 
         if userInput:
-            printStdOut("\nIf you are encountering problems, you can reprogram anyway.  Would you like")
+            printStdErr("\nIf you are encountering problems, you can reprogram anyway.  Would you like")
             choice = pipeInput("to do this? [y/N]: ")
             if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
         else:
-            printStdOut("\nNo update needed. Exiting.")
+            printStdErr("\nNo update needed. Exiting.")
             exit(0)
 
     if hwVersion is not None and userInput:
         choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ")
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreSettings = False
-        printStdOut("\nWould you like me to try to restore your configured devices after")
+        printStdErr("\nWould you like me to try to restore your configured devices after")
         choice = pipeInput("programming? [Y/n]: ")
         if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
             restoreDevices = False
 
-    printStdOut("\nDownloading firmware.")
+    printStdErr("\nDownloading firmware.")
     localFileName = None
     system1 = None
     system2 = None
@@ -235,7 +235,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
     elif family == "Spark" or family == "Particle":
         localFileName = releases.getBin(tag, [board, 'brewpi', '.bin'])
     else:
-        printStdOut("\nError: Device family {0} not recognized".format(family))
+        printStdErr("\nError: Device family {0} not recognized".format(family))
         util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
         return -1
 
@@ -246,29 +246,29 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
             oldVersion = "0.0.0"
         latestSystemTag = releases.getLatestTagForSystem(prerelease=beta, since=oldVersion)
         if latestSystemTag is not None:
-            printStdOut("\nUpdated system firmware for the photon found in release {0}".format(latestSystemTag))
+            printStdErr("\nUpdated system firmware for the photon found in release {0}".format(latestSystemTag))
             system1 = releases.getBin(latestSystemTag, ['photon', 'system-part1', '.bin'])
             system2 = releases.getBin(latestSystemTag, ['photon', 'system-part2', '.bin'])
             if system1:
-                printStdOut("\nDownloaded new system firmware to:\n")
-                printStdOut("{0}\nand\n".format(system1))
+                printStdErr("\nDownloaded new system firmware to:\n")
+                printStdErr("{0}\nand\n".format(system1))
                 if system2:
-                    printStdOut("{0}\n".format(system2))
+                    printStdErr("{0}\n".format(system2))
                 else:
-                    printStdOut("\nError: system firmware part2 not found in release")
+                    printStdErr("\nError: system firmware part2 not found in release")
                     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                     return -1
         else:
-            printStdOut("\nPhoton system firmware is up to date.")
+            printStdErr("\nPhoton system firmware is up to date.")
 
     if localFileName:
-        printStdOut("\nLatest firmware downloaded to:\n" + localFileName)
+        printStdErr("\nLatest firmware downloaded to:\n" + localFileName)
     else:
-        printStdOut("\nDownloading firmware failed.")
+        printStdErr("\nDownloading firmware failed.")
         util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
         return -1
 
-    printStdOut("\nUpdating firmware.\n")
+    printStdErr("\nUpdating firmware.\n")
     result = programmer.programController(config, board, localFileName, system1, system2, useDfu,
                                                                                 {'settings': restoreSettings, 'devices': restoreDevices})
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")

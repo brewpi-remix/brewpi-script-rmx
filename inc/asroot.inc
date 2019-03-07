@@ -38,7 +38,7 @@
 if [[ $EUID -ne 0 ]]; then
   sudo -n true 2> /dev/null
   if [[ ${?} == "0" ]]; then
-    echo -e "\nNot runing as root, relaunching correctly.\n"
+    echo -e "\nNot runing as root, relaunching correctly."
     sleep 2
     eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
     exit $?

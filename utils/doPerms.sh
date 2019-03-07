@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -34,62 +34,70 @@
 ### Init
 ############
 
-# Change to current dir (assumed to be in a repo) so we can get the git info
-pushd . &> /dev/null || exit 1
-SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-cd "$SCRIPTPATH" || exit 1 # Move to where the script is
-GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
-  popd &> /dev/null || exit 1
-  exit 1
-fi
-
-# Get project constants
-. "$GITROOT/inc/const.inc" "$@"
-
-# Get error handling functionality
-. "$GITROOT/inc/error.inc" "$@"
-
-# Get help and version functionality
-. "$GITROOT/inc/asroot.inc" "$@"
-
-# Get help and version functionality
-. "$GITROOT/inc/help.inc" "$@"
-
-# Read configuration
-. "$GITROOT/inc/config.inc" "$@"
-
-echo -e "\n***Script $THISSCRIPT starting.***"
-
-############
-### Get paths
-############
-
-# Get app locations based on local config
-wwwPath="$(getVal wwwPath $GITROOT)"
+init() {
+  # Change to current dir (assumed to be in a repo) so we can get the git info
+  pushd . &> /dev/null || exit 1
+  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+  cd "$SCRIPTPATH" || exit 1 # Move to where the script is
+  GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+  if [ -z "$GITROOT" ]; then
+    echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
+    popd &> /dev/null || exit 1
+    exit 1
+  fi
+  
+  # Get project constants
+  . "$GITROOT/inc/const.inc" "$@"
+  
+  # Get error handling functionality
+  . "$GITROOT/inc/error.inc" "$@"
+  
+  # Get help and version functionality
+  . "$GITROOT/inc/asroot.inc" "$@"
+  
+  # Get help and version functionality
+  . "$GITROOT/inc/help.inc" "$@"
+  
+  # Read configuration
+  . "$GITROOT/inc/config.inc" "$@"
+}
 
 ############
 ### Fix permissions
 ############
 
-echo -e "\nFixing file permissions for $wwwPath."
-chown -R www-data:www-data "$wwwPath"||warn
-find "$wwwPath" -type d -exec chmod 750 {} \;||warn
-find "$wwwPath" -type f -exec chmod 640 {} \;||warn
-find "$wwwPath/data" -type d -exec chmod 770 {} \;||warn
-find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
-find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
-chmod 775 "$wwwPath/"||warn
+perms() {
+  # Get app locations based on local config
+  wwwPath="$(getVal wwwPath $GITROOT)"
+  echo -e "\nFixing file permissions for $wwwPath."
+  chown -R www-data:www-data "$wwwPath"||warn
+  find "$wwwPath" -type d -exec chmod 2750 {} \; || warn
+  find "$wwwPath" -type f -exec chmod 640 {} \;||warn
+  find "$wwwPath/data" -type d -exec chmod 770 {} \;||warn
+  find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
+  find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
+  echo -e "\nFixing file permissions for $GITROOT."
+  chown -R brewpi:brewpi "$GITROOT"||warn
+  find "$GITROOT" -type d -exec chmod 775 {} \;||warn
+  find "$GITROOT" -type f -exec chmod 660 {} \;||warn
+  find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+  find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
+  find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
+}
 
-echo -e "\nFixing file permissions for $GITROOT."
-chown -R brewpi:brewpi "$GITROOT"||warn
-find "$GITROOT" -type d -exec chmod 775 {} \;||warn
-find "$GITROOT" -type f -exec chmod 660 {} \;||warn
-find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
-find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
-find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
+############
+### Main
+############
 
-echo -e "\n***Script $THISSCRIPT complete.***"
+main() {
+  echo -e "\n***Script $THISSCRIPT starting.***"
+  init "$@"
+  perms
+  echo -e "\n***Script $THISSCRIPT complete.***"
+}
 
-exit 0
+############
+### Start script
+############
+
+main && exit 0

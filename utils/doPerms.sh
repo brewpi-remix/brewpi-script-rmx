@@ -71,9 +71,8 @@ perms() {
   wwwPath="$(getVal wwwPath $GITROOT)"
   echo -e "\nFixing file permissions for $wwwPath."
   chown -R www-data:www-data "$wwwPath"||warn
-  find "$wwwPath" -type d -exec chmod 2750 {} \; || warn
+  find "$wwwPath" -type d -exec chmod 2770 {} \; || warn
   find "$wwwPath" -type f -exec chmod 640 {} \;||warn
-  find "$wwwPath/data" -type d -exec chmod 770 {} \;||warn
   find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
   find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
   echo -e "\nFixing file permissions for $GITROOT."

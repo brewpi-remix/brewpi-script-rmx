@@ -47,25 +47,22 @@ func_doinit() {
   fi
 
   # Get project constants
-  . "$GITROOT/inc/const.inc"
+  . "$GITROOT/inc/const.inc" "$@"
 
   # Get error handling functionality
-  . "$GITROOT/inc/error.inc"
+  . "$GITROOT/inc/error.inc" "$@"
 
   # Get help and version functionality
-  . "$GITROOT/inc/asroot.inc"
+  . "$GITROOT/inc/asroot.inc" "$@"
 
   # Get help and version functionality
   . "$GITROOT/inc/help.inc" "$@"
 
   # Network test
-  . "$GITROOT/inc/nettest.inc"
+  . "$GITROOT/inc/nettest.inc" "$@"
 
   # Read configuration
-  . "$GITROOT/inc/config.inc"
-
-  # Files for which we will create links
-  INDEXLINKS="multi-index/index.php touch-icon-ipad.png touch-icon-ipad-retina.png touch-icon-iphone.png favicon.ico"
+  . "$GITROOT/inc/config.inc" "$@"
 }
 
 ############
@@ -88,15 +85,12 @@ func_getweb() {
 }
 
 ############
-### Create links
+### Create link
 ############
 
 func_createlinks() {
-  # Loop through the files to make links
-  for link in $INDEXLINKS; do
-    echo -e "\nCreating link to $link in $rootWeb."
-    ln -sf "$wwwPath/$link" "$rootWeb/$(basename $link)"
-  done
+  echo -e "\nCreating link to multi-index.php in $rootWeb."
+  ln -sf "$wwwPath/multi-index.php" "$rootWeb/index.php"
 }
 
 ############

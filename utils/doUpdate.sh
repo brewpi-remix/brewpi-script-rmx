@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -46,22 +46,22 @@ if [ -z "$GITROOT" ]; then
 fi
 
 # Get project constants
-. "$GITROOT/inc/const.inc"
+. "$GITROOT/inc/const.inc" "$@"
 
 # Get error handling functionality
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/error.inc" "$@"
 
 # Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
+. "$GITROOT/inc/asroot.inc" "$@"
 
 # Get help and version functionality
 . "$GITROOT/inc/help.inc" "$@"
 
 # Network test
-. "$GITROOT/inc/nettest.inc"
+. "$GITROOT/inc/nettest.inc" "$@"
 
 # Read configuration
-. "$GITROOT/inc/config.inc"
+. "$GITROOT/inc/config.inc" "$@"
 
 ############
 ### Function: whatRepo

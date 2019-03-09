@@ -186,7 +186,7 @@ if [[ $? == 0 ]]; then
 fi
 
 # Handle WiFi Unit file setup
-if [ -z "$source" ]; then
+if [[ ! "$@" == *"-nowifi"* ]]; then
   func_checkdaemon "wificheck"
   if [[ $? == 0 ]]; then func_createdaemon "doWiFi.sh" "wificheck" "root"; fi
 fi

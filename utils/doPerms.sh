@@ -85,6 +85,21 @@ perms() {
 }
 
 ############
+### Fix users and groups
+############
+
+checkuser() {
+  echo -e "\nChecking user accounts."
+  if ! id -u brewpi >/dev/null 2>&1; then
+    useradd brewpi -m -G dialout,sudo,www-data||die
+  else
+    usermod -a -G dialout,sudo,www-data brewpi
+  fi
+  # Add current user to www-data & brewpi group
+  usermod -a -G www-data,brewpi "$REALUSER"||die
+}
+
+############
 ### Main
 ############
 
@@ -92,6 +107,7 @@ main() {
   init "$@"
   echo -e "\n***Script $THISSCRIPT starting.***"
   perms
+  checkuser
   echo -e "\n***Script $THISSCRIPT complete.***"
 }
 

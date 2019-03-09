@@ -46,13 +46,13 @@ if [ -z "$GITROOT" ]; then
 fi
 
 # Get project constants
-. "$GITROOT/inc/const.inc"
+. "$GITROOT/inc/const.inc" "$@"
 
 # Get error handling functionality
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/error.inc" "$@"
 
 # Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
+. "$GITROOT/inc/asroot.inc" "$@"
 
 # Get help and version functionality
 . "$GITROOT/inc/help.inc" "$@"

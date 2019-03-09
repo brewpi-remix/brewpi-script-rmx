@@ -89,8 +89,8 @@ perms() {
 ############
 
 main() {
-  echo -e "\n***Script $THISSCRIPT starting.***"
   init "$@"
+  echo -e "\n***Script $THISSCRIPT starting.***"
   perms
   echo -e "\n***Script $THISSCRIPT complete.***"
 }

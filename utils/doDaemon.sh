@@ -190,7 +190,6 @@ if [[ ! "$@" == *"-nowifi"* ]]; then
   func_checkdaemon "wificheck"
   if [[ $? == 0 ]]; then func_createdaemon "doWiFi.sh" "wificheck" "root"; fi
 fi
-
 echo -e "\n***Script $THISSCRIPT complete.***"
 
 exit 0

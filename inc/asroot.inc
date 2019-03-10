@@ -50,7 +50,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 # And get the user home directory
 if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
-local shadow="$((getent passwd $REALUSER) 2>&1)"
+shadow="$((getent passwd $REALUSER) 2>&1)"
 retval="$?"
 if [ "$retval" -eq 0 ]; then
   HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"

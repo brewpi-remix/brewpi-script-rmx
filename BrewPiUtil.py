@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -133,7 +133,7 @@ def findSerialPort(bootLoader):
   (port, name) = autoSerial.detect_port(bootLoader)
   return port
 
-def setupSerial(config, baud_rate=57600, time_out=0.6, wtime_out=0.6):
+def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
   ser = None
   dumpSerial = config.get('dumpSerial', False)
 

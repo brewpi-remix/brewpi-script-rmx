@@ -504,7 +504,8 @@ class SerialProgrammer:
                 if line:  # line available?
                     if line[0] == 'D':
                         self.print_debug_log(line)
-                if self.ser.inWaiting() == 0:
+                # if self.ser.inWaiting() == 0: # WiFi Change
+                if self.ser.readline() == 0:
                     break
             self.ser.timeout = 5
 

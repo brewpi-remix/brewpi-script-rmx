@@ -109,9 +109,11 @@ class BackGroundSerial():
             new_data = None
             if not self.error:
                 try:
-                    in_waiting = self.ser.inWaiting()
+                    #in_waiting = self.ser.inWaiting() # WiFi Change
+                    in_waiting = self.ser.readline()
                     if in_waiting > 0:
-                        new_data = self.ser.read(in_waiting)
+                        #new_data = self.ser.read(in_waiting) # WiFi Change
+                        new_data = in_waiting
                         lastReceive = time.time()
                 except (IOError, OSError, SerialException) as e:
                     logMessage('Serial Error: {0})'.format(str(e)))

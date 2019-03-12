@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -109,9 +109,11 @@ class BackGroundSerial():
             new_data = None
             if not self.error:
                 try:
-                    in_waiting = self.ser.inWaiting()
+                    #in_waiting = self.ser.inWaiting() # WiFi Change
+                    in_waiting = self.ser.readline()
                     if in_waiting > 0:
-                        new_data = self.ser.read(in_waiting)
+                        #new_data = self.ser.read(in_waiting) # WiFi Change
+                        new_data = in_waiting
                         lastReceive = time.time()
                 except (IOError, OSError, SerialException) as e:
                     logMessage('Serial Error: {0})'.format(str(e)))
@@ -171,7 +173,7 @@ if __name__ == '__main__':
 
     config_file = util.addSlash(sys.path[0]) + 'settings/config.cfg'
     config = util.readCfgWithDefaults(config_file)
-    ser = util.setupSerial(config, time_out=0)
+    ser = util.setupSerial(config)
     if not ser:
         printStdErr("Could not open Serial Port")
         exit()
@@ -206,4 +208,3 @@ if __name__ == '__main__':
         time.sleep(5)
 
     print("Successes: {0}, Fails: {1}".format(success,fail))
-

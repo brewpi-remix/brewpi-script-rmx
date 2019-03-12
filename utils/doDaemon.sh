@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -36,22 +36,23 @@
 
 # Change to current dir (assumed to be in a repo) so we can get the git info
 pushd . &> /dev/null || exit 1
-cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
+SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+cd "$SCRIPTPATH" || exit 1 # Move to where the script is
 GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
 if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+  echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
   popd &> /dev/null || exit 1
   exit 1
 fi
 
 # Get project constants
-. "$GITROOT/inc/const.inc"
+. "$GITROOT/inc/const.inc" "$@"
 
 # Get error handling functionality
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/error.inc" "$@"
 
 # Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
+. "$GITROOT/inc/asroot.inc" "$@"
 
 # Get help and version functionality
 . "$GITROOT/inc/help.inc" "$@"
@@ -185,8 +186,10 @@ if [[ $? == 0 ]]; then
 fi
 
 # Handle WiFi Unit file setup
-func_checkdaemon "wificheck"
-if [[ $? == 0 ]]; then func_createdaemon "doWiFi.sh" "wificheck" "root"; fi
+if [[ ! "$@" == *"-nowifi"* ]]; then
+  func_checkdaemon "wificheck"
+  if [[ $? == 0 ]]; then func_createdaemon "doWiFi.sh" "wificheck" "root"; fi
+fi
 
 echo -e "\n***Script $THISSCRIPT complete.***"
 

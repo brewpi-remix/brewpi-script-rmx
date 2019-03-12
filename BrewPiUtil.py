@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -75,7 +75,7 @@ def readCfgWithDefaults(cfg):
   #  Conditional line added to fix default config file detection for multi-chamber
   if not defaultCfg:
     defaultCfg = scriptPath() + '/settings/defaults.cfg'
-    
+
   config = configobj.ConfigObj(defaultCfg)
 
   if cfg:
@@ -133,7 +133,7 @@ def findSerialPort(bootLoader):
   (port, name) = autoSerial.detect_port(bootLoader)
   return port
 
-def setupSerial(config, baud_rate=57600, time_out=0.1):
+def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
   ser = None
   dumpSerial = config.get('dumpSerial', False)
 
@@ -155,7 +155,7 @@ def setupSerial(config, baud_rate=57600, time_out=0.1):
       else:
         port = portSetting
       try:
-        ser = serial.Serial(port, baudrate=baud_rate, timeout=time_out, write_timeout=0)
+        ser = serial.serial_for_url(port, baudrate=baud_rate, timeout=time_out, write_timeout=wtime_out)
         if ser:
           break
       except (IOError, OSError, serial.SerialException) as e:

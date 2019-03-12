@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -37,34 +37,32 @@
 func_doinit() {
   # Change to current dir (assumed to be in a repo) so we can get the git info
   pushd . &> /dev/null || exit 1
-  cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
+  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
+  cd "$SCRIPTPATH" || exit 1 # Move to where the script is
   GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
   if [ -z "$GITROOT" ]; then
-    echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+    echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
     popd &> /dev/null || exit 1
     exit 1
   fi
 
   # Get project constants
-  . "$GITROOT/inc/const.inc"
+  . "$GITROOT/inc/const.inc" "$@"
 
   # Get error handling functionality
-  . "$GITROOT/inc/error.inc"
+  . "$GITROOT/inc/error.inc" "$@"
 
   # Get help and version functionality
-  . "$GITROOT/inc/asroot.inc"
+  . "$GITROOT/inc/asroot.inc" "$@"
 
   # Get help and version functionality
   . "$GITROOT/inc/help.inc" "$@"
 
   # Network test
-  . "$GITROOT/inc/nettest.inc"
+  . "$GITROOT/inc/nettest.inc" "$@"
 
   # Read configuration
-  . "$GITROOT/inc/config.inc"
-
-  # Files for which we will create links
-  INDEXLINKS="multi-index/index.php touch-icon-ipad.png touch-icon-ipad-retina.png touch-icon-iphone.png favicon.ico"
+  . "$GITROOT/inc/config.inc" "$@"
 }
 
 ############
@@ -87,15 +85,12 @@ func_getweb() {
 }
 
 ############
-### Create links
+### Create link
 ############
 
 func_createlinks() {
-  # Loop through the files to make links
-  for link in $INDEXLINKS; do
-    echo -e "\nCreating link to $link in $rootWeb."
-    ln -sf "$wwwPath/$link" "$rootWeb/$(basename $link)"
-  done
+  echo -e "\nCreating link to multi-index.php in $rootWeb."
+  ln -sf "$wwwPath/multi-index.php" "$rootWeb/index.php"
 }
 
 ############

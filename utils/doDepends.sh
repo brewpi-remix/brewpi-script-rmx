@@ -45,25 +45,25 @@ init() {
     popd &> /dev/null || exit 1
     exit 1
   fi
-  
+
   # Get project constants
   . "$GITROOT/inc/const.inc" "$@"
-  
+
   # Get error handling functionality
   . "$GITROOT/inc/error.inc" "$@"
-  
+
   # Get help and version functionality
   . "$GITROOT/inc/asroot.inc" "$@"
-  
+
   # Get help and version functionality
   . "$GITROOT/inc/help.inc" "$@"
-  
+
   # Read configuration
   . "$GITROOT/inc/config.inc" "$@"
 
   # Check network connectivoty
   . "$GITROOT/inc/config.inc" "$@"
-  
+
   # Packages to be installed/checked via apt
   APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml"
   # nginx packages to be uninstalled via apt if present
@@ -170,7 +170,7 @@ do_packages() {
   upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
     grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
     uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
-  
+
   # Loop through only the required packages and see if they need an upgrade
   for pkg in ${APTPACKAGES,,}; do
     if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
@@ -208,12 +208,12 @@ do_packages() {
 }
 
 main() {
+  init "$@"
   echo -e "\n***Script $THISSCRIPT starting.***"
   apt_check
   rem_php5
   rem_nginx
   do_packages
-  init "$@"
   echo -e "\n***Script $THISSCRIPT complete.***"
 }
 

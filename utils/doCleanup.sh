@@ -46,13 +46,13 @@ if [ -z "$GITROOT" ]; then
 fi
 
 # Get project constants
-. "$GITROOT/inc/const.inc"
+. "$GITROOT/inc/const.inc" "$@"
 
 # Get error handling functionality
-. "$GITROOT/inc/error.inc"
+. "$GITROOT/inc/error.inc" "$@"
 
 # Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
+. "$GITROOT/inc/asroot.inc" "$@"
 
 # Get help and version functionality
 . "$GITROOT/inc/help.inc" "$@"
@@ -82,7 +82,7 @@ fi
 ### Do the needful via the other scripts
 ############
 
-sudo bash "$GITROOT/utils/doDaemon.sh"  # Set up or upgrade cron
-sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
+sudo bash "$GITROOT/utils/doDaemon.sh" "$@"  # Set up or upgrade cron
+sudo bash "$GITROOT/utils/doPerms.sh" "$@"   # Fix file permissions
 
 echo -e "\n***Script $THISSCRIPT complete.***"

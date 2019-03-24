@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -37,8 +37,8 @@
 # Set up some project constants
 THISSCRIPT="$(basename "$0")"
 SCRIPTNAME="${THISSCRIPT%%.*}"
-VERSION="$(git describe --tags $(git rev-list --tags --max-count=1))"
+VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
 GITROOT="$(git rev-parse --show-toplevel)"
 GITURL="$(git config --get remote.origin.url)"
-GITPROJ="$(basename $GITURL)" && GITPROJ="${GITPROJ%.*}"
+GITPROJ="$(basename "$GITURL")" && GITPROJ="${GITPROJ%.*}"
 PACKAGE="${GITPROJ^^}"

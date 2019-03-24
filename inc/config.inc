@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -41,33 +41,36 @@
 
 # Get location of config file based on brewpi path
 getConfigFile() {
-  local _configPath="${1}/settings"
-  if [ -f "$_configPath/config.cfg" ]; then
-    echo "$_configPath/config.cfg"
-  else
-    echo "$_configPath/defaults.cfg"
-  fi
+    local _configPath="${1}/settings"
+    if [ -f "$_configPath/config.cfg" ]; then
+        echo "$_configPath/config.cfg"
+    else
+        echo "$_configPath/defaults.cfg"
+    fi
 }
 
 # Raw read of config file
 readConfig() {
-  local _temp=$((grep -E "^${2} = " -m 1 "${1}" 2>/dev/null || echo "VAR = __UNDEFINED__") | head -n 1 | cut -d '=' -f 2-;)
-  echo "$_temp"
+    local _temp
+    _temp=$( (grep -E "^${2} = " -m 1 "${1}" 2>/dev/null || echo "VAR = __UNDEFINED__") | head -n 1 | cut -d '=' -f 2-;)
+    echo "$_temp"
 }
 
 # Strip leading/trailing spaces and trailing slash
 strip() {
-  local _temp=$(echo "${1}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-  echo "${_temp%/}"
+    local _temp
+    _temp=$(echo "${1}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    echo "${_temp%/}"
 }
 
 # Get requested value
 getVal() {
-  local _configFile="$(getConfigFile ${2})"
-  local _val="$(readConfig "${_configFile}" "${1}")";
-  if [ "${_val}" = "__UNDEFINED__" ]; then
-    local _val="$(readConfig "${2}" "${1}")";
-  fi
-  local _val=$(printf -- "%s" "${_val}";)
-  echo $(strip ${_val})
+    local _configFile _val
+    _configFile="$(getConfigFile "${2}")"
+    _val="$(readConfig "${_configFile}" "${1}")";
+    if [ "${_val}" = "__UNDEFINED__" ]; then
+        _val="$(readConfig "${2}" "${1}")";
+    fi
+    _val=$(printf -- "%s" "${_val}";)
+    echo "$(strip "${_val}")"
 }

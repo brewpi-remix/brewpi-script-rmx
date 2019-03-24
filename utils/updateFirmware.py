@@ -54,7 +54,7 @@ def printStdErr(*objs):
         print(*objs, file=sys.stderr)
 
 # Log to stdout.txt
-def printStdErr(*objs):
+def printStdOut(*objs):
     if userInput:
         print(*objs, file=sys.stdout)
 
@@ -64,7 +64,7 @@ def quitBrewPi(webPath):
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
 
-def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDevices = True):
+def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = True):
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
     import brewpiVersion
@@ -107,17 +107,9 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
                 printStdErr("\nCould not find compatible device in available serial ports.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
-            if "Particle" in name:
-                family = "Particle"
-                if "Photon" in name:
-                    board = 'photon'
-                elif "Core" in name:
-                    board = 'core'
-            elif "Arduino" in name:
+            if "Arduino" in name:
                 family = "Arduino"
-                if "Leonardo" in name:
-                    board = 'leonardo'
-                elif "Uno" in name:
+                if "Uno" in name:
                     board = 'uno'
 
             if board is None:
@@ -131,12 +123,6 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
                     printStdErr("\nAssuming a Rev C shield. If this is not the case, please program your Arduino\n"
                                 "manually.")
                     shield = 'RevC'
-                else:
-                    printStdErr("\nPlease put your controller in DFU mode now by holding the setup button during\n"
-                                "reset, until the LED blinks yellow.")
-                    printStdErr("\nPress Enter when ready.")
-                    choice = pipeInput()
-                    useDfu = True # use dfu mode when board is not responding to serial
 
     if ser:
         ser.close()    # close serial port
@@ -157,8 +143,6 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         url = None
         if family == "Arduino":
             url = releases.getBinUrl(tag, [board, shield, ".hex"])
-        elif family == "Spark" or family == "Particle":
-            url = releases.getBinUrl(tag, [board, 'brewpi', '.bin'])
         if url is not None:
             compatibleTags.append(tag)
 
@@ -179,7 +163,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         num_choices = len(compatibleTags)
         while 1:
             try:
-                choice = pipeInput("Enter the number [0-%d] of the version you want to program\n"
+                choice = pipeInput("\nEnter the number [0-%d] of the version you want to program\n"
                                    "[default = %d (%s)]: " % (num_choices, default_choice, tag))
                 if choice == "":
                     break
@@ -232,34 +216,10 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
 
     if family == "Arduino":
         localFileName = releases.getBin(tag, [board, shield, ".hex"])
-    elif family == "Spark" or family == "Particle":
-        localFileName = releases.getBin(tag, [board, 'brewpi', '.bin'])
     else:
         printStdErr("\nError: Device family {0} not recognized".format(family))
         util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
         return -1
-
-    if board == "photon":
-        if hwVersion:
-            oldVersion = hwVersion.version.vstring
-        else:
-            oldVersion = "0.0.0"
-        latestSystemTag = releases.getLatestTagForSystem(prerelease=beta, since=oldVersion)
-        if latestSystemTag is not None:
-            printStdErr("\nUpdated system firmware for the photon found in release {0}".format(latestSystemTag))
-            system1 = releases.getBin(latestSystemTag, ['photon', 'system-part1', '.bin'])
-            system2 = releases.getBin(latestSystemTag, ['photon', 'system-part2', '.bin'])
-            if system1:
-                printStdErr("\nDownloaded new system firmware to:\n")
-                printStdErr("{0}\nand\n".format(system1))
-                if system2:
-                    printStdErr("{0}\n".format(system2))
-                else:
-                    printStdErr("\nError: system firmware part2 not found in release")
-                    util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
-                    return -1
-        else:
-            printStdErr("\nPhoton system firmware is up to date.")
 
     if localFileName:
         printStdErr("\nLatest firmware downloaded to:\n" + localFileName)
@@ -269,8 +229,7 @@ def updateFromGitHub(userInput, beta, useDfu, restoreSettings = True, restoreDev
         return -1
 
     printStdErr("\nUpdating firmware.\n")
-    result = programmer.programController(config, board, localFileName, system1, system2, useDfu,
-                                                                                {'settings': restoreSettings, 'devices': restoreDevices})
+    result = programmer.programController(config, board, localFileName, {'settings': restoreSettings, 'devices': restoreDevices})
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
     return result
 
@@ -278,7 +237,7 @@ if __name__ == '__main__':
     import getopt
     # Read in command line arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent', 'dfu'])
+        opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent'])
     except getopt.GetoptError:
         print ("Unknown parameter, available options: \n" +
                "\t--silent\t use default options, do not ask for user input\n" +
@@ -287,7 +246,6 @@ if __name__ == '__main__':
 
     userInput = True
     beta = False
-    useDfu = False
 
     for o, a in opts:
         # print help message for command line options
@@ -295,10 +253,8 @@ if __name__ == '__main__':
             userInput = False
         if o in ('-b', '--beta'):
             beta = True
-        if o in ('-d', '--dfu'):
-            useDfu = True
 
-    result = updateFromGitHub(userInput=userInput, beta=beta, useDfu=useDfu)
+    result = updateFromGitHub(userInput=userInput, beta=beta)
 
 exit(result)
 

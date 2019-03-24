@@ -201,13 +201,6 @@ class BrewPiProcesses():
 
         # some OS's (OS X) do not allow processes to read info from other processes.
         matching = []
-        try:
-            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'flashDfu.py'in s for s in p.cmdline())]
-        except psutil.AccessDenied:
-            pass
-
-        if len(matching) > 0:
-            return 1
 
         try:
             matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'updateFirmware.py'in s for s in p.cmdline())]

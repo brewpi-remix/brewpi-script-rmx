@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -37,24 +37,25 @@
 ### Check if we have root privs to run
 if [[ $EUID -ne 0 ]]; then
   sudo -n true 2> /dev/null
-  if [[ ${?} == "0" ]]; then
-    echo -e "\nNot runing as root, relaunching correctly."
+  retval="$?"
+  if [[ "$retval" == "0" ]]; then
+    echo -e "\nNot runing as root, relaunching correctly." > /dev/tty
     sleep 2
-    eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
+    eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
     exit $?
   else
     # sudo not available, give instructions
-    echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2
+    echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $*" 1>&2 > /dev/tty
     exit 1
   fi
 fi
 # And get the user home directory
-if [ "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
-shadow="$((getent passwd $REALUSER) 2>&1)"
+if [ -n "$SUDO_USER" ]; then REALUSER="$SUDO_USER"; else REALUSER=$(whoami); fi
+shadow="$( (getent passwd "$REALUSER") 2>&1)"
 retval="$?"
 if [ "$retval" -eq 0 ]; then
   HOMEPATH="$(echo "$shadow" | cut -d':' -f6)"
 else
-  echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary."
+  echo -e "\nUnable to retrieve $REALUSER's home directory. Manual install may be necessary." > /dev/tty
   exit 1
 fi

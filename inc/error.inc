@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -39,19 +39,18 @@
 ############
 
 warn() {
-  local fmt="$1"
-  command shift 2>/dev/null
-  echo -e "$fmt"
-  echo -e "${@}"
-  echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***"
-  echo -e "-------------------------------------"
-  echo -e "See above lines for error message."
-  echo -e "Setup NOT completed.\n"
+    local fmt="$1"
+    command shift 2>/dev/null
+    echo -e "$fmt" > /dev/tty
+    echo -e "${@}" > /dev/tty
+    echo -e "\n*** ERROR ERROR ERROR ERROR ERROR ***" > /dev/tty
+    echo -e "-------------------------------------" > /dev/tty
+    echo -e "See above lines for error message." > /dev/tty
+    echo -e "Setup NOT completed.\n" > /dev/tty
 }
 
 die () {
-  local st="$?"
-  warn "$@"
-  exit "$st"
+    local st="$?"
+    warn "$@"
+    exit "$st"
 }
-

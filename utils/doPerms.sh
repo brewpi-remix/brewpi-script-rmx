@@ -30,36 +30,54 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Declare this script's constants
+declare SCRIPTPATH GITROOT
+
 ############
 ### Init
 ############
 
 init() {
-  # Change to current dir (assumed to be in a repo) so we can get the git info
-  pushd . &> /dev/null || exit 1
-  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-  cd "$SCRIPTPATH" || exit 1 # Move to where the script is
-  GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-  if [ -z "$GITROOT" ]; then
-    echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
-    popd &> /dev/null || exit 1
-    exit 1
-  fi
-  
-  # Get project constants
-  . "$GITROOT/inc/const.inc" "$@"
-  
-  # Get error handling functionality
-  . "$GITROOT/inc/error.inc" "$@"
-  
-  # Get help and version functionality
-  . "$GITROOT/inc/asroot.inc" "$@"
-  
-  # Get help and version functionality
-  . "$GITROOT/inc/help.inc" "$@"
-  
-  # Read configuration
-  . "$GITROOT/inc/config.inc" "$@"
+    # Change to current dir (assumed to be in a repo) so we can get the git info
+    pushd . &> /dev/null || exit 1
+    SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+    cd "$SCRIPTPATH" || exit 1 # Move to where the script is
+    GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+    if [ -z "$GITROOT" ]; then
+        echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
+        popd &> /dev/null || exit 1
+        exit 1
+    fi
+    
+    # Get project constants
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/const.inc" "$@"
+    
+    # Get error handling functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/error.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/asroot.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/help.inc" "$@"
+    
+    # Get config file read functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/config.inc" "$@"
+}
+
+############
+### Create a banner
+############
+
+banner() {
+    local adj
+    adj="$1"
+    echo -e "\n***Script $THISSCRIPT $adj.***"
 }
 
 ############
@@ -67,21 +85,22 @@ init() {
 ############
 
 perms() {
-  # Get app locations based on local config
-  wwwPath="$(getVal wwwPath $GITROOT)"
-  echo -e "\nFixing file permissions for $wwwPath."
-  chown -R www-data:www-data "$wwwPath"||warn
-  find "$wwwPath" -type d -exec chmod 2770 {} \; || warn
-  find "$wwwPath" -type f -exec chmod 640 {} \;||warn
-  find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
-  find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
-  echo -e "\nFixing file permissions for $GITROOT."
-  chown -R brewpi:brewpi "$GITROOT"||warn
-  find "$GITROOT" -type d -exec chmod 775 {} \;||warn
-  find "$GITROOT" -type f -exec chmod 660 {} \;||warn
-  find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
-  find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
-  find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
+    local wwwPath
+    # Get app locations based on local config
+    wwwPath="$(getVal wwwPath "$GITROOT")"
+    echo -e "\nFixing file permissions for $wwwPath."
+    chown -R www-data:www-data "$wwwPath"||warn
+    find "$wwwPath" -type d -exec chmod 2770 {} \; || warn
+    find "$wwwPath" -type f -exec chmod 640 {} \;||warn
+    find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
+    find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
+    echo -e "\nFixing file permissions for $GITROOT."
+    chown -R brewpi:brewpi "$GITROOT"||warn
+    find "$GITROOT" -type d -exec chmod 775 {} \;||warn
+    find "$GITROOT" -type f -exec chmod 660 {} \;||warn
+    find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
+    find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
+    find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
 }
 
 ############
@@ -89,30 +108,29 @@ perms() {
 ############
 
 checkuser() {
-  echo -e "\nChecking user accounts."
-  if ! id -u brewpi >/dev/null 2>&1; then
-    useradd brewpi -m -G dialout,sudo,www-data||die
-  else
-    usermod -a -G dialout,sudo,www-data brewpi
-  fi
-  # Add current user to www-data & brewpi group
-  usermod -a -G www-data,brewpi "$REALUSER"||die
+    echo -e "\nChecking user accounts."
+    if ! id -u brewpi >/dev/null 2>&1; then
+        useradd brewpi -m -G dialout,sudo,www-data||die
+    else
+        usermod -a -G dialout,sudo,www-data brewpi
+    fi
+    # Add current user to www-data & brewpi group
+    usermod -a -G www-data,brewpi "$REALUSER"||die
 }
 
 ############
-### Main
+### Main function
 ############
 
 main() {
-  init "$@"
-  echo -e "\n***Script $THISSCRIPT starting.***"
-  perms
-  checkuser
-  echo -e "\n***Script $THISSCRIPT complete.***"
+    init "$@" # Init and call supporting libs
+    const "$@" # Get script constants
+    asroot # Make sure we are running with root privs
+    help "$@" # Process help and version requests
+    banner "starting"
+    perms # Check/set file and dir permissions
+    checkuser # Check/set user attributes
+    banner "complete"
 }
 
-############
-### Start script
-############
-
-main && exit 0
+main "$@" && exit 0

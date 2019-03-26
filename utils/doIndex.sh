@@ -30,53 +30,72 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Declare this script's constants
+declare SCRIPTPATH GITROOT WWWPATH ROOTWEB
+
 ############
 ### Init
 ############
 
-func_doinit() {
-  # Change to current dir (assumed to be in a repo) so we can get the git info
-  pushd . &> /dev/null || exit 1
-  SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-  cd "$SCRIPTPATH" || exit 1 # Move to where the script is
-  GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-  if [ -z "$GITROOT" ]; then
-    echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
-    popd &> /dev/null || exit 1
-    exit 1
-  fi
+init() {
+    # Change to current dir (assumed to be in a repo) so we can get the git info
+    pushd . &> /dev/null || exit 1
+    SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+    cd "$SCRIPTPATH" || exit 1 # Move to where the script is
+    GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+    if [ -z "$GITROOT" ]; then
+        echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
+        popd &> /dev/null || exit 1
+        exit 1
+    fi
+    
+    # Get project constants
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/const.inc" "$@"
+    
+    # Get error handling functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/error.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/asroot.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/help.inc" "$@"
+    
+    # Get config file read functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/config.inc" "$@"
 
-  # Get project constants
-  . "$GITROOT/inc/const.inc" "$@"
+    # Get network test functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/nettest.inc" "$@"
+}
 
-  # Get error handling functionality
-  . "$GITROOT/inc/error.inc" "$@"
+############
+### Create a banner
+############
 
-  # Get help and version functionality
-  . "$GITROOT/inc/asroot.inc" "$@"
-
-  # Get help and version functionality
-  . "$GITROOT/inc/help.inc" "$@"
-
-  # Network test
-  . "$GITROOT/inc/nettest.inc" "$@"
-
-  # Read configuration
-  . "$GITROOT/inc/config.inc" "$@"
+banner() {
+    local adj
+    adj="$1"
+    echo -e "\n***Script $THISSCRIPT $adj.***"
 }
 
 ############
 ### Get web locations
 ############
 
-func_getweb() {
+getweb() {
   # Get this app's web root in config file
-  wwwPath="$(getVal wwwPath $GITROOT)"
+  WWWPATH="$(getVal wwwPath "$GITROOT")"
   # Find root web path based on Apache2 config
   echo -e "\nSearching for default web location."
-  rootWeb="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
-  if [ ! -z "$rootWeb" ]; then
-    echo -e "\nFound $rootWeb in /etc/apache2/sites-enabled/000-default*."
+  ROOTWEB="$(grep DocumentRoot /etc/apache2/sites-enabled/000-default* |xargs |cut -d " " -f2)"
+  if [ -n "$ROOTWEB" ]; then
+    echo -e "\nFound $ROOTWEB in /etc/apache2/sites-enabled/000-default*."
   else
     echo "Something went wrong searching for /etc/apache2/sites-enabled/000-default*."
     echo "Fix that and come back to try again."
@@ -88,23 +107,24 @@ func_getweb() {
 ### Create link
 ############
 
-func_createlinks() {
-  echo -e "\nCreating link to multi-index.php in $rootWeb."
-  ln -sf "$wwwPath/multi-index.php" "$rootWeb/index.php"
+createlinks() {
+  echo -e "\nCreating link to multi-index.php in $ROOTWEB."
+  ln -sf "$WWWPATH/multi-index.php" "$ROOTWEB/index.php"
 }
 
 ############
-### Main
+### Main function
 ############
 
 main() {
-  func_doinit "$@" # Initialize constants and variables
-  echo -e "\n***Script $THISSCRIPT starting.***"
-  func_getweb # Get web locations
-  func_createlinks # Create all index links
-  echo -e "\n***Script $THISSCRIPT complete.***"
+    init "$@" # Init and call supporting libs
+    const "$@" # Get script constants
+    asroot # Make sure we are running with root privs
+    help "$@" # Process help and version requests
+    banner "starting"
+    getweb # Find web paths
+    createlinks # Create symlink for Index
+    banner "complete"
 }
 
-main "$@"
-exit 0
-
+main "$@" && exit 0

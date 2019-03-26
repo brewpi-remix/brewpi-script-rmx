@@ -31,10 +31,6 @@
 # license and credits.
 
 ############
-### Include file to set up script constants
-############
-
-############
 ### Functions to catch/display errors during execution
 ############
 
@@ -54,3 +50,6 @@ die () {
     warn "$@"
     exit "$st"
 }
+
+# Check if we were used as an include or called directly,
+(return 0 2>/dev/null) || echo "Intended to be used as an include file only."

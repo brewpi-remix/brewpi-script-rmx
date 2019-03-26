@@ -74,3 +74,6 @@ getVal() {
     _val=$(printf -- "%s" "${_val}";)
     echo "$(strip "${_val}")"
 }
+
+# Check if we were used as an include or called directly,
+(return 0 2>/dev/null) || echo "Intended to be used as an include file only."

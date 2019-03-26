@@ -30,23 +30,25 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Global constants declaration
+declare STDOUT STDERR SCRIPTPATH THISSCRIPT WLAN INTERACT GITROOT REBOOT LOOP
+declare MAX_FAILURES INTERVAL fails
+
 ### User-editable settings ###
 # Time (in seconds) in between tests when running in CRON or Daemon mode
-declare -i LOOP=600
+LOOP=600
 # Total number of times to try and contact the router if first packet fails
 # After this the interface is restarted
-declare -i MAX_FAILURES=3
+MAX_FAILURES=3
 # Time (in seconds)to wait between failed attempts contacting the router
-declare -i INTERVAL=10
+INTERVAL=10
 # Reboot on failure
 REBOOT=false
-# Global constants declaration
-declare STDOUT STDERR SCRIPTPATH THISSCRIPT SCRIPTNAME WLAN INTERACT GITROOT
 # Set log names
 STDOUT="stdout.txt"
 STDERR="stderr.txt"
 # Global variables declaration
-declare -i fails=0
+fails=0
 
 ############
 ### Init
@@ -82,6 +84,16 @@ init() {
     
     # Get wireless lan device name and gateway
     WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
+}
+
+############
+### Create a banner
+############
+
+banner() {
+    local adj
+    adj="$1"
+    echo -e "\n***Script $THISSCRIPT $adj.***"
 }
 
 ############
@@ -186,16 +198,6 @@ getinteract() {
 }
 
 ############
-### Print banner
-############
-
-banner(){
-    local option
-    option=$1
-    echo -e "\n***Script $SCRIPTNAME $option.***"
-}
-
-############
 ### Keep checking the adapter
 ############
 
@@ -274,6 +276,10 @@ main() {
     if [ -z "$WLAN" ]; then
         log 3 "Unable to find wireless adapter in system. Exiting." > /dev/tty
     fi
+    const "$@"
+    asroot # Make sure we are running with root privs
+    help "$@" # Process help and version requests
+    banner "starting"
     INTERACT=$(getinteract "$@")
     iwconfig wlan0 power off # Turn off power management for WiFi
     # If we're interactive, just run it once

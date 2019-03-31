@@ -34,8 +34,6 @@
 ### Include file to set up script constants
 ############
 
-declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
-
 const() {
     # Set up some project constants
     THISSCRIPT="$(basename "$0")"

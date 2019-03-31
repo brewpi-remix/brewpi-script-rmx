@@ -60,7 +60,7 @@ loop() {
     script="$GITROOT/brewpi.py"
     stdOut="$GITROOT/logs/stdout.txt"
     stdErr="$GITROOT/logs/stderr.txt"
-    
+
     while :
     do
         if ! python "$script" --checkstartuponly --dontrunfile
@@ -75,8 +75,9 @@ loop() {
 ############
 
 main() {
+    init "$@" # Get environment information
     help "$@" # Process help and version requests
-    loop "$@" #Loop forever
+    loop "$@" # Loop forever
 }
 
 main "$@" && exit 0

@@ -32,6 +32,10 @@
 
 # Declare this script's constants
 declare SCRIPTPATH GITROOT
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
 
 ############
 ### Init

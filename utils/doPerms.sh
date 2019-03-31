@@ -32,6 +32,10 @@
 
 # Declare this script's constants
 declare SCRIPTPATH GITROOT
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
 
 ############
 ### Init
@@ -48,23 +52,23 @@ init() {
         popd &> /dev/null || exit 1
         exit 1
     fi
-    
+
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
-    
+
     # Get config file read functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/config.inc" "$@"

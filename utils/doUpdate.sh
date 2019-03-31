@@ -30,8 +30,12 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-# Declare this script's constants
+# Declare this script's constants/variables
 declare SCRIPTPATH GITROOT repoArray
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
 
 ############
 ### Init

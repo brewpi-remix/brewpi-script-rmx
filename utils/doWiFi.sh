@@ -30,9 +30,13 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-# Global constants declaration
+# Global constants/variables declaration
 declare STDOUT STDERR SCRIPTPATH THISSCRIPT WLAN INTERACT GITROOT REBOOT LOOP
 declare MAX_FAILURES INTERVAL fails
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
 
 ### User-editable settings ###
 # Time (in seconds) in between tests when running in CRON or Daemon mode

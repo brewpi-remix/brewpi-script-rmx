@@ -35,8 +35,6 @@
 ### Will relaunch with sudo if not root/sudo
 ############
 
-declare HOMEPATH REALUSER
-
 asroot() {
     local retval
     # Check if we have root privs

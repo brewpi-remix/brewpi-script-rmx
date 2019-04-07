@@ -210,9 +210,11 @@ class AvrInfo:
         if self.board:
             string += ", running on "+ self.articleFullName()
         if self.shield:
-            string += " with a/an " + str(self.shield) + " shield"
+            string += " with a(n) " + str(self.shield) + " shield"
         if(self.simulator):
-           string += ", running as simulator"
+            string += ", running as simulator."
+        else:
+            string += "."
         return string
 
     def isNewer(self, versionString):

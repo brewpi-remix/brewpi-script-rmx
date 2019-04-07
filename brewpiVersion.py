@@ -84,8 +84,6 @@ def getVersionFromSerial(ser):
 class AvrInfo:
     """ Parses and stores the version and other compile-time details reported by the controller """
 
-    """ TODO:  N:{"v":"0.2.11","n":"c011230","s":4,"y":0,"b":"s","l":"3"} """
-
     version = "v"
     build = "n"
     simulator = "y"
@@ -94,36 +92,41 @@ class AvrInfo:
     log = "l"
     commit = "c"
 
+    shield_diy = "DIY"
     shield_revA = "revA"
     shield_revC = "revC"
     spark_shield_v1 = "V1"
     spark_shield_v2 = "V2"
     shield_i2c = "I2C"
 
-    shields = {1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2, 5: shield_i2c}
+    shields = {0: shield_diy, 1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2, 5: shield_i2c}
 
     board_leonardo = "leonardo"
     board_standard = "uno"
     board_mega = "mega"
     board_spark_core = "core"
     board_photon = "photon"
+    board_esp8266 = "esp8266"
 
-    boards = {'l': board_leonardo, 's': board_standard, 'm': board_mega, 'x': board_spark_core, 'y': board_photon}
+    boards = {'l': board_leonardo, 's': board_standard, 'm': board_mega, 'x': board_spark_core, 'y': board_photon, 'e': board_esp8266}
 
     family_arduino = "Arduino"
     family_spark = "Particle"
+    family_esp8266 = "ESP8266"
 
     families = { board_leonardo: family_arduino,
                 board_standard: family_arduino,
                 board_mega: family_arduino,
                 board_spark_core: family_spark,
-                board_photon: family_spark}
+                board_photon: family_spark,
+                board_esp8266: family_esp8266}
 
     board_names = { board_leonardo: "Leonardo",
                 board_standard: "Uno",
                 board_mega: "Mega",
                 board_spark_core: "Core",
-                board_photon: "Photon"}
+                board_photon: "Photon",
+                board_esp8266: "ESP8266"}
 
     def __init__(self, s=None):
         self.version = LooseVersion("0.0.0")
@@ -207,7 +210,7 @@ class AvrInfo:
         if self.board:
             string += ", running on "+ self.articleFullName()
         if self.shield:
-            string += " with a " + str(self.shield) + " shield"
+            string += " with a/an " + str(self.shield) + " shield"
         if(self.simulator):
            string += ", running as simulator"
         return string
@@ -235,4 +238,3 @@ class AvrInfo:
 
     def articleFullName(self):
         return self.article(self.family) + " " + self.fullName()
-

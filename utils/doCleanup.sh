@@ -90,7 +90,7 @@ cleanup() {
     echo -e "\nCleaning up BrewPi script directory."
     numPYC=$( find "$GITROOT" -name "*.pyc" | wc -l | tr -d ' ' )
     if [ "$numPYC" -gt 0 ]; then
-        find "$GITROOT" -name "*.pyc" -delete
+        find "$GITROOT" -name "*.pyc" -exec rm -f {} \;
         echo -e "Deleted $numPYC old .pyc files."
     fi
     #  Delete empty directories from script directory

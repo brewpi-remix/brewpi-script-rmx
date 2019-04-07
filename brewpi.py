@@ -353,7 +353,8 @@ ser = util.setupSerial(config)
 if not ser:
     exit(1)
 
-logMessage("Notification: Script started for beer '" + urllib.unquote(config['beerName']) + "'")
+logMessage("Notification: Starting '" + urllib.unquote(config['beerName']) + "'")
+logMessage("Waiting for 15 seconds for board to restart.")
 # wait for 15 seconds to allow an Uno to reboot (in case an Uno is being used)
 time.sleep(float(config.get('startupDelay', 15)))
 

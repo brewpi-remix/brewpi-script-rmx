@@ -75,6 +75,21 @@ def getPinList(boardType, shieldType):
                    {'val': 15, 'text': 'A1', 'type': 'free'},
                    {'val': 16, 'text': 'A2', 'type': 'free'},
                    {'val': 17, 'text': 'A3', 'type': 'free'}]
+    elif boardType == "uno" and shieldType == "I2C":
+        pinList = [{'val': 6, 'text': ' 6 (Act 1)', 'type': 'act'},
+                   {'val': 5, 'text': ' 5 (Act 2)', 'type': 'act'},
+                   {'val': 2, 'text': ' 2 (Act 3)', 'type': 'act'},
+                   {'val': 17, 'text': 'A3 (Act 4)', 'type': 'act'},
+                   {'val': 4, 'text': ' 4 (Door)', 'type': 'door'},
+                   {'val': 14, 'text': 'A0 (OneWire)', 'type': 'onewire'},
+                   {'val': 3, 'text': ' 3', 'type': 'beep'},
+                   {'val': 7, 'text': ' 7', 'type': 'rotary'},
+                   {'val': 8, 'text': ' 8', 'type': 'rotary'},
+                   {'val': 9, 'text': ' 9', 'type': 'rotary'},
+                   {'val': 0, 'text': ' 0', 'type': 'serial'},
+                   {'val': 1, 'text': ' 1', 'type': 'serial'},
+                   {'val': 18, 'text': 'A4 (SDA)', 'type': 'i2c'},
+                   {'val': 19, 'text': 'A5 (SCL)', 'type': 'i2c'}]
     elif boardType == "leonardo" and shieldType == "revA":
         pinList = [{'val': 6, 'text': '  6 (Cool)', 'type': 'act'},
                    {'val': 5, 'text': '  5 (Heat)', 'type': 'act'},

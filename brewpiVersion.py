@@ -83,6 +83,9 @@ def getVersionFromSerial(ser):
 
 class AvrInfo:
     """ Parses and stores the version and other compile-time details reported by the controller """
+
+    """ TODO:  N:{"v":"0.2.11","n":"c011230","s":4,"y":0,"b":"s","l":"3"} """
+
     version = "v"
     build = "n"
     simulator = "y"
@@ -95,8 +98,9 @@ class AvrInfo:
     shield_revC = "revC"
     spark_shield_v1 = "V1"
     spark_shield_v2 = "V2"
+    shield_i2c = "I2C"
 
-    shields = {1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2}
+    shields = {1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2, 5: shield_i2c}
 
     board_leonardo = "leonardo"
     board_standard = "uno"

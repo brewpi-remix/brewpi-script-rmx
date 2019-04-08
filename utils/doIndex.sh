@@ -113,6 +113,7 @@ getweb() {
 
 createlinks() {
   echo -e "\nCreating link to multi-index.php in $ROOTWEB."
+  rm -f "$ROOTWEB/index.html"
   ln -sf "$WWWPATH/multi-index.php" "$ROOTWEB/index.php"
 }
 

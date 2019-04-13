@@ -276,7 +276,7 @@ def setFiles():
         os.chmod(wwwDataPath, 0775)  # give group all permissions
 
     # Keep track of day and make new data file for each day
-    day = time.strftime("%Y-%m-%d")
+    day = time.strftime("%Y%m%d")
     lastDay = day
     # define a JSON file to store the data
     jsonFileName = beerFileName + '-' + day
@@ -459,11 +459,7 @@ while run:
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
-    
-    # Get control constants when we start up so the interface is correct
-    bg_ser.write("c")
-    raise socket.timeout
-    
+
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
@@ -733,7 +729,9 @@ while run:
             # Request Settings from controller to stay up to date
             # Controller should send updates on changes, this is a periodical update to ensure it is up to date
             prevSettingsUpdate += 5 # give the controller some time to respond
+            logMessage("DEBUG:  Requesting control settings/constants from controller.")
             bg_ser.write('s')
+            bg_ser.write('c')
 
         # if no new data has been received for serialRequestInteval seconds
         if (time.time() - prevDataTime) >= float(config['interval']):

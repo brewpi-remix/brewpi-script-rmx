@@ -460,6 +460,10 @@ while run:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
 
+    # Start by refreshing settings/constants
+    bg_ser.write('s')
+    bg_ser.write('c')
+
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
@@ -726,10 +730,10 @@ while run:
             bg_ser.write('l')
 
         if(time.time() - prevSettingsUpdate) > 60:
-            # Request Settings from controller to stay up to date
-            # Controller should send updates on changes, this is a periodical update to ensure it is up to date
+            # Request Settings from controller to stay up to date.
+            # Controller should send updates on changes, this is a periodic
+            # update to ensure it is up to date
             prevSettingsUpdate += 5 # give the controller some time to respond
-            logMessage("DEBUG:  Requesting control settings/constants from controller.")
             bg_ser.write('s')
             bg_ser.write('c')
 

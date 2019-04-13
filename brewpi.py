@@ -418,7 +418,7 @@ s.listen(10)  # Create a backlog queue for up to 10 connections
 # blocking socket functions wait 'serialCheckInterval' seconds
 s.settimeout(serialCheckInterval)
 
-prevDataTime = 0.0  # keep track of time between new data requests
+prevDataTime = 0  # keep track of time between new data requests
 prevTimeOut = time.time()
 prevLcdUpdate = time.time()
 prevSettingsUpdate = time.time()
@@ -721,7 +721,7 @@ while run:
             continue  # do nothing with the serial port when the controller has not been recognized
 
         if(time.time() - prevLcdUpdate) > 5:
-            # request new LCD text
+            # Request new LCD text
             prevLcdUpdate += 5 # give the controller some time to respond
             bg_ser.write('l')
 
@@ -733,11 +733,13 @@ while run:
             bg_ser.write('s')
             bg_ser.write('c')
 
-        # if no new data has been received for serialRequestInteval seconds
+        # If no new data has been received for serialRequestInteval seconds
         if (time.time() - prevDataTime) >= float(config['interval']):
-            bg_ser.write("t")  # request new from controller
+            if prevDataTime == 0: # First time through set the previous time
+                prevDataTime = time.time()
             prevDataTime += 5 # give the controller some time to respond to prevent requesting twice
-
+            bg_ser.write("t")  # request new from controller
+            
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
             #something is wrong: controller is not responding to data requests
             logMessage("Error: Controller is not responding to new data requests.")

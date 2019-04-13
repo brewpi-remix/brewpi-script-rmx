@@ -304,7 +304,6 @@ def setFiles():
 def startBeer(beerName):
     if config['dataLogging'] == 'active':
         setFiles()
-
     changeWwwSetting('beerName', beerName)
 
 def startNewBrew(newName):
@@ -355,9 +354,9 @@ if not ser:
     exit(1)
 
 logMessage("Notification: Starting '" + urllib.unquote(config['beerName']) + "'")
-logMessage("Waiting 15 seconds for board to restart.")
-# wait for 15 seconds to allow an Uno to reboot (in case an Uno is being used)
-time.sleep(float(config.get('startupDelay', 15)))
+logMessage("Waiting 10 seconds for board to restart.")
+# wait for 10 seconds to allow an Uno to reboot (in case an Uno is being used)
+time.sleep(float(config.get('startupDelay', 10)))
 
 logMessage("Checking software version on controller.")
 hwVersion = brewpiVersion.getVersionFromSerial(ser)
@@ -384,7 +383,8 @@ bg_ser = None
 
 if ser is not None:
     ser.flush()
-    # set up background serial processing, which will continuously read data from serial and put whole lines in a queue
+    # set up background serial processing, which will continuously read data
+    # from serial and put whole lines in a queue
     bg_ser = BackGroundSerial(ser)
     bg_ser.start()
     # request settings from controller, processed later when reply is received
@@ -460,10 +460,6 @@ while run:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
 
-    # Start by refreshing settings/constants
-    bg_ser.write('s')
-    bg_ser.write('c')
-
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
@@ -486,7 +482,7 @@ while run:
             conn.send(cs['mode'])
         elif messageType == "getFridge":  # echo fridge temperature setting
             conn.send(json.dumps(cs['fridgeSet']))
-        elif messageType == "getBeer":  # echo fridge temperature setting
+        elif messageType == "getBeer":  # echo beer temperature setting
             conn.send(json.dumps(cs['beerSet']))
         elif messageType == "getControlConstants":
             conn.send(json.dumps(cc))
@@ -806,6 +802,9 @@ while run:
                     elif line[0] == 'C':
                         # Control constants received
                         cc = json.loads(line[2:])
+                        # Update the json with the right temp format for the web page
+                        if 'tempFormat' in cc:
+                            changeWwwSetting('tempFormat', cc['tempFormat'])
                     elif line[0] == 'S':
                         # Control settings received
                         prevSettingsUpdate = time.time()

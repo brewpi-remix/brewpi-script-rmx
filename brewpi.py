@@ -97,7 +97,7 @@ from backgroundserial import BackGroundSerial
 # Settings will be read from controller, initialize with same defaults as controller
 # This is mainly to show what's expected. Will all be overwritten on the first update from the controller
 
-compatibleHwVersion = "0.2.10"
+compatibleHwVersion = "0.2.4"
 
 # Control Settings
 cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
@@ -203,7 +203,7 @@ dontRunFilePath = os.path.join(config['wwwPath'], 'do_not_run_brewpi')
 # check dont run file when it exists and exit it it does
 if checkDontRunFile:
     if os.path.exists(dontRunFilePath):
-        # do not print anything, this will flood the logs
+        # do not print anything or it will flood the logs
         exit(0)
 
 # check for other running instances of BrewPi that will cause conflicts with this instance
@@ -227,8 +227,9 @@ day = ""
 
 if logToFiles:
     logPath = util.addSlash(util.scriptPath()) + 'logs/'
-    logMessage("Redirecting output to log files in %s, output will not " +
-               "be shown in console." % logPath)
+    # Skip logging for this message
+    printStdOut("Redirecting output to log files in %s." % logPath)
+    printStdOut("Script output will not be shown in console.")
     sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # append to stderr file, unbuffered
     sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # overwrite stdout file on script start, unbuffered
 

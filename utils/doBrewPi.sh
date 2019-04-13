@@ -58,13 +58,11 @@ init() {
 loop() {
     local script stdOut stdErr
     script="$GITROOT/brewpi.py"
-    stdOut="$GITROOT/logs/stdout.txt"
-    stdErr="$GITROOT/logs/stderr.txt"
 
     while :
     do
         if ! python "$script" --checkstartuponly --dontrunfile
-            then python -u "$script" 1>"$stdOut" 2>>"$stdErr"
+            then python -u "$script" --log
         fi
         sleep 5
     done

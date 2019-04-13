@@ -455,7 +455,7 @@ while run:
     if config['dataLogging'] == 'active':
         # Check whether it is a new day
         lastDay = day
-        day = time.strftime("%Y-%m-%d")
+        day = time.strftime("%Y%m%d")
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()

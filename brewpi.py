@@ -354,7 +354,7 @@ if not ser:
     exit(1)
 
 logMessage("Notification: Starting '" + urllib.unquote(config['beerName']) + "'")
-logMessage("Waiting for 15 seconds for board to restart.")
+logMessage("Waiting 15 seconds for board to restart.")
 # wait for 15 seconds to allow an Uno to reboot (in case an Uno is being used)
 time.sleep(float(config.get('startupDelay', 15)))
 
@@ -368,7 +368,7 @@ if hwVersion is None:
     lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller.']
 else:
     logMessage("Found " + hwVersion.toExtendedString() + \
-               " on port " + ser.name)
+               " on port " + ser.name + ".")
     if LooseVersion( hwVersion.toString() ) < LooseVersion(compatibleHwVersion):
         logMessage("Warning: minimum BrewPi version compatible with this script is " +
                    compatibleHwVersion +
@@ -565,15 +565,14 @@ while run:
         elif messageType == "stopScript":  # exit instruction received. Stop script.
             # voluntary shutdown.
             # write a file to prevent the cron job from restarting the script
-            logMessage("'stopScript' message received on socket. " +
-                       "Stopping script and writing do_not_run_brewpi to prevent automatic restart.")
+            logMessage("Stop message received on socket.")
             run = 0
             dontrunfile = open(dontRunFilePath, "w")
             dontrunfile.write("1")
             dontrunfile.close()
             continue
         elif messageType == "quit":  # quit instruction received. Probably sent by another brewpi script instance
-            logMessage("'quit' message received on socket. Stopping script.")
+            logMessage("Quit message received on socket.")
             run = 0
             # Leave dontrunfile alone.
             # This instruction is meant to restart the script or replace it with another instance.
@@ -658,7 +657,7 @@ while run:
                 programmer.programController(config, boardType, hexFile, {'settings': restoreSettings, 'devices': restoreDevices})
                 logMessage("New program uploaded to controller, script will restart.")
             except json.JSONDecodeError:
-                logMessage("Error: cannot decode programming parameters: " + value)
+                logMessage("Error. Cannot decode programming parameters: " + value)
                 logMessage("Restarting script without programming.")
 
             # restart the script when done. This replaces this process with the new one
@@ -686,7 +685,7 @@ while run:
             try:
                 configStringJson = json.loads(value)  # load as JSON to check syntax
             except json.JSONDecodeError:
-                logMessage("Error: Invalid JSON parameter string received: " + value)
+                logMessage("Error. Invalid JSON parameter string received: " + value)
                 continue
             bg_ser.write("U" + json.dumps(configStringJson))
             deviceList['listState'] = ""  # invalidate local copy
@@ -703,7 +702,7 @@ while run:
             logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
         else:
-            logMessage("Error: Received invalid message on socket: " + message)
+            logMessage("Error. Received invalid message on socket: " + message)
 
         if (time.time() - prevTimeOut) < serialCheckInterval:
             continue

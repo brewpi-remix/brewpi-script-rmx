@@ -203,18 +203,15 @@ class AvrInfo:
 
     def toExtendedString(self):
         string = "BrewPi v" + self.toString()
-        if self.commit:
-            string += ", running commit " + str(self.commit)
         if self.build:
             string += " build " + str(self.build)
         if self.board:
             string += ", running on "+ self.articleFullName()
         if self.shield:
-            string += " with a(n) " + str(self.shield) + " shield"
+            string += " with " + self.article(str(self.shield)) + " "
+            string += str(self.shield) + " shield"
         if(self.simulator):
             string += ", running as simulator."
-        else:
-            string += "."
         return string
 
     def isNewer(self, versionString):

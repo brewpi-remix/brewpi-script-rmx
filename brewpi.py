@@ -459,6 +459,11 @@ while run:
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
+    
+    # Get control constants when we start up so the interface is correct
+    bg_ser.write("c")
+    raise socket.timeout
+    
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
@@ -738,7 +743,6 @@ while run:
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
             #something is wrong: controller is not responding to data requests
             logMessage("Error: Controller is not responding to new data requests.")
-
 
         while True:
             line = bg_ser.read_line()

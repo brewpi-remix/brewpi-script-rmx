@@ -121,7 +121,7 @@ log() {
             level="INFO"
         ;;
     esac
-    # If we are interacive, send to tty (straight echo will break func here)
+    # If we are interactive, send to tty (straight echo will break func here)
     [ "$INTERACT" == true ] && echo -e "$level: $msg" > /dev/tty && return
     logmsg="$now $name $level: $msg"
     # Send "INFO to stdout else (WARN and ERROR) send to stderr

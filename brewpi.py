@@ -361,10 +361,11 @@ time.sleep(float(config.get('startupDelay', 15)))
 
 logMessage("Checking software version on controller.")
 hwVersion = brewpiVersion.getVersionFromSerial(ser)
-if hwVersion is None:
-    logMessage("Warning: Cannot receive version number from controller. " +
-               "Your controller is either not programmed or running a very old version of BrewPi. " +
-               "Please upload a new version of BrewPi to your controller.")
+if hwVersion is None: 
+    logMessage("ERROR: Cannot receive version number from controller.")
+    logMessage("Your controller is either not programmed or running a")
+    logMessage("very old version of BrewPi. Please upload a new version")
+    logMessage("of BrewPi to your controller.")
     # script will continue so you can at least program the controller
     lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller.']
 else:
@@ -582,7 +583,7 @@ while run:
             # erase the log files for stderr and stdout
             open(util.scriptPath() + '/logs/stderr.txt', 'wb').close()
             open(util.scriptPath() + '/logs/stdout.txt', 'wb').close()
-            logMessage("Fresh start, log files erased.")
+            logMessage("Log files erased.")
             continue
         elif messageType == "interval":  # new interval received
             newInterval = int(value)
@@ -749,7 +750,7 @@ while run:
                     if line[0] == 'T':
                         # print it to stdout
                         if outputTemperature:
-                            print(time.strftime("%Y-%m-%d %H:%M:%S   ") + line[2:]) # This is format: "2019-01-08 16:50:15"
+                            logMessage(line[2:]) # Use standard logger
                             #print(time.strftime("%b %d %Y %H:%M:%S  ") + line[2:]) # This is format: "Jan 08 2019 16:31:56"
 
                         # store time of last new data for interval check

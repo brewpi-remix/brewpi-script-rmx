@@ -94,33 +94,41 @@ import expandLogMessage
 import BrewPiProcess
 from backgroundserial import BackGroundSerial
 
-# Settings will be read from controller, initialize with same defaults as controller
-# This is mainly to show what's expected. Will all be overwritten on the first update from the controller
+# Settings will be read from controller, initialize with same defaults as
+# controller. This is mainly to show what's expected. Will all be overwritten
+# on the first update from the controller
 
 compatibleHwVersion = "0.2.4"
 
 # Control Settings
-cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2, coolEstimator=5)
+cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2,
+            coolEstimator=5)
 
 # Control Constants
-cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0, Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500,
-          idleRangeH=1.000, idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199, coolTargetH=0.199,
-          coolTargetL=-0.301, maxHeatTimeForEst="600", maxCoolTimeForEst="1200", fridgeFastFilt="1", fridgeSlowFilt="4",
-          fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5", beerSlopeFilt="4", lah=0, hs=0)
+cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0,
+            Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500, idleRangeH=1.000,
+            idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199,
+            coolTargetH=0.199, coolTargetL=-0.301, maxHeatTimeForEst="600",
+            maxCoolTimeForEst="1200", fridgeFastFilt="1", fridgeSlowFilt="4",
+            fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5",
+            beerSlopeFilt="4", lah=0, hs=0)
 
 # Control variables
-cv = dict(beerDiff=0.000, diffIntegral=0.000, beerSlope=0.000, p=0.000, i=0.000, d=0.000, estPeak=0.000,
-negPeakEst=0.000, posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
+cv = dict(beerDiff=0.000, diffIntegral=0.000, beerSlope=0.000, p=0.000,
+            i=0.000, d=0.000, estPeak=0.000, negPeakEst=0.000,
+            posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
 
-# listState = "", "d", "h", "dh" to reflect whether the list is up to date for installed (d) and available (h)
+# listState = "", "d", "h", "dh" to reflect whether the list is up to date for
+# installed (d) and available (h)
 deviceList = dict(listState="", installed=[], available=[])
 
-lcdText = ['Script starting up', ' ', ' ', ' ']
+lcdText = ['Script starting up.', ' ', ' ', ' ']
 
 # Read in command line arguments
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "hc:sqkfld",
-                               ['help', 'config=', 'status', 'quit', 'kill', 'force', 'log', 'dontrunfile', 'checkstartuponly'])
+    opts, args = getopt.getopt(sys.argv[1:], "hc:sqkfld", ['help', 'config=',
+                'status', 'quit', 'kill', 'force', 'log', 'dontrunfile',
+                'checkstartuponly'])
 except getopt.GetoptError:
     printStdErr("Unknown parameter, available Options: --help, --config <path to config file>,\n" +
                 "                                      --status, --quit, --kill, --force, --log,\n" +
@@ -203,10 +211,11 @@ dontRunFilePath = os.path.join(config['wwwPath'], 'do_not_run_brewpi')
 # check dont run file when it exists and exit it it does
 if checkDontRunFile:
     if os.path.exists(dontRunFilePath):
-        # do not print anything or it will flood the logs
+        # Do not print anything or it will flood the logs
         exit(0)
 
-# check for other running instances of BrewPi that will cause conflicts with this instance
+# Check for other running instances of BrewPi that will cause conflicts with
+# this instance
 allProcesses = BrewPiProcess.BrewPiProcesses()
 allProcesses.update()
 myProcess = allProcesses.me()
@@ -230,11 +239,12 @@ if logToFiles:
     # Skip logging for this message
     printStdOut("Redirecting output to log files in %s." % logPath)
     printStdOut("Script output will not be shown in console.")
-    sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # append to stderr file, unbuffered
-    sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # overwrite stdout file on script start, unbuffered
+    sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # Append stderr, unbuffered
+    sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # Overwrite stdout, unbuffered
 
-# userSettings.json is a copy of some of the settings that are needed by the web server.
-# This allows the web server to load properly, even when the script is not running.
+# userSettings.json is a copy of some of the settings that are needed by the
+# web server. This allows the web server to load properly, even when the script
+# is not running.
 def changeWwwSetting(settingName, value):
     wwwSettingsFileName = util.addSlash(config['wwwPath']) + 'userSettings.json'
     if os.path.exists(wwwSettingsFileName):
@@ -542,7 +552,7 @@ while run:
                 cs['fridgeSet'] = round(newTemp, 2)
                 bg_ser.write("j{mode:f, fridgeSet:" + json.dumps(cs['fridgeSet']) + "}")
                 logMessage("Notification: Fridge temperature set to " +
-                           str(cs['fridgeSet'] + ".") +
+                           str(cs['fridgeSet']) + "." +
                            " degrees in web interface.")
                 raise socket.timeout  # go to serial communication to update controller
             else:

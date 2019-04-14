@@ -125,4 +125,3 @@ def newEmptyFile(jsonFileName):
         jsonFile = open(jsonFileName, "w")
         jsonFile.write("{" + jsonCols + ",\"rows\":[]}")
         jsonFile.close()
-

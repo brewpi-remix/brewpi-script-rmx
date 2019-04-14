@@ -366,7 +366,7 @@ if hwVersion is None:
     logMessage("very old version of BrewPi. Please upload a new version")
     logMessage("of BrewPi to your controller.")
     # script will continue so you can at least program the controller
-    lcdText = ['Could not receive', 'version from controller', 'Please (re)program', 'your controller.']
+    lcdText = ['Could not receive', 'ver from controller', 'Please (re)program', 'your controller.']
 else:
     logMessage("Found " + hwVersion.toExtendedString() + \
                " on port " + ser.name + ".")

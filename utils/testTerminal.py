@@ -30,33 +30,37 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-import msvcrt
 import sys
 import os
+import termios
+import fcntl
+import select
+import subprocess
 import simplejson as json
 
-# append parent directory to be able to import files
+# Append parent directory to be able to import files
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import expandLogMessage
 import BrewPiUtil as util
 
 # Read in command line arguments
 if len(sys.argv) < 2:
-    print >> sys.stderr, 'Using default config path ./settings/config.cfg, to override use : %s <config file full path>' % sys.argv[0]
+    print >> sys.stderr, "\nUsing default config path ./settings/config.cfg, to override use:"
+    print >> sys.stderr, "%s <config file full path>" % sys.argv[0]
     configFile = util.addSlash(sys.path[0]) + '../settings/config.cfg'
 else:
     configFile = sys.argv[1]
 
 if not os.path.exists(configFile):
-    sys.exit('ERROR: Config file "%s" was not found!' % configFile)
+    sys.exit('ERROR: Config file "%s" was not found.' % configFile)
 
 config = util.readCfgWithDefaults(configFile)
 
-print "***** BrewPi Windows Test Terminal ****"
-print "This simple Python script lets you send commands to the Arduino."
-print "It also echoes everything the Arduino returns."
-print "On known debug ID's in JSON format, it expands the messages to the full message"
-print "press 's' to send a string to the Arduino, press 'q' to quit"
+print "\n     *****     BrewPi Windows Test Terminal     ****"
+print "This simple Python script lets you send commands to the controller. It"
+print "also echoes everything the controller returns. On known debug ID's in"
+print "JSON format, it expands the messages to the full message.\n"
+print "Press 's' to send a string to the controller, press 'q' to quit"
 
 # open serial port
 ser = util.setupSerial(config)
@@ -64,28 +68,45 @@ ser = util.setupSerial(config)
 if not ser:
     exit(1)
 
-while 1:
-    if msvcrt.kbhit():
-        received = msvcrt.getch()
-        if received == 's':
-            print "type the string you want to send to the Arduino: "
-            userInput = raw_input()
-            print "sending: " + userInput
-            ser.write(userInput)
-        elif received == 'q':
+try:
+    fd = sys.stdin.fileno()
+
+    oldterm = termios.tcgetattr(fd)
+    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+
+    newattr = termios.tcgetattr(fd)
+    newattr[3] = newattr[3] & ~termios.ICANON
+    newattr[3] = newattr[3] & ~termios.ECHO
+
+    while True:
+        termios.tcsetattr(fd, termios.TCSANOW, newattr)
+        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+        inp, outp, err = select.select([sys.stdin], [], [])
+        received = sys.stdin.read()
+        if received == 'q':
             ser.close()
-            exit()
+            break
+        elif received == 's':
+            termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+            fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+            userInput = raw_input("Type the string you want to send to the controller: ")
+            print "Sending: " + userInput
+            ser.write(userInput)
 
-    line = ser.readline()
-    if line:
-        if(line[0]=='D'):
-            try:
-                decoded = json.loads(line[2:])
-                print "debug message received: " + expandLogMessage.expandLogMessage(line[2:])
-            except json.JSONDecodeError:
-                # print line normally, is not json
-                print "debug message received: " + line[2:]
+        line = ser.readline()
+        if line:
+            if(line[0]=='D'):
+                try:
+                    decoded = json.loads(line[2:])
+                    print "Debug message received: " + expandLogMessage.expandLogMessage(line[2:])
+                except json.JSONDecodeError:
+                    # Print line normally, is not json
+                    print "Debug message received: " + line[2:]
 
-        else:
-            print line
+            else:
+                print line
 
+finally:
+    # Reset the terminal:
+    termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)

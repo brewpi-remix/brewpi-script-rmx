@@ -56,7 +56,7 @@ if not os.path.exists(configFile):
 
 config = util.readCfgWithDefaults(configFile)
 
-print "\n     *****     BrewPi Windows Test Terminal     ****"
+print "\n        ********     BrewPi Terminal     *******"
 print "This simple Python script lets you send commands to the controller. It"
 print "also echoes everything the controller returns. On known debug ID's in"
 print "JSON format, it expands the messages to the full message.\n"

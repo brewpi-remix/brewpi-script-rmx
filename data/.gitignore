@@ -2,5 +2,6 @@
 *
 # Except this file
 !.gitignore
+!README.md
 # Sample data is also ignored, because users can alter it and cause git conflicts.
 # We can still change the sample data by adding it with add -f

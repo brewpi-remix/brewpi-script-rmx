@@ -6,3 +6,5 @@
 !defaults.cfg
 # and the config example
 !config.cfg.example
+# and the Docs
+!README.md

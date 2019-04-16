@@ -47,7 +47,8 @@ try:
         sys.exit(1)
 
 except ImportError:
-    print "BrewPi requires psutil to run, please install it via pip: 'sudo pip install psutil --upgrade"
+    print "BrewPi requires psutil to run, please install it via pip:"
+    print "  sudo pip install psutil --upgrade"
     sys.exit(1)
 
 import BrewPiSocket
@@ -60,14 +61,14 @@ class BrewPiProcess:
     It can also use the socket to send a quit signal or the pid to kill the other instance.
     """
     def __init__(self):
-        self.pid = None  # pid of process
-        self.cfg = None  # config file of process, full path
-        self.port = None  # serial port the process is connected to
+        self.pid = None  # PID of process
+        self.cfg = None  # Config file of process, full path
+        self.port = None  # Serial port the process is connected to
         self.sock = None  # BrewPiSocket object which the process is connected to
 
     def as_dict(self):
         """
-        Returns: member variables as a dictionary
+        Returns: Member variables as a dictionary
         """
         return self.__dict__
 
@@ -79,14 +80,12 @@ class BrewPiProcess:
             conn = self.sock.connect()
             if conn:
                 conn.send('quit')
-                conn.close()  # do not shutdown the socket, other processes are still connected to it.
+                conn.close()  # Do not shutdown the socket, other processes are still connected to it.
                 print "Quit message sent to BrewPi instance with pid %s." % self.pid
                 return True
             else:
-                print "Could not connect to socket of BrewPi process, maybe it just started and is not"
-                print "listening yet."
-                print "Could not send quit message to BrewPi instance with pid %d." % self.pid
-                print "Killing it instead."
+                print "Could not connect to socket of BrewPi process in order to send a quit message."
+                print "Maybe it just started and is not listening yet."
                 self.kill()
                 return False
 

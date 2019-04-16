@@ -48,6 +48,16 @@ def pipeInput(prompt=""):
     sys.stdin = saved_stdin
     return (result)
 
+# Return "a" or "an" depending on first letter of argument
+def article(word):
+    if not word:
+        return "a" # in case word is not valid
+    firstLetter = word[0]
+    if firstLetter.lower() in 'aeiou':
+        return "an"
+    else:
+        return "a"
+
 # Log to stderr.txt
 def printStdErr(*objs):
     if userInput:
@@ -64,6 +74,16 @@ def quitBrewPi(webPath):
     allProcesses = BrewPiProcess.BrewPiProcesses()
     allProcesses.stopAll(webPath + "/do_not_run_brewpi")
 
+# See if the version we got back from the board is valid
+def goodVersion(versn):
+    lst = versn.toString().split(".")
+    count = len(lst)
+    if count == 3:
+        M,m,p = lst
+        if M.isdigit() and m.isdigit() and p.isdigit():
+            return True
+    return False
+
 def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = True):
     import BrewPiUtil as util
     from gitHubReleases import gitHubReleases
@@ -74,6 +94,7 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     config = util.readCfgWithDefaults(configFile)
 
     printStdErr("\nStopping any running instances of BrewPi to check/update controller.")
+    # TODO: Make sure this only shuts down current version
     quitBrewPi(config['wwwPath'])
 
     hwVersion = None
@@ -92,16 +113,17 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
         board = hwVersion.board
 
         printStdErr("\nFound the following controller:\n" + hwVersion.toExtendedString() + \
-                    "\non port " + ser.name)
+                    "\non port " + ser.name + ".")
     except:
         if hwVersion is None:
-            printStdErr("\nUnable to receive version from controller.\n"
-                        "\nIs your controller unresponsive and do you wish to try restoring your")
-            choice = pipeInput("firmware? [y/N]: ")
-            if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
+            choice = pipeInput("\nUnable to receive version from controller. If your controller is" +
+                               "\nunresponsive, or if this is a new controller you can choose to proceed" + 
+                               "\nand flash the firmware. Would you like to do this? [y/N]: ").lower()
+            if not choice.startswith('y'):
                 printStdErr("\nPlease make sure your controller is connected properly and try again.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
+            # TODO:  Probably need to make sure this gets only *this* port
             port, name = autoSerial.detect_port()
             if not port:
                 printStdErr("\nCould not find compatible device in available serial ports.")
@@ -113,28 +135,36 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
                     board = 'uno'
 
             if board is None:
-                printStdErr("\nUnable to connect to controller, perhaps it is disconnected or otherwise\n"
-                            "unavailable.")
+                printStdErr("\nUnable to connect to controller, perhaps it is disconnected or otherwise"
+                            "\nunavailable.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return -1
             else:
-                printStdErr("\nWill try to restore the firmware on your %s." % name)
+                printStdErr("\nWill try to upload firmware to your %s." % name)
                 if family == "Arduino":
-                    printStdErr("\nAssuming a Rev C shield. If this is not the case, please program your Arduino\n"
-                                "manually.")
+                    # TODO:  Allow selection of a different shield
+                    printStdErr("\nAssuming a Rev C shield. If this is not the case, please program your Arduino" +
+                                "\nmanually.")
                     shield = 'RevC'
 
     if ser:
-        ser.close()    # close serial port
+        ser.close() # Close serial port so we can flash it
         ser = None
 
     if hwVersion:
-        printStdErr("\nCurrent firmware version on controller:\n" + hwVersion.toString())
+        # Make sure we didn't get half a string (happens when the BrewPi process
+        # does not shut down)
+        if goodVersion(hwVersion):
+            printStdErr("\nCurrent firmware version on controller: " + hwVersion.toString())
+        else:
+            print("\nInvalid version returned from controller. Make sure you are running as root" + 
+                    "\nand the script is able to shut down correctly.")
+            return -1
     else:
         restoreDevices = False
         restoreSettings = False
 
-    printStdErr("\nChecking GitHub for available release.")
+    printStdErr("\nChecking GitHub for available release(s).")
     releases = gitHubReleases(firmRepo)
     availableTags = releases.getTags(beta)
     stableTags = releases.getTags(False)
@@ -147,11 +177,12 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
             compatibleTags.append(tag)
 
     if len(compatibleTags) == 0:
-        printStdErr("\nNo compatible releases found for %s %s" % (family, board))
+        printStdErr("\nNo compatible releases found for %s %s %s with %s %s shield." %
+                   (article(family), family.capitalize(), board.capitalize(), article(shield), str(shield).upper()))
         util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
         return -1
 
-    # default tag is latest stable tag, or latest unstable tag if no stable tag is found
+    # Default tag is latest stable tag, or latest unstable tag if no stable tag is found
     default_choice = next((i for i, t in enumerate(compatibleTags) if t in stableTags), compatibleTags[0])
     tag = compatibleTags[default_choice]
 
@@ -191,9 +222,9 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
             printStdErr("\nYour current version is newer than %s." % tag)
 
         if userInput:
-            printStdErr("\nIf you are encountering problems, you can reprogram anyway.  Would you like")
-            choice = pipeInput("to do this? [y/N]: ")
-            if not any(choice == x for x in ["yes", "Yes", "YES", "yes", "y", "Y"]):
+            choice = pipeInput("\nIf you are encountering problems, you can reprogram anyway.  Would you like" + 
+                               "\nto do this? [y/N]: ").lower()
+            if not choice.startswith('y'):
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
         else:
@@ -201,12 +232,12 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
             exit(0)
 
     if hwVersion is not None and userInput:
-        choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ")
-        if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+        choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
+        if not choice.startswith('y'):
             restoreSettings = False
-        printStdErr("\nWould you like me to try to restore your configured devices after")
-        choice = pipeInput("programming? [Y/n]: ")
-        if not any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+        choice = pipeInput("\nWould you like me to try to restore your configured devices after programming?" + 
+                           "\n[Y/n]: ").lower()
+        if not choice.startswith('y'):
             restoreDevices = False
 
     printStdErr("\nDownloading firmware.")
@@ -257,4 +288,3 @@ if __name__ == '__main__':
     result = updateFromGitHub(userInput=userInput, beta=beta)
 
 exit(result)
-

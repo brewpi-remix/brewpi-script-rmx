@@ -146,24 +146,24 @@ class BrewPiProcesses():
 
     def parseProcess(self, process):
         """
-        Converts a psutil process into a BrewPiProcess object by parsing the config file it has been called with.
-        Params: a psutil.Process object
-        Returns: BrewPiProcess object
+        Converts a psutil process into a BrewPiProcess object by parsing the
+        config file it has been called with.
+            :Params:    A psutil.Process object
+            :Returns:   A BrewPiProcess object
         """
         bp = BrewPiProcess()
         try:
             bp.pid = process._pid
             cfg = [s for s in process.cmdline() if '.cfg' in s]  # get config file argument
-            # Get brewpi.py file argument so we can grab path to fix multi-chamber bug
+            # Get brewpi.py file argument so we can grab path
             bps = [s for s in process.cmdline() if 'brewpi.py' in s]
         except psutil.NoSuchProcess:
             # process no longer exists
             return None
+
         if cfg:
             cfg = cfg[0]  # add full path to config file
         else:
-            # use default config file location
-            # Added use of cfgpath to fix multi-chamber bug
             # Get path from arguments and use that to build default path to config
             cfgpath = os.path.dirname(str(bps).translate(None, '\[\]\'')) + '/settings/'
             cfg = cfgpath + "config.cfg"

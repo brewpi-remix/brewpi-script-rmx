@@ -66,6 +66,7 @@ print "Press 's' to send a string to the controller, press 'q' to quit"
 ser = util.setupSerial(config)
 
 if not ser:
+    print "Unable to open serial port; is script still running?"
     exit(1)
 
 try:

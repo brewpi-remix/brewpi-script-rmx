@@ -173,7 +173,6 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     compatibleTags = []
 
     # Allow selecting the desired shield type
-    shield = None # DEBUG
     if shield == None:
         shields = releases.getShields()
 
@@ -199,10 +198,6 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
                 print("\nNot a valid choice. Try again.")
                 continue
             break
-
-    print("DEBUG: Shield choice is {0}".format(shield))  #DEBUG
-    util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")  # DEBUG
-    return -1
 
     for tag in availableTags:
         url = None

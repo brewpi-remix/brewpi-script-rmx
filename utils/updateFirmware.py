@@ -294,6 +294,14 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
     return result
 
+def testProcess():
+    import BrewPiProcess
+
+    from pprint import pprint
+
+    allProcesses = BrewPiProcess.BrewPiProcesses()
+    pprint(allProcesses)
+
 if __name__ == '__main__':
     import getopt
     # Read in command line arguments
@@ -314,6 +322,10 @@ if __name__ == '__main__':
             userInput = False
         if o in ('-b', '--beta'):
             beta = True
+
+    # DEBUG
+    testProcess()
+    exit()
 
     result = updateFromGitHub(userInput=userInput, beta=beta)
 

@@ -95,9 +95,8 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
 
     printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
     
-    try:
-        stopThisChamber()
-    except:
+    if not stopThisChamber() == True:
+        printStdErr("\nUnable to stop this chamber's process(es).")
         return -1
 
     hwVersion = None
@@ -162,7 +161,7 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
         if goodVersion(hwVersion):
             printStdErr("\nCurrent firmware version on controller: " + hwVersion.toString())
         else:
-            print("\nInvalid version returned from controller. Make sure you are running as root" + 
+            printStdErr("\nInvalid version returned from controller. Make sure you are running as root" + 
                     "\nand the script is able to shut down correctly.")
             return -1
     else:
@@ -175,6 +174,10 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     stableTags = releases.getTags(False)
     compatibleTags = []
 
+    # Allow reflashing the shield type
+    if doShield == True:
+        shield = None
+
     # Allow selecting the desired shield type
     if shield == None:
         shields = releases.getShields()
@@ -183,22 +186,31 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
         for i in range(len(shields)):
             printStdErr("[{0}] {1}".format(i, shields[i]))
 
+        # Give chance to exit
+        printStdErr("[{0}] {1}".format(i + 1, "Cancel firmware update"))
+
         while 1:
             try:
                 choice = pipeInput("\nEnter the number [0-{0}] of the shield you would like to use.\n"
                                    "[default = {0} ({1})]: ".format(len(shields) - 1, shields[len(shields) - 1]))
                 if choice == "":
                     selection = len(shields) - 1
+                elif int(choice) == len(shields):
+                    prprintStdErr("\nExiting without making any changes.")
+                    util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
+                    return 0
                 else:
                     selection = int(choice)
+
             except ValueError:
-                print("\nNot a valid choice. Try again.")
+                printStdErr("\nNot a valid choice. Try again.")
                 continue
 
             try:
                 shield = shields[selection]
+                printStdErr("\nReflashing controller with {0} shield.".format(shield))
             except IndexError:
-                print("\nNot a valid choice. Try again.")
+                printStdErr("\nNot a valid choice. Try again.")
                 continue
             break
 
@@ -220,10 +232,10 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     tag = compatibleTags[default_choice]
 
     if userInput:
-        print("\nAvailable releases:")
+        printStdErr("\nAvailable releases:")
         for i, menu_tag in enumerate(compatibleTags):
-            print("[%d] %s" % (i, menu_tag))
-        print ("[" + str(len(compatibleTags)) + "] Cancel firmware update")
+            printStdErr("[%d] %s" % (i, menu_tag))
+        printStdErr("[" + str(len(compatibleTags)) + "] Cancel firmware update")
         num_choices = len(compatibleTags)
         while 1:
             try:
@@ -234,7 +246,7 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
                 else:
                     selection = int(choice)
             except ValueError:
-                print("Select by the number corresponding to your choice [0-%d]" % num_choices)
+                printStdErr("Select by the number corresponding to your choice [0-%d]" % num_choices)
                 continue
             if selection == num_choices:
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
@@ -242,7 +254,7 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
             try:
                 tag = compatibleTags[selection]
             except IndexError:
-                print("\nNot a valid choice. Try again.")
+                printStdErr("\nNot a valid choice. Try again.")
                 continue
             break
     else:
@@ -318,20 +330,25 @@ def stopThisChamber():
     # Stop this chamber's process
     for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
         if 'python' in proc.info['name'] and scriptPath + '/brewpi.py' in proc.info['cmdline']:
-            print("\nAttempting to stop process {0}.".format(proc.info['pid']))
-            proc.terminate()
-            proc.kill()
-            return True
+            printStdErr("\nAttempting to stop process {0}.".format(proc.info['pid']))
+            try:
+                proc.terminate()
+                return True             
+            except:
+                printStdErr("\nUnable to stop process {0}, are you running as root?".format(proc.info['pid']))
+                return False
+    return True
 
 if __name__ == '__main__':
     import getopt
     # Read in command line arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent'])
+        opts, args = getopt.getopt(sys.argv[1:], "asd", ['beta', 'silent', 'shield'])
     except getopt.GetoptError:
         print ("Unknown parameter, available options: \n" +
-               "\t--silent\t use default options, do not ask for user input\n" +
-               "\t--beta\t\t include unstable (prerelease) releases\n")
+               "\t--silent or -s\t Use default options, do not ask for user input\n" +
+               "\t--beta or -b\t Include unstable (prerelease) releases\n" + 
+               "\t--shield or -h\t Allow flashing a different shield\n")
         sys.exit()
 
     userInput = True
@@ -343,6 +360,8 @@ if __name__ == '__main__':
             userInput = False
         if o in ('-b', '--beta'):
             beta = True
+        if o in ('-h', '--shield'):
+            doShield = True
 
     result = updateFromGitHub(userInput=userInput, beta=beta)
 

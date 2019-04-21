@@ -106,7 +106,7 @@ apt_check() {
     if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
-        apt update||die
+        apt-get update -q||die
         echo
     fi
 }
@@ -134,7 +134,7 @@ rem_php5() {
                 # Loop through the php5 packages that we've found
                 for pkg in ${php_packages,,}; do
                     echo -e "\nRemoving '$pkg'.\n"
-                    sudo apt remove --purge $pkg -y
+                    sudo apt-get remove --purge $pkg -y -q=2
                 done
                 echo -e "\nCleanup of the php environment complete."
             ;;
@@ -164,7 +164,7 @@ rem_nginx() {
                 # Loop through the php5 packages that we've found
                 for pkg in ${NGINXPACKAGES,,}; do
                     echo -e "\nRemoving '$pkg'.\n"
-                    sudo apt remove --purge $pkg -y
+                    sudo apt-get remove --purge $pkg -y -q=2
                 done
                 echo -e "\nCleanup of the nginx environment complete."
             ;;
@@ -184,7 +184,7 @@ do_packages() {
         grep "install ok installed")
         if [ -z "$pkgOk" ]; then
             echo -e "\nInstalling '$pkg'.\n"
-            apt install ${pkg,,} -y||die
+            apt-get install ${pkg,,} -y -q=2||die
             echo
         fi
     done
@@ -198,7 +198,7 @@ do_packages() {
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
             echo -e "\nUpgrading '$pkg'.\n"
-            apt upgrade ${pkg,,} -y||die
+            apt-get install ${pkg,,} -y -q=2||die
             doCleanup=1
         fi
     done

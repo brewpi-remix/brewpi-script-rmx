@@ -105,7 +105,7 @@ class gitHubReleases:
 
         AllUrls = (asset["browser_download_url"] for asset in release["assets"])
 
-        for url in  AllUrls:
+        for url in AllUrls:
             urlFileName = url.rpartition('/')[2] # isolate filename, which is after the last /
             if all(word.lower() in urlFileName.lower() for word in wordsInFileName):
                 downloadUrl = url
@@ -188,18 +188,56 @@ class gitHubReleases:
         else:
             return [release["tag_name"] for release in self.releases if release['prerelease']==False]
 
+    def getShields(self):
+        """
+        Get list of shield types in downloads
+            :return:        List of Shields
+        """
+        shields = []
+        # Get everything that has a key name of 'name'
+        names = extract_values(self.releases, 'name')
+        for name in names:
+            # Only keep the firmware file names
+            if name.startswith('brewpi-') and name.endswith('.hex'):
+                file = (name.split('-'))
+                # Keep only uniques
+                if file[3] not in shields:
+                    # Create the list
+                    shields.append(file[3])
+        shields.sort() # Sort the list
+        return shields
+
+def extract_values(obj, key):
+    """Pull all values of specified key from nested JSON."""
+    arr = []
+    def extract(obj, arr, key):
+        """Recursively search for values of key in JSON tree."""
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (dict, list)):
+                    extract(v, arr, key)
+                elif k == key:
+                    arr.append(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract(item, arr, key)
+        return arr
+    results = extract(obj, arr, key)
+    return results
+
 if __name__ == "__main__":
     # test code
     releases = gitHubReleases(repo)
     latest = releases.getLatestTag('uno', False)
     print "Latest tag: " + latest
-    print "Downloading hex for latest tag."
-    localFileName = releases.getBin(latest, ["uno", "hex"])
-    if localFileName:
-        print "Latest hex file downloaded to: \n" + localFileName
+    # print "Downloading hex for latest tag."
+    # localFileName = releases.getBin(latest, ["uno", "hex"])
+    # if localFileName:
+    #     print "Latest hex file downloaded to: \n" + localFileName
 
     print "Stable releases: ", releases.getTags(prerelease=False)
     print "All releases: ", releases.getTags(prerelease=True)
+    print "All supported shields: ", releases.getShields()
 
     #print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
     #print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)

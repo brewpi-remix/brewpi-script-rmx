@@ -34,19 +34,19 @@ from __future__ import absolute_import
 from serial.tools import list_ports
 
 known_devices = [
-    {'vid': 0x2341, 'pid': 0x0010, 'name': "Arduino Mega2560"},
-    {'vid': 0x2341, 'pid': 0x8036, 'name': "Arduino Leonardo"},
-    {'vid': 0x2341, 'pid': 0x0036, 'name': "Arduino Leonardo Bootloader"},
     {'vid': 0x2341, 'pid': 0x0043, 'name': "Arduino Uno"},
     {'vid': 0x2341, 'pid': 0x0001, 'name': "Arduino Uno"},
-    {'vid': 0x2a03, 'pid': 0x0010, 'name': "Arduino Mega2560"},
-    {'vid': 0x2a03, 'pid': 0x8036, 'name': "Arduino Leonardo"},
-    {'vid': 0x2a03, 'pid': 0x0036, 'name': "Arduino Leonardo Bootloader"},
     {'vid': 0x2a03, 'pid': 0x0043, 'name': "Arduino Uno"},
     {'vid': 0x2a03, 'pid': 0x0001, 'name': "Arduino Uno"},
+    {'vid': 0x1a86, 'pid': 0x7523, 'name': "Arduino Uno"},
+    {'vid': 0x2341, 'pid': 0x8036, 'name': "Arduino Leonardo"},
+    {'vid': 0x2a03, 'pid': 0x8036, 'name': "Arduino Leonardo"},
+    {'vid': 0x2341, 'pid': 0x0036, 'name': "Arduino Leonardo Bootloader"},
+    {'vid': 0x2a03, 'pid': 0x0036, 'name': "Arduino Leonardo Bootloader"},
+    {'vid': 0x2341, 'pid': 0x0010, 'name': "Arduino Mega2560"},
+    {'vid': 0x2a03, 'pid': 0x0010, 'name': "Arduino Mega2560"},
     {'vid': 0x1D50, 'pid': 0x607D, 'name': "Particle Core"},
-    {'vid': 0x2B04, 'pid': 0xC006, 'name': "Particle Photon"},
-    {'vid': 0x1a86, 'pid': 0x7523, 'name': "Arduino Uno"}
+    {'vid': 0x2B04, 'pid': 0xC006, 'name': "Particle Photon"}
 ]
 
 def recognised_device_name(device):
@@ -55,8 +55,12 @@ def recognised_device_name(device):
             return known['name']
     return None
 
-def find_compatible_serial_ports(bootLoader = False):
-    ports = find_all_serial_ports()
+def find_compatible_serial_ports(bootLoader = False, my_port = None):
+    if my_port == None:
+        ports = find_all_serial_ports()
+    else:
+        ports = find_my_serial_port(my_port)
+
     for p in ports:
         name = recognised_device_name(p)
         if name is not None:
@@ -72,13 +76,21 @@ def find_all_serial_ports():
     all_ports = list_ports.comports()
     return iter(all_ports)
 
-def detect_port(bootLoader = False):
+def find_my_serial_port(my_port):
+    """
+    :return: Requested serial port info tuple
+    :rtype:
+    """
+    my_port = list_ports.grep(my_port)
+    return iter(my_port)
+
+def detect_port(bootLoader = False, my_port = None):
     """
     :return: first detected serial port as tuple: (port, name)
     :rtype:
     """
     port = (None, None)
-    ports = find_compatible_serial_ports(bootLoader=bootLoader)
+    ports = find_compatible_serial_ports(bootLoader=bootLoader, my_port=my_port)
     try:
         port = ports.next()
     except StopIteration:

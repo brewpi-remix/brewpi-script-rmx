@@ -123,8 +123,15 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
                 printStdErr("\nPlease make sure your controller is connected properly and try again.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return 0
-            # TODO:  Probably need to make sure this gets only *this* port
-            port, name = autoSerial.detect_port()
+
+            # Be sure to check the configured port
+            if config['port'] == 'auto':
+                printStdErr("\nUsing auto port configuration according to configuration settings.")
+                port, name = autoSerial.detect_port()
+            else:
+                printStdErr("\nUsing port {0} according to configuration settings.".format(config['port']))
+                port, name = autoSerial.detect_port(my_port = config['port'])
+
             if not port:
                 printStdErr("\nCould not find compatible device in available serial ports.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
@@ -135,17 +142,12 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
                     board = 'uno'
 
             if board is None:
-                printStdErr("\nUnable to connect to controller, perhaps it is disconnected or otherwise"
+                printStdErr("\nUnable to connect to an Arduino Uno, perhaps it is disconnected or otherwise"
                             "\nunavailable.")
                 util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
                 return -1
             else:
-                printStdErr("\nWill try to upload firmware to your %s." % name)
-                if family == "Arduino":
-                    # TODO:  Allow selection of a different shield
-                    printStdErr("\nAssuming a Rev C shield. If this is not the case, please program your Arduino" +
-                                "\nmanually.")
-                    shield = 'RevC'
+                printStdErr("\nProcessing a firmware flash for your blank %s." % name)
 
     if ser:
         ser.close() # Close serial port so we can flash it
@@ -169,6 +171,39 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     availableTags = releases.getTags(beta)
     stableTags = releases.getTags(False)
     compatibleTags = []
+
+    # Allow selecting the desired shield type
+    shield = None # DEBUG
+    if shield == None:
+        shields = releases.getShields()
+
+        printStdErr("\nPlease select the shield type you would like to use. Available shields:")
+        for i in range(len(shields)):
+            printStdErr("[{0}] {1}".format(i, shields[i]))
+
+        while 1:
+            try:
+                choice = pipeInput("\nEnter the number [0-{0}] of the shield you would like to use.\n"
+                                   "[default = {0} ({1})]: ".format(len(shields) - 1, shields[len(shields) - 1]))
+                if choice == "":
+                    selection = len(shields) - 1
+                else:
+                    selection = int(choice)
+            except ValueError:
+                print("\nNot a valid choice. Try again.")
+                continue
+
+            try:
+                shield = shields[selection]
+            except IndexError:
+                print("\nNot a valid choice. Try again.")
+                continue
+            break
+
+    print("DEBUG: Shield choice is {0}".format(shield))  #DEBUG
+    util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")  # DEBUG
+    return -1
+
     for tag in availableTags:
         url = None
         if family == "Arduino":

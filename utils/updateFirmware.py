@@ -93,9 +93,12 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     configFile = util.scriptPath() + '/settings/config.cfg'
     config = util.readCfgWithDefaults(configFile)
 
-    printStdErr("\nStopping any running instances of BrewPi to check/update controller.")
-    # TODO: Make sure this only shuts down current version
-    quitBrewPi(config['wwwPath'])
+    printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
+    
+    try:
+        stopThisChamber()
+    except:
+        return -1
 
     hwVersion = None
     shield = None
@@ -292,15 +295,33 @@ def updateFromGitHub(userInput, beta, restoreSettings = True, restoreDevices = T
     printStdErr("\nUpdating firmware.\n")
     result = programmer.programController(config, board, localFileName, {'settings': restoreSettings, 'devices': restoreDevices})
     util.removeDontRunFile(config['wwwPath'] + "/do_not_run_brewpi")
+    
     return result
 
-def testProcess():
-    import BrewPiProcess
+# Quit BrewPi process running from this chamber
+def stopThisChamber():
+    import BrewPiUtil as util
+    import psutil
 
-    from pprint import pprint
+    configFile = util.scriptPath() + '/settings/config.cfg'
+    config = util.readCfgWithDefaults(configFile)
+    wwwPath = config['wwwPath']
+    scriptPath = config['scriptPath']
 
-    allProcesses = BrewPiProcess.BrewPiProcesses()
-    pprint(allProcesses)
+    dontRunFilePath = wwwPath + "/do_not_run_brewpi"
+    if not os.path.exists(dontRunFilePath):
+        # If do not run file does not exist, create it
+        dontrunfile = open(dontRunFilePath, "w")
+        dontrunfile.write("1")
+        dontrunfile.close()
+
+    # Stop this chamber's process
+    for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
+        if 'python' in proc.info['name'] and scriptPath + '/brewpi.py' in proc.info['cmdline']:
+            print("\nAttempting to stop process {0}.".format(proc.info['pid']))
+            proc.terminate()
+            proc.kill()
+            return True
 
 if __name__ == '__main__':
     import getopt
@@ -322,10 +343,6 @@ if __name__ == '__main__':
             userInput = False
         if o in ('-b', '--beta'):
             beta = True
-
-    # DEBUG
-    testProcess()
-    exit()
 
     result = updateFromGitHub(userInput=userInput, beta=beta)
 

@@ -93,7 +93,7 @@ class BrewPiProcess:
         """
         Kills this BrewPiProcess with force, use when quit fails.
         """
-        process = psutil.Process(self.pid)  # get psutil process my pid
+        process = psutil.Process(self.pid)  # Get psutil process my pid
         try:
             process.kill()
             print "SIGKILL sent to BrewPi instance with pid %d." % self.pid
@@ -103,7 +103,7 @@ class BrewPiProcess:
 
     def conflict(self, otherProcess):
         if self.pid == otherProcess.pid:
-            return 0  # this is me! I don't have a conflict with myself
+            return 0  # This is me! I don't have a conflict with myself
         if otherProcess.cfg == self.cfg:
             print "Conflict: same config file as another BrewPi instance already running."
             return 1
@@ -133,7 +133,7 @@ class BrewPiProcesses():
 
         # some OS's (OS X) do not allow processes to read info from other processes.
         try:
-            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'brewpi.py'in s for s in p.cmdline())]
+            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'brewpi.py' in s for s in p.cmdline())]
         except psutil.AccessDenied:
             pass
 

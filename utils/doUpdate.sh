@@ -197,7 +197,6 @@ process() {
     arg="$1"
     echo -e "\n***Script $THISSCRIPT starting.***"
     if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
-    echo "$quick" && exit 0 #DEBUG
     didUpdate=0 # Hold a counter for having to do git pulls
     pushd . &> /dev/null || die # Store current directory
     cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is

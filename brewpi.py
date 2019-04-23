@@ -37,6 +37,9 @@ from BrewPiUtil import printStdErr
 from BrewPiUtil import printStdOut
 from BrewPiUtil import logMessage
 
+import Tilt
+import thread
+
 # Check needed software dependencies to nudge users to fix their setup
 if sys.version_info < (2, 7):
     printStdErr("Sorry, requires Python 2.7.")
@@ -400,6 +403,7 @@ if ser is not None:
     # request settings from controller, processed later when reply is received
     bg_ser.write('s')  # request control settings cs
     bg_ser.write('c')  # request control constants cc
+    bg_ser.write('v')  # request control variables cv
     # answer from controller is received asynchronously later.
 
 # create a listening socket to communicate with PHP
@@ -438,6 +442,14 @@ run = 1
 startBeer(config['beerName'])
 outputTemperature = True
 
+# Initialise Tilt and start monitoring. Use 300 Secs averaging of values to smooth out noise.
+# Use a median filter window of 10000 to further smooth out noise. This value effectively disables the 'moving average' functionality, as 300 secs will only generate about 360-380 readings. So a simple median will be applied across the entire set. This means that a true change in temperature/SG will take at least 2.5 mins to be observed.
+# (Tilts generate approx 1.2 readings per sec)
+tilt = Tilt.TiltManager()
+tilt.loadSettings()
+tilt.start()
+
+##Modify prevTempJson to add Tilt elements.
 prevTempJson = {
     "BeerTemp": 0,
     "FridgeTemp": 0,
@@ -469,6 +481,18 @@ while run:
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
+
+        ##Retrieve the current Tilt values
+        for color in Tilt.TILT_COLORS:
+            tiltValue = tilt.getValue(color)
+
+            if tiltValue is not None:
+                prevTempJson[color + 'Temp'] = round(tiltValue.temperature, 2)
+                prevTempJson[color + 'SG'] = tiltValue.gravity
+            else:
+                prevTempJson[color + 'Temp'] = None
+                prevTempJson[color + 'SG'] = None
+
 
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
@@ -504,7 +528,7 @@ while run:
             cs['dataLogging'] = config['dataLogging']
             conn.send(json.dumps(cs))
         elif messageType == "getControlVariables":
-            conn.send(json.dumps(cv))
+            conn.send(cv)
         elif messageType == "refreshControlConstants":
             bg_ser.write("c")
             raise socket.timeout
@@ -702,6 +726,13 @@ while run:
                 continue
             bg_ser.write("U" + json.dumps(configStringJson))
             deviceList['listState'] = ""  # invalidate local copy
+        elif messageType == "writeDevice":
+            try:
+                configStringJson = json.loads(value)  # load as JSON to check syntax
+            except json.JSONDecodeError:
+                logMessage("Error: invalid JSON parameter string received: " + value)
+                continue
+            bg_ser.write("d" + json.dumps(configStringJson))
         elif messageType == "getVersion":
             if hwVersion:
                 response = hwVersion.__dict__
@@ -741,7 +772,6 @@ while run:
             # update to ensure it is up to date
             prevSettingsUpdate += 5 # give the controller some time to respond
             bg_ser.write('s')
-            bg_ser.write('c')
 
         # If no new data has been received for serialRequestInteval seconds
         if (time.time() - prevDataTime) >= float(config['interval']):
@@ -749,7 +779,8 @@ while run:
                 prevDataTime = time.time()
             prevDataTime += 5 # give the controller some time to respond to prevent requesting twice
             bg_ser.write("t")  # request new from controller
-            
+            prevDataTime += 5 # give the controller some time to respond to prevent requesting twice
+
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
             #something is wrong: controller is not responding to data requests
             logMessage("Error: Controller is not responding to new data requests.")
@@ -796,7 +827,14 @@ while run:
                                            json.dumps(newRow['FridgeSet']) + ';' +
                                            json.dumps(newRow['FridgeAnn']) + ';' +
                                            json.dumps(newRow['State']) + ';' +
-                                           json.dumps(newRow['RoomTemp']) + '\n')
+                                           json.dumps(newRow['RoomTemp']) + ';')
+                            # Write out Tilt Temp and SG Values
+                            for color in Tilt.TILT_COLORS:
+                                if prevTempJson.get(color + 'Temp') is not None:
+                                    lineToWrite += (json.dumps(prevTempJson[color + 'Temp']) + ';' +
+                                                json.dumps(prevTempJson[color + 'SG']) + ';')
+
+                                lineToWrite += '\n'
                             csvFile.write(lineToWrite)
                         except KeyError, e:
                             logMessage("KeyError in line from controller: %s" % str(e))
@@ -867,6 +905,9 @@ while run:
 
 if bg_ser:
     bg_ser.stop()
+
+if tilt:
+  tilt.stop()
 
 if ser:
     if ser.isOpen():

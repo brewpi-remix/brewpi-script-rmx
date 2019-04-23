@@ -34,7 +34,9 @@ from datetime import datetime
 import time
 import os
 import re
+import Tilt
 
+# Includes additions for Tilt JSON data
 jsonCols = ("\"cols\":[" +
             "{\"type\":\"datetime\",\"id\":\"Time\",\"label\":\"Time\"}," +
             "{\"type\":\"number\",\"id\":\"BeerTemp\",\"label\":\"Beer temperature\"}," +
@@ -44,7 +46,9 @@ jsonCols = ("\"cols\":[" +
             "{\"type\":\"number\",\"id\":\"FridgeSet\",\"label\":\"Fridge setting\"}," +
             "{\"type\":\"string\",\"id\":\"FridgeAnn\",\"label\":\"Fridge Annotate\"}," +
             "{\"type\":\"number\",\"id\":\"RoomTemp\",\"label\":\"Room temp.\"}," +
-            "{\"type\":\"number\",\"id\":\"State\",\"label\":\"State\"}" +
+            "{\"type\":\"number\",\"id\":\"State\",\"label\":\"State\"}," +
+            "{\"type\":\"number\",\"id\":\"PurpleTemp\",\"label\":\"Purple Tilt Temp.\"}," +
+            "{\"type\":\"number\",\"id\":\"PurpleSG\",\"label\":\"Purple Tilt Gravity\"}," +
             "]")
 
 
@@ -115,6 +119,19 @@ def addRow(jsonFileName, row):
         jsonFile.write("null")
     else:
         jsonFile.write("{\"v\":" + str(row['State']) + "}")
+
+  # Write Tilt values
+
+    for color in Tilt.TILT_COLORS:
+        jsonFile.write(",")
+        if row.get(color + 'Temp', None) is None:
+            jsonFile.write("null,")
+        else:
+            jsonFile.write("{\"v\":" + str(row[color + 'Temp']) + "},")
+        if row.get(color + 'SG', None) is None:
+            jsonFile.write("null")
+        else:
+            jsonFile.write("{\"v\":" + str(row[color + 'SG']) + "}")
 
     # rewrite end of json file
     jsonFile.write("]}]}")

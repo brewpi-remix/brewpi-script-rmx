@@ -48,7 +48,7 @@ jsonCols = ("\"cols\":[" +
             "{\"type\":\"number\",\"id\":\"RoomTemp\",\"label\":\"Room temp.\"}," +
             "{\"type\":\"number\",\"id\":\"State\",\"label\":\"State\"}," +
             "{\"type\":\"number\",\"id\":\"PurpleTemp\",\"label\":\"Purple Tilt Temp.\"}," +
-            "{\"type\":\"number\",\"id\":\"PurpleSG\",\"label\":\"Purple Tilt Gravity\"}," +
+            "{\"type\":\"number\",\"id\":\"PurpleSG\",\"label\":\"Purple Tilt Gravity\"}" +
             "]")
 
 

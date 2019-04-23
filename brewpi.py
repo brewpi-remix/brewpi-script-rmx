@@ -528,7 +528,7 @@ while run:
             cs['dataLogging'] = config['dataLogging']
             conn.send(json.dumps(cs))
         elif messageType == "getControlVariables":
-            conn.send(cv)
+            conn.send(json.dumps(cv))
         elif messageType == "refreshControlConstants":
             bg_ser.write("c")
             raise socket.timeout

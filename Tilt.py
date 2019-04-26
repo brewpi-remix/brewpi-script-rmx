@@ -54,8 +54,7 @@ import csv
 import functools
 import ConfigParser
 
-#TILT_COLORS = [ 'Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink' ]
-TILT_COLORS = ['Purple']
+TILT_COLORS = [ 'Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink' ]
 
 # Default time in seconds to wait before checking config files to see if
 # calibration data has changed.
@@ -436,8 +435,8 @@ class TiltManager:
     # Load Settings from config file, overriding values given at creation.
     # This needs to be called before the start function is called.
     def loadSettings(self):
-        configDir = os.path.dirname(os.path.abspath(__file__)) + "/tilt/"
-        filename = configDir + "settings.ini"
+        configDir = os.path.dirname(os.path.abspath(__file__)) + "/settings/"
+        filename = configDir + "tiltsettings.ini"
         try:
             config = ConfigParser.ConfigParser()
             config.read(filename)
@@ -451,4 +450,4 @@ class TiltManager:
             self.medianWindow = config.getint("Manager", "MedianWindowVals")
 
         except Exception, e:
-            print "ERROR: Loading default settings file ({0}settings.ini): {1}".format(configDir, e.message)
+            print "ERROR: Loading default settings file ({0}tiltsettings.ini): {1}".format(configDir, e.message)

@@ -36,21 +36,6 @@ import os
 import re
 import Tilt
 
-# Includes additions for Tilt JSON data
-jsonCols = ("\"cols\":[" +
-            "{\"type\":\"datetime\",\"id\":\"Time\",\"label\":\"Time\"}," +
-            "{\"type\":\"number\",\"id\":\"BeerTemp\",\"label\":\"Beer temperature\"}," +
-            "{\"type\":\"number\",\"id\":\"BeerSet\",\"label\":\"Beer setting\"}," +
-            "{\"type\":\"string\",\"id\":\"BeerAnn\",\"label\":\"Beer Annotate\"}," +
-            "{\"type\":\"number\",\"id\":\"FridgeTemp\",\"label\":\"Fridge temperature\"}," +
-            "{\"type\":\"number\",\"id\":\"FridgeSet\",\"label\":\"Fridge setting\"}," +
-            "{\"type\":\"string\",\"id\":\"FridgeAnn\",\"label\":\"Fridge Annotate\"}," +
-            "{\"type\":\"number\",\"id\":\"RoomTemp\",\"label\":\"Room temp.\"}," +
-            "{\"type\":\"number\",\"id\":\"State\",\"label\":\"State\"}," +
-            "{\"type\":\"number\",\"id\":\"PurpleTemp\",\"label\":\"Purple Tilt Temp.\"}," +
-            "{\"type\":\"number\",\"id\":\"PurpleSG\",\"label\":\"Purple Tilt Gravity\"}" +
-            "]")
-
 
 def fixJson(j):
     j = re.sub(r"'{\s*?(|\w)", r'{"\1', j)
@@ -60,12 +45,12 @@ def fixJson(j):
     return j
 
 
-def addRow(jsonFileName, row):
+def addRow(jsonFileName, row, tiltColor = ""):
     jsonFile = open(jsonFileName, "r+")
     jsonFile.seek(-3, 2)  # Go insert point to add the last row
     ch = jsonFile.read(1)
     jsonFile.seek(0, os.SEEK_CUR)
-    # when alternating between reads and writes, the file contents should be flushed, see
+    # When alternating between reads and writes, the file contents should be flushed, see
     # http://bugs.python.org/issue3207. This prevents IOError, Errno 0
     if ch != '[':
         # not the first item
@@ -73,7 +58,7 @@ def addRow(jsonFileName, row):
     newRow = {}
     newRow['Time'] = datetime.today()
 
-    # insert something like this into the file:
+    # Insert something like this into the file:
     # {"c":[{"v":"Date(2012,8,26,0,1,0)"},{"v":18.96},{"v":19.0},null,{"v":19.94},{"v":19.6},null]},
     jsonFile.write(os.linesep)
     jsonFile.write("{\"c\":[")
@@ -120,25 +105,40 @@ def addRow(jsonFileName, row):
     else:
         jsonFile.write("{\"v\":" + str(row['State']) + "}")
 
-  # Write Tilt values
-
+    # Write Tilt values
     for color in Tilt.TILT_COLORS:
-        jsonFile.write(",")
-        if row.get(color + 'Temp', None) is None:
-            jsonFile.write("null,")
-        else:
-            jsonFile.write("{\"v\":" + str(row[color + 'Temp']) + "},")
-        if row.get(color + 'SG', None) is None:
-            jsonFile.write("null")
-        else:
-            jsonFile.write("{\"v\":" + str(row[color + 'SG']) + "}")
+        # Only log the Tilt if the color matches the config
+        if color == tiltColor:
+            jsonFile.write(",")
+            if row.get(color + 'Temp', None) is None:
+                jsonFile.write("null,")
+            else:
+                jsonFile.write("{\"v\":" + str(row[color + 'Temp']) + "},")
+            if row.get(color + 'SG', None) is None:
+                jsonFile.write("null")
+            else:
+                jsonFile.write("{\"v\":" + str(row[color + 'SG']) + "}")
 
     # rewrite end of json file
     jsonFile.write("]}]}")
     jsonFile.close()
 
 
-def newEmptyFile(jsonFileName):
+def newEmptyFile(jsonFileName, tiltColor="null"):
+    # Includes additions for Tilt JSON data
+    jsonCols = ('"cols":[' +
+                '{"type":"datetime","id":"Time","label":"Time"},' +
+                '{"type":"number","id":"BeerTemp","label":"Beer temperature"},' +
+                '{"type":"number","id":"BeerSet","label":"Beer setting"},' +
+                '{"type":"string","id":"BeerAnn","label":"Beer Annotate"},' +
+                '{"type":"number","id":"FridgeTemp","label":"Fridge temperature"},' +
+                '{"type":"number","id":"FridgeSet","label":"Fridge setting"},' +
+                '{"type":"string","id":"FridgeAnn","label":"Fridge Annotate"},' +
+                '{"type":"number","id":"RoomTemp","label":"Room temp."},' +
+                '{"type":"number","id":"State","label":"State"},' +
+                '{"type":"number","id":"' + tiltColor + 'Temp","label":"' + tiltColor + ' Tilt Temp."},' +
+                '{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}' +
+                ']')
     jsonFile = open(jsonFileName, "w")
     jsonFile.write("{" + jsonCols + ",\"rows\":[]}")
     jsonFile.close()

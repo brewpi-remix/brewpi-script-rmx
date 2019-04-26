@@ -97,7 +97,7 @@ def detect_port(bootLoader = False, my_port = None):
         return port
     try:
         another_port = ports.next()
-        print "Warning: detected multiple compatible serial ports, using the first."
+        print("Warning: Multiple compatible ports.")
     except StopIteration:
         pass
     return port

@@ -1,0 +1,15 @@
+# Temperature Calibration file for Tilt
+
+# To be active, the file should be named TEMPERATURE.<color> in the tilt/
+# folder and have at least one calibration value inside.
+
+# To calibrate a red Tilt, the file would be called TEMPERATURE.red
+
+# The following example calibration point is used. 
+
+# 16.5C read from the Tilt will be calibrated to the actual value of 15C
+# Fahrenheit values may also be used if the TiltManager is set to work in 
+# Fahrenheit. Other calibration points will be calculated.
+
+# Format: Original Value, Actual Value
+16.5, 15

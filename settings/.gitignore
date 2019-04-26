@@ -8,3 +8,7 @@
 !config.cfg.example
 # and the Docs
 !README.md
+# and Tilt example files
+!*.color
+!tiltsettings.ini
+

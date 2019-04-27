@@ -124,7 +124,7 @@ def addRow(jsonFileName, row, tiltColor = ""):
     jsonFile.close()
 
 
-def newEmptyFile(jsonFileName, tiltColor="null"):
+def newEmptyFile(jsonFileName, tiltColor="null", iSpindel="null"):
     # Includes additions for Tilt JSON data
     jsonCols = ('"cols":[' +
                 '{"type":"datetime","id":"Time","label":"Time"},' +
@@ -139,6 +139,7 @@ def newEmptyFile(jsonFileName, tiltColor="null"):
                 '{"type":"number","id":"' + tiltColor + 'Temp","label":"' + tiltColor + ' Tilt Temp."},' +
                 '{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}' +
                 ']')
+    # TODO:  Handle iSpindel
     jsonFile = open(jsonFileName, "w")
     jsonFile.write("{" + jsonCols + ",\"rows\":[]}")
     jsonFile.close()

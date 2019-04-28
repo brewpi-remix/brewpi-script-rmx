@@ -47,49 +47,48 @@ import sys
 # Check needed software dependencies
 if sys.version_info < (2, 7):
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
-    sys.exit(1)
+    exit(1)
 
 # Load non standard packages, exit if they are not installed
 try:
     import serial
     if LooseVersion(serial.VERSION) < LooseVersion("3.0"):
-        print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(foo) +
-            "\nPlease upgrade pyserial via pip, by running:\n" +
-            "  sudo pip install pyserial --upgrade\n" +
-            "\nIf you do not have pip installed, install it with:\n" +
-            "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
-        sys.exit(1)
+        print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION) +
+              "\nPlease upgrade pyserial via pip, by running:\n" +
+              "  sudo pip install pyserial --upgrade\n" +
+              "\nIf you do not have pip installed, install it with:\n" +
+              "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+        exit(1)
 except ImportError:
     print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n" +
-        "  sudo pip install pyserial --upgrade\n" +
-        "If you do not have pip installed, install it by running:\n" +
-        "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
-    sys.exit(1)
+          "  sudo pip install pyserial --upgrade\n" +
+          "\nIf you do not have pip installed, install it by running:\n" +
+          "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+    exit(1)
 try:
     import simplejson as json
 except ImportError:
-    print("BrewPi requires simplejson to run, please install it by running\n" +
-        "  sudo apt-get install python-simplejson", file=sys.stderr)
-    sys.exit(1)
+    print("\nBrewPi requires simplejson to run, please install it by running\n" +
+          "  sudo apt-get install python-simplejson", file=sys.stderr)
+    exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
-    print("BrewPi requires ConfigObj to run, please install it by running\n" +
-        "  sudo apt-get install python-configobj", file=sys.stderr)
-    sys.exit(1)
-
+    print("\nBrewPi requires ConfigObj to run, please install it by running\n" +
+          "  sudo apt-get install python-configobj", file=sys.stderr)
+    exit(1)
 
 # Local Imports
-from BrewPiUtil import logMessage
-import temperatureProfile
-import programController as programmer
-import brewpiJson
-import BrewPiUtil as util
-import brewpiVersion
-import pinList
-import expandLogMessage
-import BrewPiProcess
 from backgroundserial import BackGroundSerial
+import BrewPiProcess
+import expandLogMessage
+import pinList
+import brewpiVersion
+import BrewPiUtil as util
+from BrewPiUtil import logMessage
+import brewpiJson
+import programController as programmer
+import temperatureProfile
 
 compatibleHwVersion = "0.2.4"
 
@@ -126,8 +125,8 @@ try:
                                                            'checkstartuponly'])
 except getopt.GetoptError:
     print("Unknown parameter, available Options: --help, --config <path to config file>,\n" +
-        "                                      --status, --quit, --kill, --force, --log,\n" +
-        "                                      --dontrunfile", file=sys.stderr)
+          "                                      --status, --quit, --kill, --force, --log,\n" +
+          "                                      --dontrunfile", file=sys.stderr)
     exit(1)
 
 configFile = None
@@ -138,24 +137,25 @@ logToFiles = False
 for o, a in opts:
     # Print help message for command line options
     if o in ('-h', '--help'):
-        print("\nAvailable command line options:\n" + 
-            "  --help: Print this help message\n" + 
-            "  --config <path to config file>: Specify a config file to use. When omitted\n" +
-            "                                  settings/config.cf is used\n" +
-            "  --status: Check which scripts are already running\n" +
-            "  --quit: Ask all instances of BrewPi to quit by sending a message to\n" +
-            "          their socket\n" + 
-            "  --kill: Kill all instances of BrewPi by sending SIGKILL\n" +
-            "  --force: Force quit/kill conflicting instances of BrewPi and keep this one\n" +
-            "  --log: Redirect stderr and stdout to log files\n" +
-            "  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists\n" +
-            "  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed", file=sys.stderr)
+        print("\nAvailable command line options:\n" +
+              "  --help: Print this help message\n" +
+              "  --config <path to config file>: Specify a config file to use. When omitted\n" +
+              "                                  settings/config.cf is used\n" +
+              "  --status: Check which scripts are already running\n" +
+              "  --quit: Ask all instances of BrewPi to quit by sending a message to\n" +
+              "          their socket\n" +
+              "  --kill: Kill all instances of BrewPi by sending SIGKILL\n" +
+              "  --force: Force quit/kill conflicting instances of BrewPi and keep this one\n" +
+              "  --log: Redirect stderr and stdout to log files\n" +
+              "  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists\n" +
+              "  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed", file=sys.stderr)
         exit(0)
     # Supply a config file
     if o in ('-c', '--config'):
         configFile = os.path.abspath(a)
         if not os.path.exists(configFile):
-            sys.exit('ERROR: Config file "%s" was not found.' % configFile)
+            print('ERROR: Config file {0} was not found.'.format(configFile), file=sys.stderr)
+            exit(1)
     # Send quit instruction to all running instances of BrewPi
     if o in ('-s', '--status'):
         allProcesses = BrewPiProcess.BrewPiProcesses()
@@ -165,20 +165,20 @@ for o, a in opts:
             pprint(running)
         else:
             print("No BrewPi scripts running.", file=sys.stderr)
-        exit()
+        exit(0)
     # Quit/kill running instances, then keep this one
     if o in ('-q', '--quit'):
         logMessage("Asking all BrewPi processes to quit on their socket.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.quitAll()
         time.sleep(2)
-        exit()
+        exit(0)
     # Send SIGKILL to all running instances of BrewPi
     if o in ('-k', '--kill'):
         logMessage("Killing all BrewPi processes.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.killAll()
-        exit()
+        exit(0)
     # Close all existing instances of BrewPi by quit/kill and keep this one
     if o in ('-f', '--force'):
         logMessage(
@@ -241,10 +241,10 @@ if logToFiles:
 
 
 # Check to see if a key exists in a dictionary
-def checkKey(dict, key): 
-    if key in dict.keys(): 
+def checkKey(dict, key):
+    if key in dict.keys():
         return True
-    else: 
+    else:
         return False
 
 
@@ -467,7 +467,7 @@ startBeer(config['beerName'])
 outputTemperature = True
 
 
-# Initialise Tilt and start monitoring. 
+# Initialise Tilt and start monitoring
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
     threads = []
@@ -488,10 +488,11 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
         'TiltSG': 0}
 
 
-# Initialise iSpindel and start monitoring. 
+# Initialise iSpindel and start monitoring
+ispindel = False
 if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
     import PollForSG
-    ispindel = ""
+    ispindel = True
     threads = []
     # Create prevTempJson for iSpindel
     prevTempJson = {
@@ -522,48 +523,22 @@ if not prevTempJson:
 
 
 def renameTempKey(key):
-    if tilt:
-        rename = {
-            'bt': 'BeerTemp',
-            'bs': 'BeerSet',
-            'ba': 'BeerAnn',
-            'ft': 'FridgeTemp',
-            'fs': 'FridgeSet',
-            'fa': 'FridgeAnn',
-            'rt': 'RoomTemp',
-            's':  'State',
-            't':  'Time',
-            'sg': 'TiltSG',
-            'st': 'TiltTemp',
-            'sb': 'TiltBatt'}
-
-    elif config["iSpindel"] != "":
-        rename = {
-            'bt': 'BeerTemp',
-            'bs': 'BeerSet',
-            'ba': 'BeerAnn',
-            'ft': 'FridgeTemp',
-            'fs': 'FridgeSet',
-            'fa': 'FridgeAnn',
-            'rt': 'RoomTemp',
-            's':  'State',
-            't':  'Time',
-            'sg': 'SpinSG',
-            'st': 'SpinTemp',
-            'sb': 'SpinBatt'}
-
-    else:
-        rename = {
-            'bt': 'BeerTemp',
-            'bs': 'BeerSet',
-            'ba': 'BeerAnn',
-            'ft': 'FridgeTemp',
-            'fs': 'FridgeSet',
-            'fa': 'FridgeAnn',
-            'rt': 'RoomTemp',
-            's':  'State',
-            't':  'Time'}
-            
+    rename = {
+        'bt': 'BeerTemp',
+        'bs': 'BeerSet',
+        'ba': 'BeerAnn',
+        'ft': 'FridgeTemp',
+        'fs': 'FridgeSet',
+        'fa': 'FridgeAnn',
+        'rt': 'RoomTemp',
+        's':  'State',
+        't':  'Time',
+        'tg': 'TiltSG',
+        'tt': 'TiltTemp',
+        'tb': 'TiltBatt',
+        'sg': 'SpinSG',
+        'st': 'SpinTemp',
+        'sb': 'SpinBatt'}
     return rename.get(key, key)
 
 
@@ -584,7 +559,8 @@ while run:
                 if color == config["tiltColor"]:
                     tiltValue = tilt.getValue(color)
                     if tiltValue is not None:
-                        prevTempJson[color + 'Temp'] = round(tiltValue.temperature, 2)
+                        prevTempJson[color +
+                                     'Temp'] = round(tiltValue.temperature, 2)
                         prevTempJson[color + 'SG'] = tiltValue.gravity
                     else:
                         prevTempJson[color + 'Temp'] = None
@@ -955,7 +931,7 @@ while run:
                                            json.dumps(newRow['FridgeAnn']) + ';' +
                                            json.dumps(newRow['RoomTemp']) + ';' +
                                            json.dumps(newRow['State']))
-                            
+
                             # If we are configured to run a Tilt
                             if tilt:
                                 # Write out Tilt Temp and SG Values
@@ -963,22 +939,18 @@ while run:
                                     # Only log the Tilt if the color is correct according to config
                                     if color == config["tiltColor"]:
                                         if prevTempJson.get(color + 'Temp') is not None:
-                                            lineToWrite += (';' + 
-                                                json.dumps(prevTempJson[color + 'Temp']) + ';' +
-                                                json.dumps(prevTempJson[color + 'SG']))
+                                            lineToWrite += (';' +
+                                                            json.dumps(prevTempJson[color + 'Temp']) + ';' +
+                                                            json.dumps(prevTempJson[color + 'SG']))
 
                             # If we are configured to run an iSpindel
-                            try:
-                                ispindel
-                            except:
-                                pass
-                            else:
-                                lineToWrite += (';' + 
-                                    json.dumps(newRow['SpinTemp']) + ';' +
-                                    json.dumps(newRow['SpinBatt']) + ';' +
-                                    json.dumps(newRow['SpinSG']))
+                            if ispindel:
+                                lineToWrite += (';' +
+                                                json.dumps(newRow['SpinTemp']) + ';' +
+                                                json.dumps(newRow['SpinBatt']) + ';' +
+                                                json.dumps(newRow['SpinSG']))
 
-                            lineToWrite += '\n'
+                            lineToWrite += '\r\n'
                             csvFile.write(lineToWrite)
                         except KeyError, e:
                             logMessage(

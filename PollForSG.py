@@ -35,7 +35,6 @@ import threading
 import thread
 
 import numpy
-
 from numpy import genfromtxt
 import csv
 import functools

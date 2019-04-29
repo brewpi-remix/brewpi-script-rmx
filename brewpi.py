@@ -385,6 +385,62 @@ ser = util.setupSerial(config)
 if not ser:
     exit(1)
 
+
+# Initialise Tilt and start monitoring
+if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
+    import Tilt
+    threads = []
+    tilt = Tilt.TiltManager(config['tiltColor'])
+    tilt.loadSettings()
+    tilt.start()
+    # Create prevTempJson for Tilt
+    prevTempJson = {
+        'BeerTemp': 0,
+        'FridgeTemp': 0,
+        'BeerAnn': None,
+        'FridgeAnn': None,
+        'RoomTemp': None,
+        'State': None,
+        'BeerSet': 0,
+        'FridgeSet': 0,
+        'TiltTemp': 0,
+        'TiltSG': 0}
+
+
+# Initialise iSpindel and start monitoring
+ispindel = False
+if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
+    import PollForSG
+    ispindel = True
+    threads = []
+    # Create prevTempJson for iSpindel
+    prevTempJson = {
+        'BeerTemp': 0,
+        'FridgeTemp': 0,
+        'BeerAnn': None,
+        'FridgeAnn': None,
+        'RoomTemp': None,
+        'State': None,
+        'BeerSet': 0,
+        'FridgeSet': 0,
+        'SpinSG': 0,
+        'SpinBatt': 0,
+        'SpinTemp': 0}
+
+
+# Create prevTempJson if it does not already exist
+if not prevTempJson:
+    prevTempJson = {
+        'BeerTemp': 0,
+        'FridgeTemp': 0,
+        'BeerAnn': None,
+        'FridgeAnn': None,
+        'RoomTemp': None,
+        'State': None,
+        'BeerSet': 0,
+        'FridgeSet': 0}
+
+
 # Start script
 lcdText = ['Script starting up.', ' ', ' ', ' ']
 logMessage("Notification: Starting '" +
@@ -465,61 +521,6 @@ run = 1
 
 startBeer(config['beerName'])
 outputTemperature = True
-
-
-# Initialise Tilt and start monitoring
-if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
-    import Tilt
-    threads = []
-    tilt = Tilt.TiltManager(config['tiltColor'])
-    tilt.loadSettings()
-    tilt.start()
-    # Create prevTempJson for Tilt
-    prevTempJson = {
-        'BeerTemp': 0,
-        'FridgeTemp': 0,
-        'BeerAnn': None,
-        'FridgeAnn': None,
-        'RoomTemp': None,
-        'State': None,
-        'BeerSet': 0,
-        'FridgeSet': 0,
-        'TiltTemp': 0,
-        'TiltSG': 0}
-
-
-# Initialise iSpindel and start monitoring
-ispindel = False
-if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
-    import PollForSG
-    ispindel = True
-    threads = []
-    # Create prevTempJson for iSpindel
-    prevTempJson = {
-        'BeerTemp': 0,
-        'FridgeTemp': 0,
-        'BeerAnn': None,
-        'FridgeAnn': None,
-        'RoomTemp': None,
-        'State': None,
-        'BeerSet': 0,
-        'FridgeSet': 0,
-        'SpinSG': 0,
-        'SpinBatt': 0,
-        'SpinTemp': 0}
-
-
-# Create prevTempJson if it does not already exist
-if not prevTempJson:
-    prevTempJson = {
-        'BeerTemp': 0,
-        'FridgeTemp': 0,
-        'BeerAnn': None,
-        'FridgeAnn': None,
-        'RoomTemp': None,
-        'State': None,
-        'BeerSet': 0,
-        'FridgeSet': 0}
 
 
 def renameTempKey(key):
@@ -910,11 +911,23 @@ while run:
                         for key in newData:
                             prevTempJson[renameTempKey(key)] = newData[key]
 
+                        # Get current iSpindel values from PollForSG
+                        if ispindel:
+                            ispindelreading = PollForSG.getValue()
+                            if ispindelreading is not None:
+                                prevTempJson['spinTemp'] = round(ispindelreading[3], 2)
+                                prevTempJson['spinBatt'] = round(ispindelreading[2], 2)
+                                prevTempJson['spinSG'] = ispindelreading[1]
+                            else:
+                                prevTempJson['spinTemp'] = None
+                                prevTempJson['spinBatt'] = None
+                                prevTempJson['spinSG'] = None
+
                         newRow = prevTempJson
 
                         # Add to JSON file
                         brewpiJson.addRow(localJsonFileName,
-                                          newRow, config['tiltColor'])
+                                          newRow, config['tiltColor'], config['iSpindel'])
 
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.

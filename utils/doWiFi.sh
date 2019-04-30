@@ -159,7 +159,7 @@ do_ping() {
     while [ "$fails" -lt "$MAX_FAILURES" ]; do
         [ "$fails" -gt 0 ] && sleep "$INTERVAL"
         # Try pinging
-        ping -c 1 -I "$WLAN" "$gateway" > /dev/null
+        ping -c 3 -w 10 -I "$WLAN" "$gateway" > /dev/null
         retval="$?"
         if [ "$retval" -eq 0 ]; then
             #log 1 "Successful ping of $gateway."

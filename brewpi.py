@@ -954,8 +954,13 @@ while run:
                         newRow = prevTempJson
 
                         # Add to JSON file
-                        brewpiJson.addRow(localJsonFileName,
-                                          newRow, config['tiltColor'], config['iSpindel'])
+                        # Handle if we are runing Tilt or iSpindel
+                        if checkKey(config, 'tiltColor'):
+                            brewpiJson.addRow(localJsonFileName, newRow, config['tiltColor'], None)
+                        elif checkKey(config, 'iSpindel'):
+                            brewpiJson.addRow(localJsonFileName, newRow, None, config['iSpindel'])
+                        else:
+                            brewpiJson.addRow(localJsonFileName, newRow, None, None)
 
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.

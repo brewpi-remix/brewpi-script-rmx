@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 from serial.tools import list_ports
+import BrewPiUtil
 
 known_devices = [
     {'vid': 0x2341, 'pid': 0x0043, 'name': "Arduino Uno"},
@@ -97,7 +98,7 @@ def detect_port(bootLoader = False, my_port = None):
         return port
     try:
         another_port = ports.next()
-        print("Warning: Multiple compatible ports.")
+        BrewPiUtil.logMessage("Warning: Multiple compatible ports.")
     except StopIteration:
         pass
     return port

@@ -79,16 +79,16 @@ except ImportError:
     exit(1)
 
 # Local Imports
-from backgroundserial import BackGroundSerial
-import BrewPiProcess
-import expandLogMessage
-import pinList
-import brewpiVersion
-import BrewPiUtil as util
-from BrewPiUtil import logMessage
-import brewpiJson
-import programController as programmer
 import temperatureProfile
+import programController as programmer
+import brewpiJson
+from BrewPiUtil import logMessage
+import BrewPiUtil as util
+import brewpiVersion
+import pinList
+import expandLogMessage
+import BrewPiProcess
+from backgroundserial import BackGroundSerial
 
 compatibleHwVersion = "0.2.4"
 
@@ -244,10 +244,10 @@ if logToFiles:
 def getWwwSetting(settingName):
     setting = None
     wwwPath = util.addSlash(config['wwwPath'])
-    userSettings =  '{0}userSettings.json'.format(wwwPath)
+    userSettings = '{0}userSettings.json'.format(wwwPath)
     defaultSettings = '{0}defaultSettings.json'.format(wwwPath)
     try:
-        json_file = open(userSettings, 'r') 
+        json_file = open(userSettings, 'r')
         data = json.load(json_file)
         # If settingName exists, get value
         if checkKey(data, settingName):
@@ -256,7 +256,7 @@ def getWwwSetting(settingName):
     except:
         # userSettings.json does not exist
         try:
-            json_file = open(defaultSettings, 'r') 
+            json_file = open(defaultSettings, 'r')
             data = json.load(json_file)
             # If settingName exists, get value
             if checkKey(data, settingName):
@@ -943,8 +943,10 @@ while run:
                         if ispindel:
                             ispindelreading = PollForSG.getValue()
                             if ispindelreading is not None:
-                                prevTempJson['spinTemp'] = round(ispindelreading[3], 2)
-                                prevTempJson['spinBatt'] = round(ispindelreading[2], 2)
+                                prevTempJson['spinTemp'] = round(
+                                    ispindelreading[3], 2)
+                                prevTempJson['spinBatt'] = round(
+                                    ispindelreading[2], 2)
                                 prevTempJson['spinSG'] = ispindelreading[1]
                             else:
                                 prevTempJson['spinTemp'] = None
@@ -956,11 +958,14 @@ while run:
                         # Add to JSON file
                         # Handle if we are runing Tilt or iSpindel
                         if checkKey(config, 'tiltColor'):
-                            brewpiJson.addRow(localJsonFileName, newRow, config['tiltColor'], None)
+                            brewpiJson.addRow(
+                                localJsonFileName, newRow, config['tiltColor'], None)
                         elif checkKey(config, 'iSpindel'):
-                            brewpiJson.addRow(localJsonFileName, newRow, None, config['iSpindel'])
+                            brewpiJson.addRow(
+                                localJsonFileName, newRow, None, config['iSpindel'])
                         else:
-                            brewpiJson.addRow(localJsonFileName, newRow, None, None)
+                            brewpiJson.addRow(
+                                localJsonFileName, newRow, None, None)
 
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.

@@ -240,6 +240,34 @@ if logToFiles:
     sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
 
 
+# Get www json setting with default
+def getWwwSetting(settingName):
+    setting = None
+    wwwPath = util.addSlash(config['wwwPath'])
+    userSettings =  '{0}userSettings.json'.format(wwwPath)
+    defaultSettings = '{0}defaultSettings.json'.format(wwwPath)
+    try:
+        json_file = open(userSettings, 'r') 
+        data = json.load(json_file)
+        # If settingName exists, get value
+        if checkKey(data, settingName):
+            setting = data[settingName]
+        json_file.close()
+    except:
+        # userSettings.json does not exist
+        try:
+            json_file = open(defaultSettings, 'r') 
+            data = json.load(json_file)
+            # If settingName exists, get value
+            if checkKey(data, settingName):
+                setting = data[settingName]
+            json_file.close()
+        except:
+            # defaultSettings.json does not exist, use None
+            pass
+    return setting
+
+
 # Check to see if a key exists in a dictionary
 def checkKey(dict, key):
     if key in dict.keys():
@@ -391,7 +419,7 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
     threads = []
     tilt = Tilt.TiltManager(config['tiltColor'])
-    tilt.loadSettings()
+    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 1000)
     tilt.start()
     # Create prevTempJson for Tilt
     prevTempJson = {

@@ -430,21 +430,62 @@ class TiltManager:
 
     # Load Settings from config file, overriding values given at creation.
     # This needs to be called before the start function is called.
-    def loadSettings(self):
-        configDir = os.path.dirname(os.path.abspath(__file__)) + "/settings/"
-        filename = configDir + "tiltsettings.ini"
+    def loadSettings(self, tempFormat=None, deviceID=None, period=None, window=None):
+        myDir = os.path.dirname(os.path.abspath(__file__))
+        filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
             config = ConfigParser.ConfigParser()
-            config.read(filename)
+            # Load config values from ini if not passing from BrewPi
+            if tempFormat == 'F':
+                self.inFahrenheit = True
+            elif tempFormat == 'C':
+                self.inFahrenheit = False
+            else:
+                config.read(filename)
+                self.inFahrenheit = config.getboolean(
+                    "Manager", "FahrenheitTemperatures")
 
-            # Load config values
-            self.inFahrenheit = config.getboolean(
-                "Manager", "FahrenheitTemperatures")
-            self.dev_ID = config.getint("Manager", "DeviceID")
-            self.averagingPeriod = config.getint(
-                "Manager", "AveragePeriodSeconds")
-            self.medianWindow = config.getint("Manager", "MedianWindowVals")
+            if deviceID:
+                self.dev_ID = deviceID
+            else:
+                config.read(filename)
+                self.dev_ID = config.getint("Manager", "DeviceID")
+
+            if period:
+                self.averagingPeriod = period
+            else:
+                config.read(filename)
+                self.averagingPeriod = config.getint(
+                    "Manager", "AveragePeriodSeconds")
+
+            if window:
+                self.medianWindow = window
+            else:
+                config.read(filename)
+                self.medianWindow = config.getint(
+                    "Manager", "MedianWindowVals")
 
         except Exception, e:
-            print "ERROR: Loading default settings file ({0}tiltsettings.ini): {1}".format(
-                configDir, e.message)
+            print "WARN: Unable to load configuration ({0}): {1}".format(
+                filename, e.message)
+
+# Run Tilt test
+if __name__ == "__main__":
+    threads = []
+    tilt = TiltManager(False, 60, 40)
+    tilt.loadSettings()
+    tilt.start()
+
+    print "\nScanning for 20 Secs (Control+C to exit early)."
+    for x in range(4):
+        time.sleep(5)
+        print('\nLoop Iteration: {0}'.format(x + 1))
+        for color in TILT_COLORS:
+            print color + ": " + str(tilt.getValue(color))
+
+    tilt.stop()
+
+    for thread in threads:
+        thread.join()
+
+    exit(0)

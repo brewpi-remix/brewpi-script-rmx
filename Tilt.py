@@ -54,7 +54,8 @@ import csv
 import functools
 import ConfigParser
 
-TILT_COLORS = [ 'Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink' ]
+TILT_COLORS = ['Red', 'Green', 'Black',
+               'Purple', 'Orange', 'Blue', 'Yellow', 'Pink']
 
 # Default time in seconds to wait before checking config files to see if
 # calibration data has changed.
@@ -83,16 +84,14 @@ def extrap1d(interpolator):
 
     return ufunclike
 
+
 # Simple offset calibration if only one point available.
-
-
 def offsetCalibration(offset, value):
     return value + offset
 
+
 # More complex interpolation calibration if more than one calibration point
 # available
-
-
 def extrapolationCalibration(extrapolationFunction, value):
     inputValue = [value]
     returnValue = extrapolationFunction(inputValue)
@@ -102,15 +101,13 @@ def extrapolationCalibration(extrapolationFunction, value):
 def noCalibration(value):
     return value
 
+
 # Median utility function
-
-
 def median(values):
     return numpy.median(numpy.array(values))
 
+
 # Class to hold a Tilt reading
-
-
 class TiltValue:
     temperature = 0
     gravity = 0
@@ -124,9 +121,8 @@ class TiltValue:
     def __str__(self):
         return "T: " + str(self.temperature) + " G: " + str(self.gravity)
 
+
 # Tilt class, looks after calibration, storing of values and smoothing of read values.
-
-
 class Tilt:
     color = ''
     values = None
@@ -272,7 +268,7 @@ class Tilt:
         originalValues = []
         actualValues = []
         csvFile = None
-        configDir = os.path.dirname(os.path.abspath(__file__)) + "/tilt/"
+        configDir = os.path.dirname(os.path.abspath(__file__)) + "/settings/"
         filename = configDir + type.upper() + "." + color.lower()
 
         lastChecked = self.calibrationDataTime.get(type + "_checked", 0)
@@ -450,4 +446,5 @@ class TiltManager:
             self.medianWindow = config.getint("Manager", "MedianWindowVals")
 
         except Exception, e:
-            print "ERROR: Loading default settings file ({0}tiltsettings.ini): {1}".format(configDir, e.message)
+            print "ERROR: Loading default settings file ({0}tiltsettings.ini): {1}".format(
+                configDir, e.message)

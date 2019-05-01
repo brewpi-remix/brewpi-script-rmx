@@ -38,7 +38,7 @@ import bluetooth._bluetooth as bluez
 import struct
 import sys
 import os
-DEBUG = False
+
 # BLE scanner based on https://github.com/adamf/BLE/blob/master/ble-scanner.py
 # BLE scanner, based on
 # https://code.google.com/p/pybluez/source/browse/trunk/examples/advanced/inquiry-with-rssi.py
@@ -154,7 +154,7 @@ def hci_le_set_scan_parameters(sock):
     SCAN_TYPE = 0x01
 
 
-def parse_events(sock, loop_count=100):
+def parse_events(sock, loop_count=100): 
     old_filter = sock.getsockopt(bluez.SOL_HCI, bluez.HCI_FILTER, 14)
 
     # Perform a device inquiry on bluetooth device #0. The inquiry should
@@ -167,10 +167,11 @@ def parse_events(sock, loop_count=100):
     done = False
     results = []
     myFullList = []
+    
     for i in range(0, loop_count):
         pkt = sock.recv(255)
         ptype, event, plen = struct.unpack("BBB", pkt[:3])
-        #print "--------------"
+
         if event == bluez.EVT_INQUIRY_RESULT_WITH_RSSI:
             i = 0
         elif event == bluez.EVT_NUM_COMP_PKTS:
@@ -187,45 +188,14 @@ def parse_events(sock, loop_count=100):
                 num_reports = struct.unpack("B", pkt[0])[0]
                 report_pkt_offset = 0
                 for i in range(0, num_reports):
-
-                    if (DEBUG == True):
-                        print "-------------"
-                        #print "\tfullpacket: ", printpacket(pkt)
-                        print "\tUDID: ", printpacket(
-                            pkt[report_pkt_offset - 22: report_pkt_offset - 6])
-                        print "\tMAJOR: ", printpacket(
-                            pkt[report_pkt_offset - 6: report_pkt_offset - 4])
-                        print "\tMINOR: ", printpacket(
-                            pkt[report_pkt_offset - 4: report_pkt_offset - 2])
-                        print "\tMAC address: ", packed_bdaddr_to_string(
-                            pkt[report_pkt_offset + 3:report_pkt_offset + 9])
-                        # Commented out - don't know what this byte is.  It's NOT TXPower
-                        txpower, = struct.unpack(
-                            "b", pkt[report_pkt_offset - 2])
-                        print "\t(Unknown):", txpower
-
-                        rssi, = struct.unpack("b", pkt[report_pkt_offset - 1])
-                        print "\tRSSI:", rssi
-                    # Build the return string
-                    Adstring = packed_bdaddr_to_string(
-                        pkt[report_pkt_offset + 3:report_pkt_offset + 9])
-                    Adstring += ","
-                    Adstring += returnstringpacket(
-                        pkt[report_pkt_offset - 22: report_pkt_offset - 6])
-                    Adstring += ","
-                    Adstring += "%i" % returnnumberpacket(
-                        pkt[report_pkt_offset - 6: report_pkt_offset - 4])
-                    Adstring += ","
-                    Adstring += "%i" % returnnumberpacket(
-                        pkt[report_pkt_offset - 4: report_pkt_offset - 2])
-                    Adstring += ","
-                    Adstring += "%i" % struct.unpack("b",
-                                                     pkt[report_pkt_offset - 2])
-                    Adstring += ","
-                    Adstring += "%i" % struct.unpack("b",
-                                                     pkt[report_pkt_offset - 1])
-
-                    #print "\tAdstring=", Adstring
+                    # Build return string
+                    mac = packed_bdaddr_to_string(pkt[report_pkt_offset + 3:report_pkt_offset + 9])
+                    uuid = returnstringpacket(pkt[report_pkt_offset - 22: report_pkt_offset - 6])
+                    temp = "%i" % returnnumberpacket(pkt[report_pkt_offset - 6: report_pkt_offset - 4])
+                    grav = "%i" % returnnumberpacket(pkt[report_pkt_offset - 4: report_pkt_offset - 2])
+                    txp = "%i" % struct.unpack("b", pkt[report_pkt_offset - 2])
+                    rssi = "%i" % struct.unpack("b", pkt[report_pkt_offset - 1])
+                    Adstring = '{0},{1},{2},{3},{4},{5}'.format(mac, uuid, temp, grav, txp, rssi)
                     myFullList.append(Adstring)
                 done = True
     sock.setsockopt(bluez.SOL_HCI, bluez.HCI_FILTER, old_filter)

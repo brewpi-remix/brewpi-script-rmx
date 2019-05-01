@@ -408,6 +408,7 @@ class TiltManager:
 
                 # If the event is for a Tilt, process the data
                 if name is not None:
+                    # print("DEBUG Tilt Beacon: {0}".format(str(beaconParts)))
                     # Get the temperature and convert to C if needed.
                     temperature = int(beaconParts[2])
                     if not self.inFahrenheit:

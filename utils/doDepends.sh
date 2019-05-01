@@ -78,7 +78,7 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
     
     # Packages to be installed/checked via apt
-    APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml"
+    APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin"
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be installed/check via pip

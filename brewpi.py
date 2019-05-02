@@ -53,28 +53,28 @@ if sys.version_info < (2, 7):
 try:
     import serial
     if LooseVersion(serial.VERSION) < LooseVersion("3.0"):
-        print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION) +
-              "\nPlease upgrade pyserial via pip, by running:\n" +
-              "  sudo pip install pyserial --upgrade\n" +
-              "\nIf you do not have pip installed, install it with:\n" +
+        print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION),
+              "\nPlease upgrade pyserial via pip, by running:\n",
+              "  sudo pip install pyserial --upgrade\n",
+              "\nIf you do not have pip installed, install it with:\n",
               "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
         exit(1)
 except ImportError:
-    print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n" +
-          "  sudo pip install pyserial --upgrade\n" +
-          "\nIf you do not have pip installed, install it by running:\n" +
+    print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n",
+          "  sudo pip install pyserial --upgrade\n",
+          "\nIf you do not have pip installed, install it by running:\n",
           "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
     exit(1)
 try:
     import simplejson as json
 except ImportError:
-    print("\nBrewPi requires simplejson to run, please install it by running\n" +
+    print("\nBrewPi requires simplejson to run, please install it by running\n",
           "  sudo apt-get install python-simplejson", file=sys.stderr)
     exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
-    print("\nBrewPi requires ConfigObj to run, please install it by running\n" +
+    print("\nBrewPi requires ConfigObj to run, please install it by running\n",
           "  sudo apt-get install python-configobj", file=sys.stderr)
     exit(1)
 
@@ -124,8 +124,8 @@ try:
                                                            'status', 'quit', 'kill', 'force', 'log', 'dontrunfile',
                                                            'checkstartuponly'])
 except getopt.GetoptError:
-    print("Unknown parameter, available Options: --help, --config <path to config file>,\n" +
-          "                                      --status, --quit, --kill, --force, --log,\n" +
+    print("Unknown parameter, available Options: --help, --config <path to config file>,\n",
+          "                                      --status, --quit, --kill, --force, --log,\n",
           "                                      --dontrunfile", file=sys.stderr)
     exit(1)
 
@@ -137,17 +137,17 @@ logToFiles = False
 for o, a in opts:
     # Print help message for command line options
     if o in ('-h', '--help'):
-        print("\nAvailable command line options:\n" +
-              "  --help: Print this help message\n" +
-              "  --config <path to config file>: Specify a config file to use. When omitted\n" +
-              "                                  settings/config.cf is used\n" +
-              "  --status: Check which scripts are already running\n" +
-              "  --quit: Ask all instances of BrewPi to quit by sending a message to\n" +
-              "          their socket\n" +
-              "  --kill: Kill all instances of BrewPi by sending SIGKILL\n" +
-              "  --force: Force quit/kill conflicting instances of BrewPi and keep this one\n" +
-              "  --log: Redirect stderr and stdout to log files\n" +
-              "  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists\n" +
+        print("\nAvailable command line options:\n",
+              "  --help: Print this help message\n",
+              "  --config <path to config file>: Specify a config file to use. When omitted\n",
+              "                                  settings/config.cf is used\n",
+              "  --status: Check which scripts are already running\n",
+              "  --quit: Ask all instances of BrewPi to quit by sending a message to\n",
+              "          their socket\n",
+              "  --kill: Kill all instances of BrewPi by sending SIGKILL\n",
+              "  --force: Force quit/kill conflicting instances of BrewPi and keep this one\n",
+              "  --log: Redirect stderr and stdout to log files\n",
+              "  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists\n",
               "  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed", file=sys.stderr)
         exit(0)
     # Supply a config file
@@ -199,7 +199,7 @@ for o, a in opts:
         checkStartupOnly = True
 
 if not configFile:
-    configFile = util.addSlash(sys.path[0]) + 'settings/config.cfg'
+    configFile = '{0}settings/config.cfg'.format(util.addSlash(sys.path[0]))
 config = util.readCfgWithDefaults(configFile)
 
 dontRunFilePath = os.path.join(config['wwwPath'], 'do_not_run_brewpi')
@@ -230,9 +230,9 @@ lastDay = ""
 day = ""
 
 if logToFiles:
-    logPath = util.addSlash(util.scriptPath()) + 'logs/'
+    logPath = '{0}logs/'.format(util.addSlash(util.scriptPath()))
     # Skip logging for this message
-    print("Logging to %s." % logPath)
+    print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
     sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
@@ -280,8 +280,7 @@ def changeWwwSetting(settingName, value):
     # userSettings.json is a copy of some of the settings that are needed by the
     # web server. This allows the web server to load properly, even when the script
     # is not running.
-    wwwSettingsFileName = util.addSlash(
-        config['wwwPath']) + 'userSettings.json'
+    wwwSettingsFileName = '{0}userSettings.json'.format(util.addSlash(config['wwwPath']))
     if os.path.exists(wwwSettingsFileName):
         wwwSettingsFile = open(wwwSettingsFileName, 'r+b')
         try:
@@ -313,10 +312,8 @@ def setFiles():
 
     # Create directory for the data if it does not exist
     beerFileName = config['beerName']
-    dataPath = util.addSlash(util.addSlash(
-        util.scriptPath()) + 'data/' + beerFileName)
-    wwwDataPath = util.addSlash(util.addSlash(
-        config['wwwPath']) + 'data/' + beerFileName)
+    dataPath = '{0}data/{1}'.format(util.addSlash(util.scriptPath()), beerFileName)
+    wwwDataPath = '{0}data/{1}'.format(util.addSlash(config['wwwPath']), beerFileName)
 
     if not os.path.exists(dataPath):
         os.makedirs(dataPath)
@@ -329,16 +326,16 @@ def setFiles():
     day = time.strftime("%Y%m%d")
     lastDay = day
     # Define a JSON file to store the data
-    jsonFileName = beerFileName + '-' + day
+    jsonFileName = '{0}-{1}'.format(beerFileName, day)
 
     # If a file for today already existed, add suffix
-    if os.path.isfile(dataPath + jsonFileName + '.json'):
+    if os.path.isfile('{0}{1}.json'.format(dataPath, jsonFileName)):
         i = 1
-        while os.path.isfile(dataPath + jsonFileName + '-' + str(i) + '.json'):
+        while os.path.isfile('{0}{1}-{2}.json'.format(dataPath, jsonFileName, str(i))):
             i += 1
-        jsonFileName = jsonFileName + '-' + str(i)
+        jsonFileName = '{0}-{1}'.format(jsonFileName, str(i))
 
-    localJsonFileName = dataPath + jsonFileName + '.json'
+    localJsonFileName =  '{0}{1}.json'.format(dataPath, jsonFileName)
 
     # Handle if we are runing Tilt or iSpindel
     if checkKey(config, 'tiltColor'):
@@ -419,7 +416,7 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
     threads = []
     tilt = Tilt.TiltManager(config['tiltColor'])
-    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 1000)
+    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 10000)
     tilt.start()
     # Create prevTempJson for Tilt
     prevTempJson = {
@@ -846,9 +843,9 @@ while run:
                 configStringJson = json.loads(value)
             except json.JSONDecodeError:
                 logMessage(
-                    "Error. Invalid JSON parameter string received: " + value)
+                    "Error. Invalid JSON parameter string received: {0}".format(value))
                 continue
-            bg_ser.write("U" + json.dumps(configStringJson))
+            bg_ser.write("U{0}".format(json.dumps(configStringJson)))
             deviceList['listState'] = ""  # Invalidate local copy
         elif messageType == "writeDevice":
             try:

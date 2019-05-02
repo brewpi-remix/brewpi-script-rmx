@@ -30,24 +30,15 @@
 # under the GNU General Public License v3.0, this license is attached here
 # giving precedence for prior work by the BrewPi team.
 
-# Tilt polling library
-# Simon Bowler 06/06/2016
-# simon@bowler.id.au
-#
-# Version: 1.1 - Added calibration and smoothing functions to reduce noise.
-
 import blescan
 import sys
 import datetime
 import time
 import os
-
 import bluetooth._bluetooth as bluez
 import threading
 import thread
-
 import numpy
-
 from scipy.interpolate import interp1d
 from scipy import arange, array, exp
 import csv
@@ -324,10 +315,10 @@ class Tilt:
             print "Tilt (" + color + "): Initialised " + \
                 type.capitalize() + " Calibration: Offset (" + str(offset) + ")"
         return returnFunction
+
+
 # Class to manage the monitoring of all Tilts and storing the read
 # values.
-
-
 class TiltManager:
     inFahrenheit = True
     dev_id = 0
@@ -431,53 +422,55 @@ class TiltManager:
 
     # Load Settings from config file, overriding values given at creation.
     # This needs to be called before the start function is called.
-    def loadSettings(self, tempFormat=None, deviceID=None, period=None, window=None):
+    def loadSettings(self, tempFormat='F', deviceID=0, period=300, window=10000):
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
             config = ConfigParser.ConfigParser()
-            # Load config values from ini if not passing from BrewPi
-            if tempFormat == 'F':
-                self.inFahrenheit = True
-            elif tempFormat == 'C':
-                self.inFahrenheit = False
-            else:
-                config.read(filename)
-                self.inFahrenheit = config.getboolean(
-                    "Manager", "FahrenheitTemperatures")
+            config.read(filename)
 
-            if deviceID:
-                self.dev_ID = deviceID
-            else:
-                config.read(filename)
+            # Load config values from ini if present (allow override)
+            #
+            # Fahrenheit or Celsius
+            try:
+                self.inFahrenheit = config.getboolean("Manager", "TempInF")
+            except:
+                if tempFormat == 'F':
+                    self.inFahrenheit = True
+                elif tempFormat == 'C':
+                    self.inFahrenheit = False
+
+            # BT Device ID
+            try:
                 self.dev_ID = config.getint("Manager", "DeviceID")
+            except:
+                self.dev_ID = deviceID
 
-            if period:
+            # Time period for noise smoothing
+            try:
+                self.averagingPeriod = config.getint("Manager", "AvgWindow")
+            except:
                 self.averagingPeriod = period
-            else:
-                config.read(filename)
-                self.averagingPeriod = config.getint(
-                    "Manager", "AveragePeriodSeconds")
 
-            if window:
+            # Median filter setting
+            try:
+                self.medianWindow = config.getint("Manager", "MedWindow")
+            except:
                 self.medianWindow = window
-            else:
-                config.read(filename)
-                self.medianWindow = config.getint(
-                    "Manager", "MedianWindowVals")
 
         except Exception, e:
-            print "WARN: Unable to load configuration ({0}): {1}".format(
+            print "WARN: Config file does not exist or cannot be read: ({0}): {1}".format(
                 filename, e.message)
 
-# Run Tilt test
-if __name__ == "__main__":
+
+def main():
+    # Test run
     threads = []
     tilt = TiltManager(False, 60, 40)
     tilt.loadSettings()
     tilt.start()
 
-    print "\nScanning for 20 Secs (Control+C to exit early)."
+    print "\nScanning Tilt for 20 Secs (Control+C to exit early)."
     for x in range(4):
         time.sleep(5)
         print('\nLoop Iteration: {0}'.format(x + 1))
@@ -489,4 +482,7 @@ if __name__ == "__main__":
     for thread in threads:
         thread.join()
 
+
+if __name__ == "__main__":
+    main()
     exit(0)

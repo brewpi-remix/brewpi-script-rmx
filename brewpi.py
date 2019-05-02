@@ -312,9 +312,9 @@ def setFiles():
 
     # Create directory for the data if it does not exist
     beerFileName = config['beerName']
-    dataPath = '{0}data/{1}'.format(util.addSlash(util.scriptPath()), beerFileName)
-    wwwDataPath = '{0}data/{1}'.format(util.addSlash(config['wwwPath']), beerFileName)
-
+    dataPath = '{0}data/{1}/'.format(util.addSlash(util.scriptPath()), beerFileName)
+    wwwDataPath = '{0}data/{1}/'.format(util.addSlash(config['wwwPath']), beerFileName)
+    
     if not os.path.exists(dataPath):
         os.makedirs(dataPath)
         os.chmod(dataPath, 0775)  # Give group all permissions

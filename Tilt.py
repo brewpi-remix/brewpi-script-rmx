@@ -331,9 +331,9 @@ class TiltManager:
 
     brewthread = None
 
-    def __init__(self, inFahrenheit=True, averagingPeriod=0, medianWindow=0, device_id=0):
+    def __init__(self, inFahrenheit=True, averagingPeriod=0, medianWindow=0, dev_id=0):
         self.inFahrenheit = inFahrenheit
-        self.dev_id = device_id
+        self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
 
@@ -422,7 +422,7 @@ class TiltManager:
 
     # Load Settings from config file, overriding values given at creation.
     # This needs to be called before the start function is called.
-    def loadSettings(self, tempFormat='F', deviceID=0, period=300, window=10000):
+    def loadSettings(self, tempFormat='F', deviceID=0, period=0, window=0):
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
@@ -442,9 +442,9 @@ class TiltManager:
 
             # BT Device ID
             try:
-                self.dev_ID = config.getint("Manager", "DeviceID")
+                self.dev_id = config.getint("Manager", "DeviceID")
             except:
-                self.dev_ID = deviceID
+                self.dev_id = deviceID
 
             # Time period for noise smoothing
             try:

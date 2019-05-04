@@ -418,8 +418,8 @@ threads = []
 tilt = False
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
-    tilt = Tilt.TiltManager(config['tiltColor'])
-    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 10000)
+    tilt = Tilt.TiltManager()
+    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 1000)
     tilt.start()
     # Create prevTempJson for Tilt
     prevTempJson = {
@@ -431,8 +431,8 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
         'State': None,
         'BeerSet': 0,
         'FridgeSet': 0,
-        'TiltTemp': 0,
-        'TiltSG': 0}
+        config['tiltColor'] + 'Temp': 0,
+        config['tiltColor'] + 'SG': 0}
 
 
 # Initialise iSpindel and start monitoring

@@ -410,11 +410,14 @@ ser = util.setupSerial(config)
 if not ser:
     exit(1)
 
+prevTempJson = {}
+thread = False
+threads = []
 
 # Initialise Tilt and start monitoring
+tilt = False
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
-    threads = []
     tilt = Tilt.TiltManager(config['tiltColor'])
     tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 10000)
     tilt.start()
@@ -437,7 +440,6 @@ ispindel = False
 if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
     import PollForSG
     ispindel = True
-    threads = []
     # Create prevTempJson for iSpindel
     prevTempJson = {
         'BeerTemp': 0,
@@ -544,8 +546,17 @@ prevSettingsUpdate = time.time()
 # Allow script loop to run
 run = 1
 
-startBeer(config['beerName'])
-outputTemperature = True
+
+startBeer(config['beerName']) # Set up files and prep for run
+
+# Log full JSON if logJson is True in config, none if not set at all,
+# else just a ping
+outputJson = None
+if checkKey(config, 'logJson'):
+    if config['logJson'] == 'True':
+        outputJson = True
+    else:
+        outputJson = False
 
 
 def renameTempKey(key):
@@ -576,21 +587,6 @@ while run:
         if lastDay != day:
             logMessage("Notification: New day, creating new JSON file.")
             setFiles()
-
-        # If we are running Tilt
-        if tilt:
-            # Check each of the Tilt colors
-            for color in Tilt.TILT_COLORS:
-                # Only log the Tilt if the color matches the config
-                if color == config["tiltColor"]:
-                    tiltValue = tilt.getValue(color)
-                    if tiltValue is not None:
-                        prevTempJson[color +
-                                     'Temp'] = round(tiltValue.temperature, 2)
-                        prevTempJson[color + 'SG'] = tiltValue.gravity
-                    else:
-                        prevTempJson[color + 'Temp'] = None
-                        prevTempJson[color + 'SG'] = None
 
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
@@ -920,10 +916,6 @@ while run:
             if line is not None:
                 try:
                     if line[0] == 'T':
-                        # Log received line
-                        if outputTemperature:
-                            logMessage(line[2:])  # Use standard logger
-
                         # Store time of last new data for interval check
                         prevDataTime = time.time()
 
@@ -936,7 +928,22 @@ while run:
                         for key in newData:
                             prevTempJson[renameTempKey(key)] = newData[key]
 
-                        # Get current iSpindel values from PollForSG
+                        # If we are running Tilt, get current values
+                        if tilt:
+                            # Check each of the Tilt colors
+                            for color in Tilt.TILT_COLORS:
+                                # Only log the Tilt if the color matches the config
+                                if color == config["tiltColor"]:
+                                    tiltValue = tilt.getValue(color)
+                                    if tiltValue is not None:
+                                        prevTempJson[color +
+                                                    'Temp'] = round(tiltValue.temperature, 2)
+                                        prevTempJson[color + 'SG'] = tiltValue.gravity
+                                    else:
+                                        prevTempJson[color + 'Temp'] = None
+                                        prevTempJson[color + 'SG'] = None
+
+                        # If we are running iSpindel, get current values
                         if ispindel:
                             ispindelreading = PollForSG.getValue()
                             if ispindelreading is not None:
@@ -951,6 +958,14 @@ while run:
                                 prevTempJson['spinSG'] = None
 
                         newRow = prevTempJson
+                        # Log received line if true, false is short message, none = mute
+                        if outputJson == True:
+                            logMessage(newRow)
+                        elif outputJson == False:
+                            logMessage('New JSON received.')
+                        else:
+                            pass # Don't log JSON messages
+                        
 
                         # Add to JSON file
                         # Handle if we are runing Tilt or iSpindel

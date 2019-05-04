@@ -95,12 +95,13 @@ def readCfgWithDefaults(cfg):
 
 def configSet(configFile, settingName, value):
     if not os.path.isfile(configFile):
-        logMessage(
-            "User config file {0} does not exist, creating with defaults.".format(configFile))
+        logMessage("Config file {0} does not exist.".format(configFile))
+        logMessage("Creating with defaults")
     try:
         config = configobj.ConfigObj(configFile)
         config[settingName] = value
         config.write()
+        os.chmod(configFile, 0770)
     except IOError as e:
         logMessage(
             "I/O error({0}) while updating {1}: {2}\n".format(e.errno, configFile, e.strerror))

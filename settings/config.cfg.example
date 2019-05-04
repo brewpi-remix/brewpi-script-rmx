@@ -9,6 +9,7 @@
 # startupDelay = 1.0
 # debug = true
 # tiltColor = Purple
+# logJson = True
 
 # On a standard pi installation, the defaults should work.
 # If you are using a different linux flavor or Windows, you can

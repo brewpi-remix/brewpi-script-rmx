@@ -177,7 +177,7 @@ def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
 
     # No Tilt or iSpindel
     else:
-        jsonCols('{' + standardCols + '],"rows":[]}')
+        jsonCols = ('{' + standardCols + '],"rows":[]}')
 
     jsonFile = open(jsonFileName, 'w')
     jsonFile.write(jsonCols)

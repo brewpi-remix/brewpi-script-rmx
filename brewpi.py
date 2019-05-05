@@ -280,7 +280,8 @@ def changeWwwSetting(settingName, value):
     # userSettings.json is a copy of some of the settings that are needed by the
     # web server. This allows the web server to load properly, even when the script
     # is not running.
-    wwwSettingsFileName = '{0}userSettings.json'.format(util.addSlash(config['wwwPath']))
+    wwwSettingsFileName = '{0}userSettings.json'.format(
+        util.addSlash(config['wwwPath']))
     if os.path.exists(wwwSettingsFileName):
         wwwSettingsFile = open(wwwSettingsFileName, 'r+b')
         try:
@@ -312,9 +313,11 @@ def setFiles():
 
     # Create directory for the data if it does not exist
     beerFileName = config['beerName']
-    dataPath = '{0}data/{1}/'.format(util.addSlash(util.scriptPath()), beerFileName)
-    wwwDataPath = '{0}data/{1}/'.format(util.addSlash(config['wwwPath']), beerFileName)
-    
+    dataPath = '{0}data/{1}/'.format(
+        util.addSlash(util.scriptPath()), beerFileName)
+    wwwDataPath = '{0}data/{1}/'.format(
+        util.addSlash(config['wwwPath']), beerFileName)
+
     if not os.path.exists(dataPath):
         os.makedirs(dataPath)
         os.chmod(dataPath, 0775)  # Give group all permissions
@@ -335,7 +338,7 @@ def setFiles():
             i += 1
         jsonFileName = '{0}-{1}'.format(jsonFileName, str(i))
 
-    localJsonFileName =  '{0}{1}.json'.format(dataPath, jsonFileName)
+    localJsonFileName = '{0}{1}.json'.format(dataPath, jsonFileName)
 
     # Handle if we are runing Tilt or iSpindel
     if checkKey(config, 'tiltColor'):
@@ -375,8 +378,9 @@ def startNewBrew(newName):
 
 def stopLogging():
     global config
-    logMessage("Stopped data logging as requested in web interface. BrewPi will continue to " +
-               "control temperatures, but will not log any data.")
+    logMessage("Stopped data logging as requested in web interface.")
+    logMessage("BrewPi will continue to control temperatures, but will")
+    logMessage("not log any data.")
     config = util.configSet(configFile, 'beerName', None)
     config = util.configSet(configFile, 'dataLogging', 'stopped')
     changeWwwSetting('beerName', None)
@@ -385,8 +389,9 @@ def stopLogging():
 
 def pauseLogging():
     global config
-    logMessage("Paused logging data, as requested in web interface. BrewPi will continue to " +
-               "control temperatures, but will not log any data until resumed.")
+    logMessage("Paused logging data, as requested in web interface.")
+    logMessage("BrewPi will continue to control temperatures, but will")
+    logMessage("not log any data until resumed.")
     if config['dataLogging'] == 'active':
         config = util.configSet(configFile, 'dataLogging', 'paused')
         return {'status': 0, 'statusMessage': "Successfully paused logging."}
@@ -418,8 +423,11 @@ threads = []
 tilt = False
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
-    tilt = Tilt.TiltManager()
-    tilt.loadSettings(getWwwSetting('tempFormat'), 0, 300, 1000)
+    if getWwwSetting('tempFormat') == 'F':
+        tilt = Tilt.TiltManager(True, config['tiltColor'], 300, 10000, 0)
+    else:
+        tilt = Tilt.TiltManager(False, config['tiltColor'], 300, 10000, 0)
+    tilt.loadSettings()
     tilt.start()
     # Create prevTempJson for Tilt
     prevTempJson = {
@@ -490,14 +498,14 @@ else:
     logMessage("Found " + hwVersion.toExtendedString() +
                " on port " + ser.name + ".")
     if LooseVersion(hwVersion.toString()) < LooseVersion(compatibleHwVersion):
-        logMessage("Warning: minimum BrewPi version compatible with this script is " +
-                   compatibleHwVersion +
-                   " but version number received is " + hwVersion.toString() + ".")
+        logMessage("Warning: minimum BrewPi version compatible with this")
+        logMessage("script is {0} but version number received is".format(compatibleHwVersion))
+        logMessage("{0}.".format(hwVersion.toString()))
     if int(hwVersion.log) != int(expandLogMessage.getVersion()):
-        logMessage("Warning: version number of local copy of logMessages.h " +
-                   "does not match log version number received from controller. " +
-                   "Controller version = " + str(hwVersion.log) +
-                   ", local copy version = " + str(expandLogMessage.getVersion()) + ".")
+        logMessage("Warning: version number of local copy of logMessages.h")
+        logMessage("does not match log version number received from")
+        logMessage("controller. Controller version = {0}, local copy".format(hwVersion.log))
+        logMessage("version = {0}.".format(str(expandLogMessage.getVersion())))
 bg_ser = None
 
 if ser is not None:
@@ -547,7 +555,7 @@ prevSettingsUpdate = time.time()
 run = 1
 
 
-startBeer(config['beerName']) # Set up files and prep for run
+startBeer(config['beerName'])  # Set up files and prep for run
 
 # Log full JSON if logJson is True in config, none if not set at all,
 # else just a ping
@@ -652,21 +660,19 @@ while run:
                 cs['beerSet'] = round(newTemp, 2)
                 bg_ser.write(
                     "j{mode:b, beerSet:" + json.dumps(cs['beerSet']) + "}")
-                logMessage("Notification: Beer temperature set to " +
-                           str(cs['beerSet']) +
-                           " degrees in web interface.")
+                logMessage("Notification: Beer temperature set to {0} degrees in".format(str(cs['beerSet'])))
+                logMessage("web interface.")
                 raise socket.timeout  # Go to serial communication to update controller
             else:
-                logMessage("Beer temperature setting " + str(newTemp) +
-                           " is outside of allowed range " +
-                           str(cc['tempSetMin']) + " - " + str(cc['tempSetMax']) +
-                           ". These limits can be changed in advanced settings.")
+                logMessage("Beer temperature setting {0} is outside of allowed".format(str(newTemp)))
+                logMessage("range {0) - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
+                logMessage("advanced settings.")
+
         elif messageType == "setFridge":  # New constant fridge temperature received
             try:
                 newTemp = float(value)
             except ValueError:
-                logMessage("Cannot convert temperature '" +
-                           value + "' to float.")
+                logMessage("Cannot convert temperature '{0}' to float.".format(value))
                 continue
 
             if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
@@ -674,14 +680,13 @@ while run:
                 cs['fridgeSet'] = round(newTemp, 2)
                 bg_ser.write("j{mode:f, fridgeSet:" +
                              json.dumps(cs['fridgeSet']) + "}")
-                logMessage("Notification: Fridge temperature set to " +
-                           str(cs['fridgeSet']) + " degrees in web interface.")
+                logMessage("Notification: Fridge temperature set to {0} degrees".format(str(cs['fridgeSet'])))
+                logMessage("in web interface.")
                 raise socket.timeout  # Go to serial communication to update controller
             else:
-                logMessage("Fridge temperature setting " + str(newTemp) +
-                           " is outside of allowed range " +
-                           str(cc['tempSetMin']) + " - " + str(cc['tempSetMax']) +
-                           ". These limits can be changed in advanced settings.")
+                logMessage("Fridge temperature setting {0} is outside of allowed".format(str(newTemp)))
+                logMessage("range {0} - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
+                logMessage("advanced settings.")
         elif messageType == "setOff":  # cs['mode'] set to OFF
             cs['mode'] = 'o'
             bg_ser.write("j{mode:o}")
@@ -696,8 +701,8 @@ while run:
                     # Change in web interface settings too.
                     changeWwwSetting('tempFormat', decoded['tempFormat'])
             except json.JSONDecodeError:
-                logMessage(
-                    "Error: Invalid JSON parameter.  String received: " + value)
+                logMessage("Error: Invalid JSON parameter.  String received:")
+                logMessage(value)
             raise socket.timeout
         elif messageType == "stopScript":  # Exit instruction received. Stop script.
             # Voluntary shutdown.
@@ -730,11 +735,9 @@ while run:
                     config = util.configSet(
                         configFile, 'interval', float(newInterval))
                 except ValueError:
-                    logMessage("Cannot convert interval '" +
-                               value + "' to float.")
+                    logMessage("Cannot convert interval '{0}' to float.".format(value))
                     continue
-                logMessage("Notification: Interval changed to " +
-                           str(newInterval) + " seconds.")
+                logMessage("Notification: Interval changed to {0} seconds.".format(str(newInterval)))
         elif messageType == "startNewBrew":  # New beer name
             newName = value
             result = startNewBrew(newName)
@@ -937,8 +940,9 @@ while run:
                                     tiltValue = tilt.getValue(color)
                                     if tiltValue is not None:
                                         prevTempJson[color +
-                                                    'Temp'] = round(tiltValue.temperature, 2)
-                                        prevTempJson[color + 'SG'] = tiltValue.gravity
+                                                     'Temp'] = round(tiltValue.temperature, 2)
+                                        prevTempJson[color +
+                                                     'SG'] = round(tiltValue.gravity, 3)
                                     else:
                                         prevTempJson[color + 'Temp'] = None
                                         prevTempJson[color + 'SG'] = None
@@ -964,8 +968,7 @@ while run:
                         elif outputJson == False:
                             logMessage('New JSON received.')
                         else:
-                            pass # Don't log JSON messages
-                        
+                            pass  # Don't log JSON messages
 
                         # Add to JSON file
                         # Handle if we are runing Tilt or iSpindel

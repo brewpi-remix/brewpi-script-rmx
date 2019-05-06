@@ -63,8 +63,9 @@ loop() {
     do
         if ! python "$script" --checkstartuponly --dontrunfile
             then python -u "$script" --log
+        else
+            sleep 1
         fi
-        sleep 5
     done
 }
 

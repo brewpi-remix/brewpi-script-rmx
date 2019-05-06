@@ -31,18 +31,20 @@
 # license and credits.
 
 from __future__ import print_function
-import time
 import sys
+from sys import path, stderr, stdout, platform
 import os
 import serial
 import autoSerial
+from psutil import process_iter
+from time import sleep, strftime
 
 try:
     import configobj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it with \n"
           "'sudo apt-get install python-configobj")
-    sys.exit(1)
+    exit(1)
 
 
 def addSlash(path):
@@ -68,7 +70,7 @@ def readCfgWithDefaults(cfg):
     ConfigObj of settings
     """
     if not cfg:
-        cfg = '{0}settings/config.cfg'.format(addSlash(sys.path[0]))
+        cfg = '{0}settings/config.cfg'.format(addSlash(path[0]))
 
     # Added to fix default config file detection for multi-chamber
     if cfg:
@@ -122,7 +124,7 @@ def logMessage(*objs):
     """
     Prints a timestamped message to stdout
     """
-    printStdOut(time.strftime("%Y-%m-%d %H:%M:%S   "), *objs)
+    printStdOut(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
 
 
 def scriptPath():
@@ -135,11 +137,33 @@ def scriptPath():
 
 def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):
     if os.path.isfile(path):
-        os.remove(path)
-        if not sys.platform.startswith('win'):  # Daemon not available
-            print("\nBrewPi script will restart automatically.")
+        try:
+            os.remove(path)
+            if not platform.startswith('win'):  # Daemon not available
+                print("\nBrewPi script will restart automatically.")
+                return None
+            return True
+        except:
+            print("\nUnable to remove {0}.".format(path))
+            return False
     else:
-        print("\nFile do_not_run_brewpi does not exist at {0}.".format(path))
+        print("\n{0} does not exist.".format(path))
+        return None
+
+
+def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
+    if not os.path.isfile(path):
+        try:
+            with open(path, 'a'):
+                    os.utime(path, None)
+            os.chmod(path, 0666)
+            return True
+        except:
+            print("\nUnable to create {0}.".format(path))
+            return False
+    else:
+        print("\nFile already exists at {0}.".format(path))
+        return None
 
 
 def findSerialPort(bootLoader):
@@ -178,7 +202,7 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
         if ser:
             break
         tries += 1
-        time.sleep(1)
+        sleep(1)
 
     if ser:
         # Discard everything in serial buffers
@@ -195,12 +219,12 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
 
         def readAndDump(size=1):
             r = ser.readOriginal(size)
-            sys.stdout.write(r)
+            stdout.write(r)
             return r
 
         def writeAndDump(data):
             ser.writeOriginal(data)
-            sys.stderr.write(data)
+            stderr.write(data)
 
         ser.read = readAndDump
         ser.write = writeAndDump
@@ -208,8 +232,53 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
     return ser
 
 
-# Remove extended ascii characters from string, because they can raise
-# UnicodeDecodeError later
+def stopThisChamber(myPath='/home/brewpi/'):
+    # Quit BrewPi process running from this chamber
+    configFile = addSlash(myPath) + 'settings/config.cfg'
+    config = readCfgWithDefaults(configFile)
+    wwwPath = addSlash(config['wwwPath'])
+    myPath = addSlash(config['scriptPath'])
+    dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
+
+    printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
+    
+    # Create do not run file
+    try:
+        result = createDontRunFile(dontRunFilePath)
+        if result is False:
+            return False
+        if result is None:
+            # File already existed
+            pass
+        if result is True:
+            printStdErr('\nPausing 5 seconds to allow process to exit normally.')
+            sleep(5)
+    except:
+        printStdErr("\nUnable to call createDontRunFile().")
+        return False
+
+    # Stop this chamber's process
+    try:
+        for proc in process_iter(attrs=['pid', 'name', 'cmdline']):
+            if 'python' in proc.info['name'] and '{0}brewpi.py'.format(myPath) in proc.info['cmdline']:
+                printStdErr("\nAttempting to stop process {0}.".format(proc.info['pid']))
+                try:
+                    proc.terminate()
+                    return True             
+                except:
+                    printStdErr("\nUnable to stop process {0}, are you running as root?".format(proc.info['pid']))
+                    return False
+            else:
+                # BrewPi was already stopped
+                return None
+        return None
+    except:
+        printStdErr("\nUnable to iterate processes.")
+        return False
+
+
 def asciiToUnicode(s):
+    # Remove extended ascii characters from string, because they can raise
+    # UnicodeDecodeError later
     s = s.replace(chr(0xB0), '&deg')
     return unicode(s, 'ascii', 'ignore')

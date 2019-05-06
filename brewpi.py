@@ -47,7 +47,7 @@ import sys
 # Check needed software dependencies
 if sys.version_info < (2, 7):
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 
 # Load non standard packages, exit if they are not installed
 try:
@@ -58,25 +58,25 @@ try:
               "  sudo pip install pyserial --upgrade\n",
               "\nIf you do not have pip installed, install it with:\n",
               "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
-        exit(1)
+        sys.exit(1)
 except ImportError:
     print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n",
           "  sudo pip install pyserial --upgrade\n",
           "\nIf you do not have pip installed, install it by running:\n",
           "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 try:
     import simplejson as json
 except ImportError:
     print("\nBrewPi requires simplejson to run, please install it by running\n",
           "  sudo apt-get install python-simplejson", file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it by running\n",
           "  sudo apt-get install python-configobj", file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 
 # Local Imports
 import temperatureProfile
@@ -127,7 +127,7 @@ except getopt.GetoptError:
     print("Unknown parameter, available Options: --help, --config <path to config file>,\n",
           "                                      --status, --quit, --kill, --force, --log,\n",
           "                                      --dontrunfile", file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 
 configFile = None
 checkDontRunFile = False
@@ -149,13 +149,13 @@ for o, a in opts:
               "  --log: Redirect stderr and stdout to log files\n",
               "  --dontrunfile: Check do_not_run_brewpi in www directory and quit if it exists\n",
               "  --checkstartuponly: Exit after startup checks, return 1 if startup is allowed", file=sys.stderr)
-        exit(0)
+        sys.exit(0)
     # Supply a config file
     if o in ('-c', '--config'):
         configFile = os.path.abspath(a)
         if not os.path.exists(configFile):
             print('ERROR: Config file {0} was not found.'.format(configFile), file=sys.stderr)
-            exit(1)
+            sys.exit(1)
     # Send quit instruction to all running instances of BrewPi
     if o in ('-s', '--status'):
         allProcesses = BrewPiProcess.BrewPiProcesses()
@@ -165,20 +165,20 @@ for o, a in opts:
             pprint(running)
         else:
             print("No BrewPi scripts running.", file=sys.stderr)
-        exit(0)
+        sys.exit(0)
     # Quit/kill running instances, then keep this one
     if o in ('-q', '--quit'):
         logMessage("Asking all BrewPi processes to quit on their socket.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.quitAll()
         time.sleep(2)
-        exit(0)
+        sys.exit(0)
     # Send SIGKILL to all running instances of BrewPi
     if o in ('-k', '--kill'):
         logMessage("Killing all BrewPi processes.")
         allProcesses = BrewPiProcess.BrewPiProcesses()
         allProcesses.killAll()
-        exit(0)
+        sys.exit(0)
     # Close all existing instances of BrewPi by quit/kill and keep this one
     if o in ('-f', '--force'):
         logMessage(
@@ -202,12 +202,12 @@ if not configFile:
     configFile = '{0}settings/config.cfg'.format(util.addSlash(sys.path[0]))
 config = util.readCfgWithDefaults(configFile)
 
-dontRunFilePath = os.path.join(config['wwwPath'], 'do_not_run_brewpi')
+dontRunFilePath = '{0}do_not_run_brewpi'.format(util.addSlash(config['wwwPath']))
 # Check dont run file when it exists and exit it it does
 if checkDontRunFile:
     if os.path.exists(dontRunFilePath):
         # Do not print anything or it will flood the logs
-        exit(0)
+        sys.exit(0)
 
 # Check for other running instances of BrewPi that will cause conflicts with
 # this instance
@@ -217,10 +217,10 @@ myProcess = allProcesses.me()
 if allProcesses.findConflicts(myProcess):
     if not checkDontRunFile:
         logMessage("A conflicting BrewPi is running. This instance will exit.")
-    exit(0)
+    sys.exit(0)
 
 if checkStartupOnly:
-    exit(1)
+    sys.exit(1)
 
 localJsonFileName = ""
 localCsvFileName = ""
@@ -413,7 +413,7 @@ def resumeLogging():
 # the buffer contains a full line.
 ser = util.setupSerial(config)
 if not ser:
-    exit(1)
+    sys.exit(1)
 
 prevTempJson = {}
 thread = False
@@ -477,6 +477,8 @@ if not prevTempJson:
 
 
 # Start script
+if logToFiles:
+    print('Starting BrewPi.', file=sys.__stdout__)
 lcdText = ['Script starting up.', ' ', ' ', ' ']
 logMessage("Notification: Starting '" +
            urllib.unquote(config['beerName']) + "'")
@@ -498,7 +500,7 @@ else:
     logMessage("Found " + hwVersion.toExtendedString() +
                " on port " + ser.name + ".")
     if LooseVersion(hwVersion.toString()) < LooseVersion(compatibleHwVersion):
-        logMessage("Warning: minimum BrewPi version compatible with this")
+        logMessage("Warning: Minimum BrewPi version compatible with this")
         logMessage("script is {0} but version number received is".format(compatibleHwVersion))
         logMessage("{0}.".format(hwVersion.toString()))
     if int(hwVersion.log) != int(expandLogMessage.getVersion()):
@@ -706,13 +708,16 @@ while run:
             raise socket.timeout
         elif messageType == "stopScript":  # Exit instruction received. Stop script.
             # Voluntary shutdown.
-            # Write a file to prevent the daemon from restarting the script
-            logMessage("Stop message received on socket.")
+            logMessage('Stop message received on socket.')
+            sys.stdout.flush()
+            # Also log stop back to daemon
+            if logToFiles:
+                print('Stop message received on socket.', file=sys.__stdout__)
             run = 0
-            dontrunfile = open(dontRunFilePath, "w")
-            dontrunfile.write("1")
-            dontrunfile.close()
-            continue
+            # Write a file to prevent the daemon from restarting the script
+            wwwPath = util.addSlash(config['wwwPath'])
+            dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
+            util.createDontRunFile(dontRunFilePath)
         elif messageType == "quit":
             # Quit instruction received. Probably sent by another brewpi
             # script instance
@@ -1117,4 +1122,4 @@ if conn:
     conn.shutdown(socket.SHUT_RDWR)  # Close socket
     conn.close()
 
-exit(0)
+sys.exit(0)

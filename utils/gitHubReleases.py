@@ -57,7 +57,7 @@ class gitHubReleases:
         """
         try:
             f = urllib2.urlopen(url)
-            print "Downloading from: \n" + url
+            print("\nDownloading from: \n{0}".format(url))
 
             # Open our local file for writing
             fileName = os.path.join(path, os.path.basename(url))
@@ -68,9 +68,9 @@ class gitHubReleases:
 
         #handle errors
         except urllib2.HTTPError, e:
-            print "HTTP Error:", e.code, url
+            print("HTTP Error: {0} {1}".format(e.code, url))
         except urllib2.URLError, e:
-            print "URL Error:", e.reason, url
+            print("URL Error: {0} {1}".format(e.reason, url))
         return None
 
     def update(self):
@@ -97,7 +97,7 @@ class gitHubReleases:
         Finds the download URL for a binary inside a release
             :param tag:             Tag name of the release
             :param wordsInFileName: Words to look for in the filename
-            :return:                URL to first binary that has all the words
+            :return:                First URL that has all the words
                                     in the filename
         """
         release = self.findByTag(tag)
@@ -201,9 +201,9 @@ class gitHubReleases:
             if name.startswith('brewpi-') and name.endswith('.hex'):
                 file = (name.split('-'))
                 # Keep only uniques
-                if file[3] not in shields:
+                if file[3].lower() not in shields:
                     # Create the list
-                    shields.append(file[3])
+                    shields.append(file[3].lower())
         shields.sort() # Sort the list
         return shields
 

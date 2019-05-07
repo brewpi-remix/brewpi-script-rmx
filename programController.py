@@ -225,7 +225,7 @@ class SerialProgrammer:
         self.oldSettings = {}
 
     def program(self, hexFile, restoreWhat):
-        printStdErr("\n%(a)s program script started.\n" % msg_map)
+        printStdErr("\n%(a)s program script started." % msg_map)
 
         self.parse_restore_settings(restoreWhat)
 
@@ -248,8 +248,8 @@ class SerialProgrammer:
             if not self.flash_file(hexFile):
                 return 0
 
-        printStdErr("\nWaiting for device to reset.")
-        time.sleep(15)  # give time to reboot
+        # printStdErr("\nWaiting for device to reset.")
+        # time.sleep(15)  # give time to reboot
 
         self.fetch_new_version()
         self.reset_settings()
@@ -257,12 +257,12 @@ class SerialProgrammer:
             printStdErr(
                 "\nChecking which settings and devices may be restored.")
         if self.versionNew is None:
-            printStdErr(("\nWarning: Cannot receive version number from controller after programming."
+            printStdErr(("\nWarning: Cannot receive version number from controller after programming.",
                          "\nRestoring settings/devices settings failed."))
             return 0
 
         if not self.versionOld and (self.restoreSettings or self.restoreDevices):
-            printStdErr("\nCould not receive valid version number from old board, no settings/devices"
+            printStdErr("\nCould not receive valid version number from old board, no settings/devices",
                         "\nhave been restored.")
             return 0
 
@@ -298,7 +298,7 @@ class SerialProgrammer:
         # they might be set to false due to version incompatibility later
 
         printStdErr("\nSettings will {0}be restored{1}.".format(("" if restoreSettings else "not "), (" if possible" if restoreSettings else "")))
-        printStdErr("\nDevices will {0}be restored{1}.".format(("" if restoreDevices else "not "), (" if possible" if restoreDevices else "")))
+        printStdErr("\nDevices will {0}be restored{1}.\n".format(("" if restoreDevices else "not "), (" if possible" if restoreDevices else "")))
 
         self.restoreSettings = restoreSettings
         self.restoreDevices = restoreDevices
@@ -307,7 +307,7 @@ class SerialProgrammer:
         if self.ser:
             self.ser.close()
         self.ser = None
-        self.ser = util.setupSerial(config, baud, timeout)
+        self.ser = util.setupSerial(config, baud, timeout, 1.0, True)
         if self.ser is None:
             return False
         return True
@@ -614,14 +614,14 @@ class ArduinoProgrammer(SerialProgrammer):
         output, errors = p.communicate()
 
         # avrdude only uses stderr, append its output to the returnString
-        printStdErr("\nResult of invoking avrdude:\n{0}".format(errors))
+        printStdErr("\nResult of invoking avrdude:{0}".format(errors))
 
         if("bytes of flash verified" in errors):
-            printStdErr("\nAvrdude done, programming successful.")
+            printStdErr("Avrdude done, programming successful.")
         else:
-            printStdErr("\nThere was an error while programming.")
+            printStdErr("There was an error while programming.")
             return False
 
-        printStdErr("\nGiving the Arduino a 10 seconds to power up.")
+        printStdErr("\nGiving the Arduino 10 seconds to reset.")
         self.delay(10)
         return True

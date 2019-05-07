@@ -103,13 +103,10 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         startAfterUpdate = True
         pass
     elif stopResult is False:
-        # Unable to stop BrewPi.
-        if startAfterUpdate:
-            # Only restart if it was running when we started
-            removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+        # Unable to stop BrewPi
         return False
     elif stopResult is None:
-        # BrewPi was not running, don't start after update.
+        # BrewPi was not probably not running, don't start after update.
         startAfterUpdate = False
         pass
 
@@ -122,9 +119,8 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     ### Get version number
     printStdErr("\nChecking current firmware version.")
     try:
-        ser = setupSerial(config)
+        ser = setupSerial(config, 57600, 1.0, 1.0, True)
         hwVersion = brewpiVersion.getVersionFromSerial(ser)
-        print('DEBUG: Returned version: {0}'.format(hwVersion.toString()))
         family = hwVersion.family
         shield = hwVersion.shield
         board = hwVersion.board
@@ -178,7 +174,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
 
     if hwVersion:
         # Make sure we didn't get half a string (happens when the BrewPi process
-        # does not shut down)
+        # does not shut down or restarts)
         if goodVersion(hwVersion):
             printStdErr("\nCurrent firmware version on controller: " + hwVersion.toString())
         else:
@@ -199,11 +195,11 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     compatibleTags = []
 
     # Allow reflashing the shield type
-    if doShield == True:
+    if doShield is True:
         shield = None
 
     # Allow selecting the desired shield type
-    if shield == None:
+    if shield is None:
         shields = releases.getShields()
 
         printStdErr("\nPlease select the shield type you would like to use. Available shields:")
@@ -248,15 +244,21 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
             compatibleTags.append(tag)
 
     if len(compatibleTags) == 0:
-        printStdErr("\nNo compatible releases found for %s %s %s with %s %s shield." %
-                   (article(family), family.capitalize(), board.capitalize(), article(shield), str(shield).upper()))
+        printStdErr("\nNo compatible releases found for {0} {1} {2} with {3} {4} shield.".format(article(family), family.capitalize(), board.capitalize(), article(shield), str(shield).upper()))
         if startAfterUpdate:
             # Only restart if it was running when we started
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
         return False
 
     # Default tag is latest stable tag, or latest unstable tag if no stable tag is found
-    default_choice = next((i for i, t in enumerate(compatibleTags) if t in stableTags), compatibleTags[0])
+    for i, t in enumerate(compatibleTags):
+        if t in stableTags:
+            default_choice = i
+            break
+        elif t in compatibleTags:
+            default_choice = i
+            break
+
     tag = compatibleTags[default_choice]
 
     if userInput:
@@ -290,37 +292,47 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     else:
         printStdErr("\nLatest version on GitHub: " + tag)
 
-    if hwVersion is not None and not hwVersion.isNewer(tag):
-        if hwVersion.isEqual(tag):
-            printStdErr("\nYou are already running version %s." % tag)
-        else:
-            printStdErr("\nYour current version is newer than %s." % tag)
+    # # DEBUG
+    # printStdErr('\nDEBUG:  hwVersion.shield = {0}'.format(hwVersion.shield.lower()))
+    # printStdErr('\nDEBUG:  shield = {0}'.format(shield.lower()))
+    # if hwVersion.shield.lower() == shield.lower(): #DEBUG
+    #     printStdErr('DEBUG: hwVersion.shield == shield')
+    # else:
+    #     printStdErr('DEBUG: hwVersion.shield != shield')
+    # return True # DEBUG
+    # # DEBUG
 
-        if userInput:
-            choice = pipeInput("\nIf you are encountering problems, you can reprogram anyway.  Would you like" + 
-                               "\nto do this? [y/N]: ").lower()
-            if not choice.startswith('y'):
+    if doShield is False:
+        if hwVersion is not None and not hwVersion.isNewer(tag):
+            if hwVersion.isEqual(tag):
+                printStdErr("\nYou are already running version %s." % tag)
+            else:
+                printStdErr("\nYour current version is newer than %s." % tag)
+
+            if userInput:
+                choice = pipeInput("\nIf you are encountering problems, you can reprogram anyway.  Would you like" + 
+                                "\nto do this? [y/N]: ").lower()
+                if not choice.startswith('y'):
+                    if startAfterUpdate:
+                        # Only restart if it was running when we started
+                        removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                    return True
+            else:
+                printStdErr("\nNo update needed. Exiting.")
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
                 return True
-        else:
-            printStdErr("\nNo update needed. Exiting.")
-            if startAfterUpdate:
-                # Only restart if it was running when we started
-                removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
-            return True
 
     if hwVersion is not None and userInput:
         choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreSettings = False
-        choice = pipeInput("\nWould you like me to try to restore your configured devices after programming?" + 
-                           "\n[Y/n]: ").lower()
+        choice = pipeInput("\nWould you like me to try to restore your configured devices after" + 
+                           "\nprogramming? [Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreDevices = False
 
-    printStdErr("\nDownloading firmware.")
     localFileName = None
     system1 = None
     system2 = None
@@ -343,11 +355,13 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
         return False
 
-    printStdErr("\nUpdating firmware.\n")
+    printStdErr("\nUpdating firmware.")
     result = programmer.programController(config, board, localFileName, {'settings': restoreSettings, 'devices': restoreDevices})
     if startAfterUpdate:
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+    else:
+        printStdErr('BrewPi was not running when we started, leaving {0}.'.format(addSlash(config['wwwPath'])))
     
     return result
 
@@ -378,6 +392,8 @@ def main():
             doShield = True
 
     result = updateFromGitHub(beta, doShield, userInput)
+    return result
+
 
 if __name__ == '__main__':
     result = main()

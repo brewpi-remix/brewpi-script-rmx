@@ -185,7 +185,7 @@ createdaemon () {
         echo -e "# Created for BrewPi version $VERSION
 
 [Unit]
-Description=BrewPi service for: $daemonName
+Description=BrewPi Remix daemon for: $daemonName
 Documentation=https://github.com/lbussy/brewpi-tools-rmx/
 After=multi-user.target
 

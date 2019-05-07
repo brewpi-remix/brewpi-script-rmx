@@ -31,18 +31,23 @@
 # license and credits.
 
 from __future__ import print_function
-import time
 import sys
+from sys import path, stderr, stdout, platform
 import os
 import serial
 import autoSerial
+import BrewPiProcess
+import psutil
+from psutil import process_iter as ps
+from time import sleep, strftime
+import BrewPiSocket
 
 try:
     import configobj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it with \n"
           "'sudo apt-get install python-configobj")
-    sys.exit(1)
+    exit(1)
 
 
 def addSlash(path):
@@ -68,7 +73,7 @@ def readCfgWithDefaults(cfg):
     ConfigObj of settings
     """
     if not cfg:
-        cfg = '{0}settings/config.cfg'.format(addSlash(sys.path[0]))
+        cfg = '{0}settings/config.cfg'.format(addSlash(path[0]))
 
     # Added to fix default config file detection for multi-chamber
     if cfg:
@@ -122,7 +127,7 @@ def logMessage(*objs):
     """
     Prints a timestamped message to stdout
     """
-    printStdOut(time.strftime("%Y-%m-%d %H:%M:%S   "), *objs)
+    printStdOut(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
 
 
 def scriptPath():
@@ -135,11 +140,35 @@ def scriptPath():
 
 def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):
     if os.path.isfile(path):
-        os.remove(path)
-        if not sys.platform.startswith('win'):  # Daemon not available
-            print("\nBrewPi script will restart automatically.")
+        try:
+            os.remove(path)
+            if not platform.startswith('win'):  # Daemon not available
+                print("\nBrewPi script will restart automatically.")
+                return None
+            return True
+        except:
+            print("\nUnable to remove {0}.".format(path))
+            return False
     else:
-        print("\nFile do_not_run_brewpi does not exist at {0}.".format(path))
+        print("\n{0} does not exist.".format(path))
+        return None
+
+
+def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
+    if not os.path.isfile(path):
+        try:
+            with open(path, 'w'):
+                    os.utime(path, None)
+            os.chmod(path, 0666)
+            # File creation successful
+            return True
+        except:
+            # File creation failure
+            print("\nUnable to create {0}.".format(path))
+            return False
+    else:
+        # print("\nFile already exists at {0}.".format(path))
+        return None
 
 
 def findSerialPort(bootLoader):
@@ -147,7 +176,7 @@ def findSerialPort(bootLoader):
     return port
 
 
-def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
+def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0, noLog=False):
     ser = None
     dumpSerial = config.get('dumpSerial', False)
 
@@ -155,7 +184,10 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
     error2 = None
     # open serial port
     tries = 0
-    logMessage("Opening serial port.")
+    if noLog:
+        printStdErr("Opening serial port.")
+    else:
+        logMessage("Opening serial port.")
     while tries < 10:
         error = ""
         for portSetting in [config['port'], config['altport']]:
@@ -174,18 +206,21 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
                 if ser:
                     break
             except (IOError, OSError, serial.SerialException) as e:
-                error = '{0} {1}\n'.format(error, str(e))
+                error = '{0} {1}'.format(error, str(e))
         if ser:
             break
         tries += 1
-        time.sleep(1)
+        sleep(1)
 
     if ser:
         # Discard everything in serial buffers
         ser.flushInput()
         ser.flushOutput()
     else:
-        logMessage("Error(s) while opening serial port: {0}\n".format(error))
+        if noLog:
+            logMessage("Error(s) while opening serial port: {0}\n".format(error))
+        else:
+            printStdErr("Error(s) while opening serial port: {0}\n".format(error))
 
     # Yes this is monkey patching, but I don't see how to replace the methods on
     # a dynamically instantiated type any other way
@@ -195,12 +230,12 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
 
         def readAndDump(size=1):
             r = ser.readOriginal(size)
-            sys.stdout.write(r)
+            stdout.write(r)
             return r
 
         def writeAndDump(data):
             ser.writeOriginal(data)
-            sys.stderr.write(data)
+            stderr.write(data)
 
         ser.read = readAndDump
         ser.write = writeAndDump
@@ -208,8 +243,98 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0):
     return ser
 
 
-# Remove extended ascii characters from string, because they can raise
-# UnicodeDecodeError later
+def stopThisChamber(myPath='/home/brewpi/'):
+    # Quit BrewPi process running from this chamber
+    configFile = addSlash(myPath) + 'settings/config.cfg'
+    config = readCfgWithDefaults(configFile)
+    wwwPath = addSlash(config['wwwPath'])
+    myPath = addSlash(config['scriptPath'])
+    dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
+
+    printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
+    
+    # Create do not run file
+    dontRunCreated = False
+    try:
+        result = createDontRunFile(dontRunFilePath)
+        if result is False:
+            # Unable to create semaphore
+            dontRunCreated = False
+            return False
+        if result is None:
+            # File already existed
+            dontRunCreated = False
+            pass
+        if result is True:
+            # Created dontrunfile
+            dontRunCreated = True
+            pass
+    except:
+        printStdErr("\nUnable to call createDontRunFile().")
+        return False
+
+    try:
+        procKilled = False
+        i = 0
+        for proc in psutil.process_iter():
+            if any('python' in proc.name() and '{0}brewpi.py'.format(myPath) in s for s in proc.cmdline()):
+                i += 1
+                beerSocket = '{0}BEERSOCKET'.format(myPath)
+                pid = proc.pid
+                # TODO: Figure out how to send a stopMessage to socket?
+                #printStdErr('\nStopping BrewPi in {0}.'.format(myPath))
+                #socket = BrewPiSocket.BrewPiSocket(config)
+                #socket.connect()
+                #socket.write('stopScript') # This does not work
+                #printStdErr('\nPausing 5 seconds to allow process to exit normally.')
+                # If proc still exists, continue
+                if proc.is_running():
+                    printStdErr('\nStopping BrewPi with PID {0}.'.format(proc.pid))
+                    try:
+                        proc.terminate()
+                        sleep(5)
+                        if proc.is_running():
+                            printStdErr('\nProcess still exists. Terminating BrewPi with PID {0}.'.format(proc.pid))
+                            proc.kill()
+                            sleep(5)
+                            if proc.is_running():
+                                printStdErr("\nUnable to stop process {0}, no error returned".format(proc.pid))
+                                procKilled = False
+                            else:
+                                procKilled = True
+                        else:
+                            procKilled = True
+                    except:
+                        printStdErr("\nUnable to stop process {0}, are you running as root?".format(proc.pid))
+                        procKilled = False
+                else:
+                    procKilled = None # Proc shut down for some other reason
+        if i == 0:
+            procKilled = None # BrewPi was not running
+    except:
+        printStdErr("\nUnable to iterate processes.")
+        procKilled = False
+
+    if dontRunCreated and procKilled:
+        # Both file created and proc killed
+        return True
+    elif procKilled is None and not dontRunCreated:
+        # File existed and proc did not exist
+        return None
+    elif dontRunCreated and not procKilled:
+        # Created file but proc was not killed, remove file
+        try:
+            removeDontRunFile(dontRunFilePath)
+        except:
+            printStdErr("\nUnable to remove {0}.".format(dontRunFilePath))
+        return False
+    elif procKilled and not dontRunCreated:
+        # Proc killed but file already existed
+        return None
+
+
 def asciiToUnicode(s):
+    # Remove extended ascii characters from string, because they can raise
+    # UnicodeDecodeError later
     s = s.replace(chr(0xB0), '&deg')
     return unicode(s, 'ascii', 'ignore')

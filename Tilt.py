@@ -105,15 +105,16 @@ class TiltValue:
     timestamp = 0
 
     def __init__(self, temperature, gravity):
-        self.temperature = round(temperature, 2)
-        self.gravity = round(gravity, 3)
+        self.temperature = temperature
+        self.gravity = gravity
         self.timestamp = datetime.datetime.now()
 
     def __str__(self):
         return "T: " + str(self.temperature) + " G: " + str(self.gravity)
 
 
-# Tilt class, looks after calibration, storing of values and smoothing of read values.
+# Tilt class, looks after calibration, storing of values and smoothing
+# of read values.
 class Tilt:
     color = ''
     values = None
@@ -124,11 +125,6 @@ class Tilt:
     gravityCalibrationFunction = None
     calibrationDataTime = {}
 
-    # Averaging period is number of secs to average across; 0 to disable.
-    # Median window is the window to use for applying a median filter across
-    # the values; 0 to disable. Median window should be <= the averaging
-    # period. If Median is disabled, the returned value will be the average
-    # of all values recorded during the averaging period.
     def __init__(self, color, averagingPeriod=0, medianWindow=0):
         self.color = color
         self.lock = threading.Lock()
@@ -154,7 +150,12 @@ class Tilt:
             self.gravityCalibrationFunction = gravityFunction
 
     def setValues(self, temperature, gravity):
-        """Set/add the latest temperature & gravity readings to the store. These values will be calibrated before storing if calibration is enabled"""
+        """
+        Set/add the latest temperature & gravity readings to the store.
+        
+        These values will be calibrated before storing if calibration is
+        enabled
+        """
         with self.lock:
             self.cleanValues()
             self.calibrate()
@@ -164,7 +165,12 @@ class Tilt:
                 calibratedTemperature, calibratedGravity))
 
     def getValues(self):
-        """Returns the temperature & gravity values of the Tilt. This will be the latest read value unless averaging / median has been enabled"""
+        """
+        Returns the temperature & gravity values of the Tilt. 
+        
+        This will be the latest read value unless averaging / median has
+        been enabled
+        """
         with self.lock:
             returnValue = None
             if (len(self.values) > 0):
@@ -177,7 +183,7 @@ class Tilt:
         return returnValue
 
     def averageValues(self):
-        """Internal function to average all the stored values"""
+        """Average all the stored values."""
         returnValue = None
         if (len(self.values) > 0):
             returnValue = TiltValue(0, 0)
@@ -190,14 +196,19 @@ class Tilt:
             returnValue.gravity /= len(self.values)
 
             # Round values
-            returnValue.temperature = round(returnValue.temperature, 2)
-            returnValue.gravity = round(returnValue.gravity, 3)
+            returnValue.temperature = returnValue.temperature
+            returnValue.gravity = returnValue.gravity
         return returnValue
 
     def medianValues(self, window=3):
-        """Internal function to use a median method across the stored values to reduce noise.
-           window - Smoothing window to apply across the data. If the window is less than the dataset size, the window will be moved across the dataset,
-                    taking a median value for each window, with the resultant set averaged"""
+        """
+        Use a median method across the stored values to reduce noise.
+
+        window: Smoothing window to apply across the data. If the window
+                is less than the dataset size, the window will be moved
+                across the dataset taking a median value for each window,
+                with the resultant set averaged
+        """
         returnValue = None
         # Ensure there are enough values to do a median filter, if not shrink
         # window temporarily
@@ -234,13 +245,15 @@ class Tilt:
         returnValue.gravity /= medianValueCount
 
         # Round values
-        returnValue.temperature = round(returnValue.temperature, 2)
-        returnValue.gravity = round(returnValue.gravity, 3)
+        returnValue.temperature = returnValue.temperature
+        returnValue.gravity = returnValue.gravity
 
         return returnValue
 
     def cleanValues(self):
-        """Function to clean out stale values that are beyond the desired window"""
+        """
+        Clean out stale values that are beyond the desired window.
+        """
         nowTime = datetime.datetime.now()
 
         for value in self.values:
@@ -321,6 +334,7 @@ class Tilt:
 # values.
 class TiltManager:
     inFahrenheit = True
+    color = ''
     dev_id = 0
     averagingPeriod = 0
     medianWindow = 0
@@ -331,8 +345,9 @@ class TiltManager:
 
     brewthread = None
 
-    def __init__(self, inFahrenheit=True, averagingPeriod=0, medianWindow=0, dev_id=0):
+    def __init__(self, inFahrenheit=True, color='', averagingPeriod=0, medianWindow=0, dev_id=0):
         self.inFahrenheit = inFahrenheit
+        self.color = color
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
@@ -399,17 +414,19 @@ class TiltManager:
 
                 # If the event is for a Tilt, process the data
                 if name is not None:
-                    # print("DEBUG Tilt Beacon: {0}".format(str(beaconParts)))
-                    # Get the temperature and convert to C if needed.
-                    temperature = int(beaconParts[2])
-                    if not self.inFahrenheit:
-                        temperature = self.convertFtoC(temperature)
+                    # Store only the Tilt we are monitoring or all if
+                    # we have not selected one
+                    if self.color == '' or name == self.color:
+                        # Get the temperature and convert to C if needed.
+                        temperature = int(beaconParts[2])
+                        if not self.inFahrenheit:
+                            temperature = self.convertFtoC(temperature)
 
-                    # Get the gravity.
-                    gravity = self.convertSG(beaconParts[3])
+                        # Get the gravity.
+                        gravity = self.convertSG(beaconParts[3])
 
-                    # Store the retrieved values in the relevant Tilt object.
-                    self.storeValue(name, temperature, gravity)
+                        # Store the retrieved values in the relevant Tilt object.
+                        self.storeValue(name, temperature, gravity)
 
     # Stop Scanning function
     def stop(self):
@@ -422,7 +439,7 @@ class TiltManager:
 
     # Load Settings from config file, overriding values given at creation.
     # This needs to be called before the start function is called.
-    def loadSettings(self, tempFormat='F', deviceID=0, period=0, window=0):
+    def loadSettings(self):
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
@@ -435,28 +452,25 @@ class TiltManager:
             try:
                 self.inFahrenheit = config.getboolean("Manager", "TempInF")
             except:
-                if tempFormat == 'F':
-                    self.inFahrenheit = True
-                elif tempFormat == 'C':
-                    self.inFahrenheit = False
+                pass
 
             # BT Device ID
             try:
                 self.dev_id = config.getint("Manager", "DeviceID")
             except:
-                self.dev_id = deviceID
+                pass
 
             # Time period for noise smoothing
             try:
                 self.averagingPeriod = config.getint("Manager", "AvgWindow")
             except:
-                self.averagingPeriod = period
+                pass
 
             # Median filter setting
             try:
                 self.medianWindow = config.getint("Manager", "MedWindow")
             except:
-                self.medianWindow = window
+                pass
 
         except Exception, e:
             print "WARN: Config file does not exist or cannot be read: ({0}): {1}".format(
@@ -466,7 +480,7 @@ class TiltManager:
 def main():
     # Test run
     threads = []
-    tilt = TiltManager(False, 60, 40)
+    tilt = TiltManager()
     tilt.loadSettings()
     tilt.start()
 

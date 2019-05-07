@@ -43,7 +43,7 @@ def getVersionFromSerial(ser):
     oldTimeOut = ser.timeout
     startTime = time.time()
     if not ser.isOpen():
-        print "Cannot get version from serial port that is not open."
+        print "\nCannot get version from serial port that is not open."
 
     ser.timeout = 1
     ser.write('n')  # request version info
@@ -82,7 +82,7 @@ def getVersionFromSerial(ser):
     return version
 
 class AvrInfo:
-    """ Parses and stores the version and other compile-time details reported by the controller """
+    """ Parses and stores the version and other compile-time details reported by the controller. """
 
     version = "v"
     build = "n"

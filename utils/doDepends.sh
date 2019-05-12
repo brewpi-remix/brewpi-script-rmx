@@ -224,7 +224,7 @@ do_packages() {
             echo -e "\nInstalling '$pkg'."
             pip install $pkg -q||die
         else
-            echo -e "\nChecking for update to '$pkg'.\n"
+            echo -e "\nChecking for update to '$pkg'."
             pip install $pkg --upgrade -q||die
         fi
     done

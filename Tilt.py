@@ -333,7 +333,7 @@ class Tilt:
 # Class to manage the monitoring of all Tilts and storing the read
 # values.
 class TiltManager:
-    inFahrenheit = True
+    # inFahrenheit = True
     color = ''
     dev_id = 0
     averagingPeriod = 0
@@ -345,8 +345,7 @@ class TiltManager:
 
     brewthread = None
 
-    def __init__(self, inFahrenheit=True, color='', averagingPeriod=0, medianWindow=0, dev_id=0):
-        self.inFahrenheit = inFahrenheit
+    def __init__(self, color='', averagingPeriod=0, medianWindow=0, dev_id=0):
         self.color = color
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
@@ -364,8 +363,8 @@ class TiltManager:
             'a495bb80c5b14b44b5121370f02d74de': 'Pink'
         }.get(uuid)
 
-    def convertFtoC(self, temperatureF):
-        return (temperatureF - 32) * 5.0 / 9
+    # def convertFtoC(self, temperatureF):
+    #     return (temperatureF - 32) * 5.0 / 9
 
     def convertSG(self, gravity):
         return float(gravity) / 1000
@@ -419,8 +418,8 @@ class TiltManager:
                     if self.color == '' or name == self.color:
                         # Get the temperature and convert to C if needed.
                         temperature = int(beaconParts[2])
-                        if not self.inFahrenheit:
-                            temperature = self.convertFtoC(temperature)
+                        # if not self.inFahrenheit:
+                        #     temperature = self.convertFtoC(temperature)
 
                         # Get the gravity.
                         gravity = self.convertSG(beaconParts[3])
@@ -449,10 +448,10 @@ class TiltManager:
             # Load config values from ini if present (allow override)
             #
             # Fahrenheit or Celsius
-            try:
-                self.inFahrenheit = config.getboolean("Manager", "TempInF")
-            except:
-                pass
+            # try:
+            #     self.inFahrenheit = config.getboolean("Manager", "TempInF")
+            # except:
+            #     pass
 
             # BT Device ID
             try:

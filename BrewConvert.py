@@ -39,8 +39,8 @@ class BrewConvert():
             float:  Converted value, or 0 if parameters are invalid
         """
         self.value = value
-        self.original = original
-        self.target = target
+        self.original = original.lower()
+        self.target = target.lower()
 
         method_name = 'from_{0}'.format(str(self.original))
         # Concatenate the target method from 'self'

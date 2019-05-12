@@ -89,6 +89,7 @@ import pinList
 import expandLogMessage
 import BrewPiProcess
 from backgroundserial import BackGroundSerial
+import BrewConvert
 
 compatibleHwVersion = "0.2.4"
 
@@ -418,15 +419,13 @@ if not ser:
 prevTempJson = {}
 thread = False
 threads = []
-
-# Initialise Tilt and start monitoring
 tilt = False
+
+
+# Initialize Tilt and start monitoring
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     import Tilt
-    if getWwwSetting('tempFormat') == 'F':
-        tilt = Tilt.TiltManager(True, config['tiltColor'], 300, 10000, 0)
-    else:
-        tilt = Tilt.TiltManager(False, config['tiltColor'], 300, 10000, 0)
+    tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
     tilt.loadSettings()
     tilt.start()
     # Create prevTempJson for Tilt
@@ -590,6 +589,7 @@ def renameTempKey(key):
 
 
 while run:
+    bc = BrewConvert.BrewConvert()
     if config['dataLogging'] == 'active':
         # Check whether it is a new day
         lastDay = day
@@ -700,7 +700,7 @@ while run:
                 decoded = json.loads(value)
                 bg_ser.write("j" + json.dumps(decoded))
                 if 'tempFormat' in decoded:
-                    # Change in web interface settings too.
+                    # Change in web interface settings too
                     changeWwwSetting('tempFormat', decoded['tempFormat'])
             except json.JSONDecodeError:
                 logMessage("Error: Invalid JSON parameter.  String received:")
@@ -944,8 +944,12 @@ while run:
                                 if color == config["tiltColor"]:
                                     tiltValue = tilt.getValue(color)
                                     if tiltValue is not None:
+                                        _temp = tiltValue.temperature
+                                        if cc['tempFormat'] == 'C':
+                                            _temp = bc.convert(_temp, 'F', 'C')
+
                                         prevTempJson[color +
-                                                     'Temp'] = round(tiltValue.temperature, 2)
+                                                     'Temp'] = round(_temp, 2)
                                         prevTempJson[color +
                                                      'SG'] = round(tiltValue.gravity, 3)
                                     else:

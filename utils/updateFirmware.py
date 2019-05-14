@@ -97,7 +97,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     configFile = '{0}settings/config.cfg'.format(addSlash(scriptPath()))
     config = readCfgWithDefaults(configFile)
     
-    stopResult = stopThisChamber()
+    stopResult = stopThisChamber(config['scriptPath'], config['wwwPath'])
     if stopResult is True:
         # BrewPi was running and stopped.  Start after update.
         startAfterUpdate = True
@@ -247,6 +247,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         printStdErr("\nNo compatible releases found for {0} {1} {2} with {3} {4} shield.".format(article(family), family.capitalize(), board.capitalize(), article(shield), str(shield).upper()))
         if startAfterUpdate:
             # Only restart if it was running when we started
+            print(config['wwwPath'])
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
         return False
 

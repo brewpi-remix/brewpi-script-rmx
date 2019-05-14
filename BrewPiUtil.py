@@ -243,12 +243,11 @@ def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0, noLog=Fals
     return ser
 
 
-def stopThisChamber(myPath='/home/brewpi/'):
+def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
     # Quit BrewPi process running from this chamber
-    configFile = addSlash(myPath) + 'settings/config.cfg'
-    config = readCfgWithDefaults(configFile)
-    wwwPath = addSlash(config['wwwPath'])
-    myPath = addSlash(config['scriptPath'])
+    scriptPath = addSlash(scriptPath)
+    wwwPath = addSlash(wwwPath)
+
     dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
 
     printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
@@ -277,12 +276,12 @@ def stopThisChamber(myPath='/home/brewpi/'):
         procKilled = False
         i = 0
         for proc in psutil.process_iter():
-            if any('python' in proc.name() and '{0}brewpi.py'.format(myPath) in s for s in proc.cmdline()):
+            if any('python' in proc.name() and '{0}brewpi.py'.format(scriptPath) in s for s in proc.cmdline()):
                 i += 1
-                beerSocket = '{0}BEERSOCKET'.format(myPath)
+                beerSocket = '{0}BEERSOCKET'.format(scriptPath)
                 pid = proc.pid
                 # TODO: Figure out how to send a stopMessage to socket?
-                #printStdErr('\nStopping BrewPi in {0}.'.format(myPath))
+                #printStdErr('\nStopping BrewPi in {0}.'.format(scriptPath))
                 #socket = BrewPiSocket.BrewPiSocket(config)
                 #socket.connect()
                 #socket.write('stopScript') # This does not work

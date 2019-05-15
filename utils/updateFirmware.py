@@ -137,6 +137,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
                 return True
 
             # Be sure to check the configured port
@@ -152,6 +155,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
                 return False
             if "Arduino" in name:
                 family = "Arduino"
@@ -164,6 +170,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
                 return False
             else:
                 printStdErr("\nProcessing a firmware flash for your blank %s." % name)
@@ -183,6 +192,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
             if startAfterUpdate:
                 # Only restart if it was running when we started
                 removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+            else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
             return False
     else:
         restoreDevices = False
@@ -220,6 +232,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                     if startAfterUpdate:
                         # Only restart if it was running when we started
                         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                    else:
+                        printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                            '\nmay have to investigate.')
                     return True
                 else:
                     selection = int(choice)
@@ -247,8 +262,10 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         printStdErr("\nNo compatible releases found for {0} {1} {2} with {3} {4} shield.".format(article(family), family.capitalize(), board.capitalize(), article(shield), str(shield).upper()))
         if startAfterUpdate:
             # Only restart if it was running when we started
-            print(config['wwwPath'])
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+        else:
+            printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                '\nmay have to investigate.')
         return False
 
     # Default tag is latest stable tag, or latest unstable tag if no stable tag is found
@@ -283,6 +300,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
                 return True # choice = skip updating
             try:
                 tag = compatibleTags[selection]
@@ -323,6 +343,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 if startAfterUpdate:
                     # Only restart if it was running when we started
                     removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+                else:
+                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                        '\nmay have to investigate.')
                 return True
 
     if hwVersion is not None and userInput:
@@ -345,6 +368,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         if startAfterUpdate:
             # Only restart if it was running when we started
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+        else:
+            printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                '\nmay have to investigate.')
         return False
 
     if localFileName:
@@ -354,6 +380,9 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         if startAfterUpdate:
             # Only restart if it was running when we started
             removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
+        else:
+            printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                '\nmay have to investigate.')
         return False
 
     printStdErr("\nUpdating firmware.")
@@ -363,7 +392,6 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
     else:
         printStdErr('BrewPi was not running when we started, leaving {0}.'.format(addSlash(config['wwwPath'])))
-    
     return result
 
 

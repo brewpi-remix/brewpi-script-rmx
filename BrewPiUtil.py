@@ -320,6 +320,9 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
     elif procKilled is None and not dontRunCreated:
         # File existed and proc did not exist
         return None
+    elif procKilled is None and dontRunCreated:
+        # Created file and proc did not exist
+        return None
     elif dontRunCreated and not procKilled:
         # Created file but proc was not killed, remove file
         try:

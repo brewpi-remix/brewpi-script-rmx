@@ -25,19 +25,16 @@
 # the BrewPi Legacy users. This was an obvious jumping-off point for
 # brewpi-tilt-rmx.
 
-# Neither @sibowler's scripts nor @supercow's fork had a license attached
-# to the repository. As a derivative work of BrewPi, a project released
-# under the GNU General Public License v3.0, this license is attached here
-# giving precedence for prior work by the BrewPi team.
-
-# BLE iBeaconScanner based on
-# https://github.com/adamf/BLE/blob/master/ble-scanner.py
-# JCS 06/07/14
+# As a derivative work of BrewPi, a project released under the GNU General
+# Public License v3.0, this license is attached here giving precedence for
+# prior work by the BrewPi team.  Both @sibowler and @supercow have agreed
+# to this licensing approach.
 
 import bluetooth._bluetooth as bluez
 import struct
 import sys
 import os
+import time
 
 # BLE scanner based on https://github.com/adamf/BLE/blob/master/ble-scanner.py
 # BLE scanner, based on
@@ -48,8 +45,8 @@ import os
 # https://github.com/pauloborges/bluez/blob/master/lib/hci.c#L2782 for functions
 # used by lescan
 
-# Performs a simple device inquiry, and returns a list of ble advertisements
-# discovered device
+# Performs a simple device inquiry, and returns a list of ble advertisement
+# discovered devices
 
 # NOTE: Python's struct.pack() will add padding bytes unless you make the
 # endianness explicit. Little endian should be used for BLE. Always start a
@@ -125,38 +122,19 @@ def hci_disable_le_scan(sock):
 
 
 def hci_toggle_le_scan(sock, enable):
-    # hci_le_set_scan_enable(dd, 0x01, filter_dup, 1000);
-    # memset(&scan_cp, 0, sizeof(scan_cp));
- # uint8_t         enable;
- #       uint8_t         filter_dup;
-    #        scan_cp.enable = enable;
-    #        scan_cp.filter_dup = filter_dup;
-    #
-    #        memset(&rq, 0, sizeof(rq));
-    #        rq.ogf = OGF_LE_CTL;
-    #        rq.ocf = OCF_LE_SET_SCAN_ENABLE;
-    #        rq.cparam = &scan_cp;
-    #        rq.clen = LE_SET_SCAN_ENABLE_CP_SIZE;
-    #        rq.rparam = &status;
-    #        rq.rlen = 1;
-
-    #        if (hci_send_req(dd, &rq, to) < 0)
-    #                return -1;
     cmd_pkt = struct.pack("<BB", enable, 0x00)
     bluez.hci_send_cmd(sock, OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE, cmd_pkt)
 
 
 def hci_le_set_scan_parameters(sock):
     old_filter = sock.getsockopt(bluez.SOL_HCI, bluez.HCI_FILTER, 14)
-
     SCAN_RANDOM = 0x01
     OWN_TYPE = SCAN_RANDOM
     SCAN_TYPE = 0x01
 
 
-def parse_events(sock, loop_count=100): 
+def parse_events(sock, loop_count=100):
     old_filter = sock.getsockopt(bluez.SOL_HCI, bluez.HCI_FILTER, 14)
-
     # Perform a device inquiry on bluetooth device #0. The inquiry should
     # last 8 * 1.28 = 10.24 seconds. Before the inquiry is performed, bluez
     # should flush its cache of previously discovered devices
@@ -167,7 +145,7 @@ def parse_events(sock, loop_count=100):
     done = False
     results = []
     myFullList = []
-    
+
     for i in range(0, loop_count):
         pkt = sock.recv(255)
         ptype, event, plen = struct.unpack("BBB", pkt[:3])
@@ -182,20 +160,27 @@ def parse_events(sock, loop_count=100):
             subevent, = struct.unpack("B", pkt[3])
             pkt = pkt[4:]
             if subevent == EVT_LE_CONN_COMPLETE:
-                le_handle_connection_complete(pkt)
+                pass
+                # le_handle_connection_complete(pkt)
             elif subevent == EVT_LE_ADVERTISING_REPORT:
-                #print "advertising report"
                 num_reports = struct.unpack("B", pkt[0])[0]
                 report_pkt_offset = 0
                 for i in range(0, num_reports):
                     # Build return string
-                    mac = packed_bdaddr_to_string(pkt[report_pkt_offset + 3:report_pkt_offset + 9])
-                    uuid = returnstringpacket(pkt[report_pkt_offset - 22: report_pkt_offset - 6])
-                    temp = "%i" % returnnumberpacket(pkt[report_pkt_offset - 6: report_pkt_offset - 4])
-                    grav = "%i" % returnnumberpacket(pkt[report_pkt_offset - 4: report_pkt_offset - 2])
+                    ts = time.time()
+                    mac = packed_bdaddr_to_string(
+                        pkt[report_pkt_offset + 3:report_pkt_offset + 9])
+                    uuid = returnstringpacket(
+                        pkt[report_pkt_offset - 22: report_pkt_offset - 6])
+                    temp = "%i" % returnnumberpacket(
+                        pkt[report_pkt_offset - 6: report_pkt_offset - 4])
+                    grav = "%i" % returnnumberpacket(
+                        pkt[report_pkt_offset - 4: report_pkt_offset - 2])
                     txp = "%i" % struct.unpack("b", pkt[report_pkt_offset - 2])
-                    rssi = "%i" % struct.unpack("b", pkt[report_pkt_offset - 1])
-                    Adstring = '{0},{1},{2},{3},{4},{5}'.format(mac, uuid, temp, grav, txp, rssi)
+                    rssi = int("%i" % struct.unpack(
+                        "b", pkt[report_pkt_offset - 1])) & 0xff
+                    Adstring = '{0},{1},{2},{3},{4},{5},{6}'.format(
+                        ts, mac, uuid, temp, grav, txp, rssi)
                     myFullList.append(Adstring)
                 done = True
     sock.setsockopt(bluez.SOL_HCI, bluez.HCI_FILTER, old_filter)

@@ -25,10 +25,10 @@
 # the BrewPi Legacy users. This was an obvious jumping-off point for
 # brewpi-tilt-rmx.
 
-# Neither @sibowler's scripts nor @supercow's fork had a license attached
-# to the repository. As a derivative work of BrewPi, a project released
-# under the GNU General Public License v3.0, this license is attached here
-# giving precedence for prior work by the BrewPi team.
+# As a derivative work of BrewPi, a project released under the GNU General
+# Public License v3.0, this license is attached here giving precedence for
+# prior work by the BrewPi team.  Both @sibowler and @supercow have agreed
+# to this licensing approach.
 
 import blescan
 import sys
@@ -53,12 +53,18 @@ TILT_COLORS = ['Red', 'Green', 'Black',
 DATA_REFRESH_WINDOW = 60
 
 
-# extrap1d Sourced from sastanin @ StackOverflow:
-# http://stackoverflow.com/questions/2745329/
-# This function is required as the interp1d function doesn't support
-# extrapolation in the version of scipy that is currently available on
-# the pi.
 def extrap1d(interpolator):
+    '''
+    Extrapolation of configuration points.
+
+    This function is required as the interp1d function doesn't support
+    extrapolation in the version of scipy that is currently available on
+    the pi.
+    '''
+
+    # extrap1d Sourced from sastanin @ StackOverflow:
+    # http://stackoverflow.com/questions/2745329/
+
     xs = interpolator.x
     ys = interpolator.y
 
@@ -76,30 +82,30 @@ def extrap1d(interpolator):
     return ufunclike
 
 
-# Simple offset calibration if only one point available.
 def offsetCalibration(offset, value):
+    '''Simple offset calibration if only one point available.'''
     return value + offset
 
 
-# More complex interpolation calibration if more than one calibration point
-# available
 def extrapolationCalibration(extrapolationFunction, value):
+    '''Interpolation calibration if >1 calibration point available.'''
     inputValue = [value]
     returnValue = extrapolationFunction(inputValue)
     return returnValue[0]
 
 
 def noCalibration(value):
+    '''Return unconverted argument if no calibration points available.'''
     return value
 
 
-# Median utility function
 def median(values):
+    '''Returns median of supplied values.'''
     return numpy.median(numpy.array(values))
 
 
-# Class to hold a Tilt reading
 class TiltValue:
+    '''Holds a Tilt reading.'''
     temperature = 0
     gravity = 0
     timestamp = 0
@@ -113,9 +119,13 @@ class TiltValue:
         return "T: " + str(self.temperature) + " G: " + str(self.gravity)
 
 
-# Tilt class, looks after calibration, storing of values and smoothing
-# of read values.
 class Tilt:
+    '''
+    Manages Tilt values.
+
+    Looks after calibration, storing of values and smoothing of read values.
+    '''
+
     color = ''
     values = None
     lock = None
@@ -132,9 +142,11 @@ class Tilt:
         self.medianWindow = medianWindow
         self.values = []
         self.calibrate()
+        self.displayedError = False
 
     def calibrate(self):
         """Load/reload calibration functions."""
+
         # Check for temperature function. If none, then not changed since
         # last load.
         tempFunction = self.tiltCalibrationFunction(
@@ -152,22 +164,27 @@ class Tilt:
     def setValues(self, temperature, gravity):
         """
         Set/add the latest temperature & gravity readings to the store.
-        
+
         These values will be calibrated before storing if calibration is
         enabled
         """
         with self.lock:
-            self.cleanValues()
-            self.calibrate()
-            calibratedTemperature = self.tempCalibrationFunction(temperature)
-            calibratedGravity = self.gravityCalibrationFunction(gravity)
-            self.values.append(TiltValue(
-                calibratedTemperature, calibratedGravity))
+            try:
+                self.cleanValues()
+                self.calibrate()
+                calibratedTemperature = self.tempCalibrationFunction(temperature)
+                calibratedGravity = self.gravityCalibrationFunction(gravity)
+                self.values.append(TiltValue(
+                    calibratedTemperature, calibratedGravity))
+            except TypeError:
+                if self.displayedError is False:
+                    print '\nERROR: Detected a type error, >1 Tilt available? Results will be erratic.'
+                    self.displayedError = True
 
     def getValues(self):
         """
         Returns the temperature & gravity values of the Tilt. 
-        
+
         This will be the latest read value unless averaging / median has
         been enabled
         """
@@ -264,9 +281,13 @@ class Tilt:
                 # this condition we can stop searching.
                 break
 
-    # Load the calibration settings from file and create the calibration
-    # functions
     def tiltCalibrationFunction(self, type, color):
+        '''
+        Load the calibration settings.
+
+        Loads settings from file and create the calibration functions.
+        '''
+
         returnFunction = noCalibration
 
         originalValues = []
@@ -277,14 +298,13 @@ class Tilt:
 
         lastChecked = self.calibrationDataTime.get(type + "_checked", 0)
         if ((int(time.time()) - lastChecked) < DATA_REFRESH_WINDOW):
-            # Only check every x seconds
+            # Only check every DATA_REFRESH_WINDOW seconds
             return None
 
         lastLoaded = self.calibrationDataTime.get(type, 0)
         self.calibrationDataTime[type + "_checked"] = int(time.time())
 
         try:
-            #print "opening file"
             if (os.path.isfile(filename)):
                 fileModificationTime = os.path.getmtime(filename)
                 if (lastLoaded >= fileModificationTime):
@@ -319,21 +339,19 @@ class Tilt:
                 originalValues, actualValues, bounds_error=False, fill_value=1)
             returnFunction = functools.partial(
                 extrapolationCalibration, extrap1d(interpolationFunction))
-            print "Tilt (" + color + "): Initialised " + \
+            print "Tilt (" + color + "): Initialized " + \
                 type.capitalize() + " Calibration: Interpolation"
         # Not enough values. Likely just an offset calculation
         elif (len(actualValues) == 1):
             offset = actualValues[0] - originalValues[0]
             returnFunction = functools.partial(offsetCalibration, offset)
-            print "Tilt (" + color + "): Initialised " + \
+            print "Tilt (" + color + "): Initialized " + \
                 type.capitalize() + " Calibration: Offset (" + str(offset) + ")"
         return returnFunction
 
 
-# Class to manage the monitoring of all Tilts and storing the read
-# values.
 class TiltManager:
-    # inFahrenheit = True
+    '''Manages the monitoring of all Tilts and storing the read values.'''
     color = ''
     dev_id = 0
     averagingPeriod = 0
@@ -343,7 +361,7 @@ class TiltManager:
     # Dictionary to hold Tilts - index on color
     tilts = {}
 
-    brewthread = None
+    tiltthread = None
 
     def __init__(self, color='', averagingPeriod=0, medianWindow=0, dev_id=0):
         self.color = color
@@ -352,6 +370,7 @@ class TiltManager:
         self.medianWindow = medianWindow
 
     def tiltName(self, uuid):
+        '''Return color given UUID.'''
         return {
             'a495bb10c5b14b44b5121370f02d74de': 'Red',
             'a495bb20c5b14b44b5121370f02d74de': 'Green',
@@ -363,32 +382,25 @@ class TiltManager:
             'a495bb80c5b14b44b5121370f02d74de': 'Pink'
         }.get(uuid)
 
-    # def convertFtoC(self, temperatureF):
-    #     return (temperatureF - 32) * 5.0 / 9
-
-    def convertSG(self, gravity):
-        return float(gravity) / 1000
-
-    # Store function
     def storeValue(self, color, temperature, gravity):
+        '''Store Tilt values by color.'''
         tilt = self.tilts.get(color)
         if (tilt is None):
             tilt = Tilt(
                 color, self.averagingPeriod, self.medianWindow)
             self.tilts[color] = tilt
-
         tilt.setValues(temperature, gravity)
 
-    # Retrieve function.
     def getValue(self, color):
+        '''Retrieve Tilt values per color.'''
         returnValue = None
         tilt = self.tilts.get(color)
         if (tilt is not None):
             returnValue = tilt.getValues()
         return returnValue
 
-    # Scanner function
     def scan(self):
+        '''Scan for BLE messages, stores Tilt values.'''
         try:
             sock = bluez.hci_open_dev(self.dev_id)
 
@@ -409,49 +421,56 @@ class TiltManager:
 
                 # Resolve whether the received BLE event is for a Tilt
                 # by looking at the UUID.
-                name = self.tiltName(beaconParts[1])
+                name = self.tiltName(beaconParts[2])
 
                 # If the event is for a Tilt, process the data
                 if name is not None:
                     # Store only the Tilt we are monitoring or all if
                     # we have not selected one
-                    if self.color == '' or name == self.color:
-                        # Get the temperature and convert to C if needed.
-                        temperature = int(beaconParts[2])
-                        # if not self.inFahrenheit:
-                        #     temperature = self.convertFtoC(temperature)
 
-                        # Get the gravity.
-                        gravity = self.convertSG(beaconParts[3])
+                    # DEBUG
+                    # print('DEBUG: {0} Tilt beacon: {1}'.format(name, beaconParts))
+                    # ts = beaconParts[0]
+                    # mac = beaconParts[1]
+                    # uuid = beaconParts[2]
+                    # temp = beaconParts[3]
+                    # grav = beaconParts[4]
+                    # txp = beaconParts[5]
+                    # rssi = beaconParts[6]
+                    # print('DEBUG:  TS: {0}, MAC: {1}, UUID: {2}, Name: {7}, Temp: {3}, Grav: {4}, TXP: {5}, RSSI: {6}'.format(ts, mac, name, temp, grav, txp, rssi, name))
+                    # DEBUG
+
+                    if self.color == '' or name == self.color:
+                        # Get the temperature (in F, conversion in brewpi.py)
+                        temperature = int(beaconParts[3])
+
+                        # Get the gravity
+                        gravity = float(beaconParts[4]) / 1000
 
                         # Store the retrieved values in the relevant Tilt object.
                         self.storeValue(name, temperature, gravity)
 
-    # Stop Scanning function
     def stop(self):
+        '''Stop scanning function.'''
         self.scanning = False
 
-    # Start the scanning thread
     def start(self):
+        '''Start the scanning thread.'''
         self.scanning = True
-        self.brewthread = thread.start_new_thread(self.scan, ())
+        self.tiltthread = thread.start_new_thread(self.scan, ())
 
-    # Load Settings from config file, overriding values given at creation.
-    # This needs to be called before the start function is called.
     def loadSettings(self):
+        '''
+        Load Settings from config file.
+
+        Overrides values given at creation. This needs to be called before
+        the start function is called.
+        '''
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
             config = ConfigParser.ConfigParser()
             config.read(filename)
-
-            # Load config values from ini if present (allow override)
-            #
-            # Fahrenheit or Celsius
-            # try:
-            #     self.inFahrenheit = config.getboolean("Manager", "TempInF")
-            # except:
-            #     pass
 
             # BT Device ID
             try:
@@ -477,7 +496,7 @@ class TiltManager:
 
 
 def main():
-    # Test run
+    '''Test run for stand-alone run.'''
     threads = []
     tilt = TiltManager()
     tilt.loadSettings()
@@ -493,6 +512,7 @@ def main():
     tilt.stop()
 
     for thread in threads:
+        time.sleep(2)
         thread.join()
 
 

@@ -177,8 +177,7 @@ def parse_events(sock, loop_count=100):
                     grav = "%i" % returnnumberpacket(
                         pkt[report_pkt_offset - 4: report_pkt_offset - 2])
                     txp = "%i" % struct.unpack("b", pkt[report_pkt_offset - 2])
-                    rssi = int("%i" % struct.unpack(
-                        "b", pkt[report_pkt_offset - 1])) & 0xff
+                    rssi = "%i" % struct.unpack("b", pkt[report_pkt_offset - 1])
                     Adstring = '{0},{1},{2},{3},{4},{5},{6}'.format(
                         ts, mac, uuid, temp, grav, txp, rssi)
                     myFullList.append(Adstring)

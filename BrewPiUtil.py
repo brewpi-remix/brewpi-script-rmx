@@ -171,8 +171,8 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
         return None
 
 
-def findSerialPort(bootLoader):
-    (port, name) = autoSerial.detect_port(bootLoader)
+def findSerialPort(bootLoader, my_port=None):
+    (port, name) = autoSerial.detect_port(bootLoader, my_port)
     return port
 
 

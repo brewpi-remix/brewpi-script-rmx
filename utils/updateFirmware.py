@@ -313,16 +313,6 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     else:
         printStdErr("\nLatest version on GitHub: " + tag)
 
-    # # DEBUG
-    # printStdErr('\nDEBUG:  hwVersion.shield = {0}'.format(hwVersion.shield.lower()))
-    # printStdErr('\nDEBUG:  shield = {0}'.format(shield.lower()))
-    # if hwVersion.shield.lower() == shield.lower(): #DEBUG
-    #     printStdErr('DEBUG: hwVersion.shield == shield')
-    # else:
-    #     printStdErr('DEBUG: hwVersion.shield != shield')
-    # return True # DEBUG
-    # # DEBUG
-
     if doShield is False:
         if hwVersion is not None and not hwVersion.isNewer(tag):
             if hwVersion.isEqual(tag):
@@ -391,7 +381,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
     else:
-        printStdErr('BrewPi was not running when we started, leaving {0}.'.format(addSlash(config['wwwPath'])))
+        printStdErr('\nBrewPi was not running when we started, leaving do_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
     return result
 
 

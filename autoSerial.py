@@ -31,6 +31,7 @@
 # license and credits.
 
 from __future__ import absolute_import
+from __future__ import print_function
 from serial.tools import list_ports
 import BrewPiUtil
 
@@ -50,7 +51,7 @@ known_devices = [
     {'vid': 0x2B04, 'pid': 0xC006, 'name': "Particle Photon"}
 ]
 
-def recognised_device_name(device):
+def recognized_device_name(device):
     for known in known_devices:
         if device.vid == known['vid'] and device.pid == known['pid']: # match on VID, PID
             return known['name']
@@ -63,7 +64,7 @@ def find_compatible_serial_ports(bootLoader = False, my_port = None):
         ports = find_my_serial_port(my_port)
 
     for p in ports:
-        name = recognised_device_name(p)
+        name = recognized_device_name(p)
         if name is not None:
             if "Bootloader" in name and not bootLoader:
                 continue
@@ -74,7 +75,7 @@ def find_all_serial_ports():
     :return: a list of serial port info tuples
     :rtype:
     """
-    all_ports = list_ports.comports()
+    all_ports = list_ports.comports(True)
     return iter(all_ports)
 
 def find_my_serial_port(my_port):
@@ -82,7 +83,7 @@ def find_my_serial_port(my_port):
     :return: Requested serial port info tuple
     :rtype:
     """
-    my_port = list_ports.grep(my_port)
+    my_port = list_ports.grep(my_port, True)
     return iter(my_port)
 
 def detect_port(bootLoader = False, my_port = None):
@@ -90,8 +91,12 @@ def detect_port(bootLoader = False, my_port = None):
     :return: first detected serial port as tuple: (port, name)
     :rtype:
     """
+    if my_port == "auto":
+        my_port = None
+        
     port = (None, None)
     ports = find_compatible_serial_ports(bootLoader=bootLoader, my_port=my_port)
+
     try:
         port = ports.next()
     except StopIteration:
@@ -112,15 +117,14 @@ def configure_serial_for_device(s, d):
     s.setBaudrate(57600)
 
 if __name__ == '__main__':
-    print "All ports:"
+    print("All ports:")
     for p in find_all_serial_ports():
         try:
-            print "{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid))
+            print("{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid)))
         except ValueError:
             # could not convert pid and vid to hex
-            print "{0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid))
-    print "Compatible ports: "
+            print("{0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid)))
+    print("Compatible ports: ")
     for p in find_compatible_serial_ports():
-        print p
-    print "Selected port: {0}".format(detect_port())
-
+        print(p)
+    print("Selected port: {0}".format(detect_port()))

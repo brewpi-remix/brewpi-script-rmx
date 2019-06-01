@@ -248,17 +248,14 @@ class SerialProgrammer:
             if not self.flash_file(hexFile):
                 return 0
 
-        # printStdErr("\nWaiting for device to reset.")
-        # time.sleep(15)  # give time to reboot
-
         self.fetch_new_version()
         self.reset_settings()
         if self.restoreSettings or self.restoreDevices:
             printStdErr(
                 "\nChecking which settings and devices may be restored.")
         if self.versionNew is None:
-            printStdErr(("\nWarning: Cannot receive version number from controller after programming.",
-                         "\nRestoring settings/devices settings failed."))
+            printStdErr("\nWarning: Cannot receive version number from controller after programming.",
+                         "\nRestoring settings/devices settings failed.")
             return 0
 
         if not self.versionOld and (self.restoreSettings or self.restoreDevices):
@@ -521,21 +518,6 @@ class ArduinoProgrammer(SerialProgrammer):
             # give the arduino some time to reboot in case of an Arduino UNO
             time.sleep(10)
 
-    def reset_leonardo(self):
-        if self.ser:
-            self.ser.close()
-        del self.ser
-        self.ser = None
-        if self.open_serial(self.config, 1200, None):
-            self.ser.close()
-            time.sleep(2)  # give the bootloader time to start up
-            self.ser = None
-            return True
-        else:
-            printStdErr(
-                "\nCould not open serial port at 1200 baud to reset Arduino Leonardo.")
-            return False
-
     def flash_file(self, hexFile):
         config, boardType = self.config, self.boardType
         printStdErr("\nLoading programming settings from board.txt.")
@@ -587,13 +569,10 @@ class ArduinoProgrammer(SerialProgrammer):
         hexFileDir = os.path.dirname(hexFile)
         hexFileLocal = os.path.basename(hexFile)
 
-        if boardType == 'leonardo':
-            if not self.reset_leonardo():
-                return False
-
         time.sleep(1)
         # Get serial port while in bootloader
-        bootLoaderPort = util.findSerialPort(bootLoader=True)
+        bootLoaderPort = util.findSerialPort(bootLoader=True, my_port=config['port'])
+        # bootLoaderPort = util.findSerialPort(bootLoader=True)
         if not bootLoaderPort:
             printStdErr("\nERROR: Could not find port in bootloader.")
 

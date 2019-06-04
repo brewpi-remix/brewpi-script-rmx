@@ -202,7 +202,7 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${rawURL/BRANCH/$branch}"
     cd "$SCRIPTPATH" && { curl -O "$url" ; cd -; }
-    chmod 660 "$SCRIPTPATH/$THISSCRIPT"
+    chmod 755 "$SCRIPTPATH/$THISSCRIPT"
     after=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
     if [ ! "$before" == "$after" ]; then
         # doUpdate was updated, re-run script

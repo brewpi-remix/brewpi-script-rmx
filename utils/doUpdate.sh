@@ -255,4 +255,5 @@ main() {
     banner "complete"
 }
 
+# Dummy update
 main "$@" && exit 0

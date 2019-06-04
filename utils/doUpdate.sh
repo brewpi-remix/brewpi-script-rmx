@@ -204,7 +204,7 @@ updateme() {
     cd "$SCRIPTPATH" && { curl -O "$url" ; cd -; }
     chmod 660 "$SCRIPTPATH/$THISSCRIPT"
     after=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
-    if [ "$before" -neq "$after" ]; then
+    if [ ! "$before" == "$after" ]; then
         # doUpdate was updated, re-run script
         echo -e "\nThis script was updated, re-executing to pick up changes."
         eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"

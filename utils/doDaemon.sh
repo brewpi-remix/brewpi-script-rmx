@@ -223,7 +223,7 @@ brewpi_unit() {
     retval="$?"
     if [[ "$retval" == 0 ]]; then
         createdaemon "doBrewPi.sh" "$brewpicheck" "brewpi"
-        # This is necessary so that WiFi checm (as root) does not create them first
+        # This is necessary so that WiFi check (as root) does not create them first
         touch "$GITROOT/logs/stdout.txt" && chown brewpi:brewpi "$GITROOT/logs/stdout.txt"
         touch "$GITROOT/logs/stderr.txt" && chown brewpi:brewpi "$GITROOT/logs/stderr.txt"
     fi

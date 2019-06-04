@@ -212,8 +212,8 @@ process() {
         if [ ! "$quick" == "true" ]; then
             "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
         fi
-        "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc files and empty dirs
-        echo -e "\nUpdate complete.  Please restart script to enable changes."
+        # Cleanup *.pyc files and empty dirs, update daemons, do perms
+        "$GITROOT/utils/doCleanup.sh"
     fi
     popd &> /dev/null || die # Move back to where we started
 }

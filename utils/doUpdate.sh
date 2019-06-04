@@ -201,7 +201,7 @@ updateme() {
     before=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${rawURL/BRANCH/$branch}"
-    cd "$SCRIPTPATH" && { curl -O url ; cd -; }
+    cd "$SCRIPTPATH" && { curl -O "$url" ; cd -; }
     chmod 660 "$SCRIPTPATH/$THISSCRIPT"
     after=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
     if [ "$before" -neq "$after" ]; then

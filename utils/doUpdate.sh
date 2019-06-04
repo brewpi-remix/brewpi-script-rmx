@@ -35,7 +35,9 @@ declare SCRIPTPATH GITROOT repoArray
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
-declare HOMEPATH REALUSER
+declare HOMEPATH REALUSER rawURL
+
+rawURL="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/BRANCH/utils/doUpdate.sh"
 
 ############
 ### Init
@@ -191,6 +193,26 @@ getrepos() {
 }
 
 ############
+### Check for Updated doUpdate Script
+############
+
+updateme() {
+    local before after url branch
+    before=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
+    branch=$(git branch | grep \* | cut -d ' ' -f2)
+    url="${rawURL/BRANCH/$branch}"
+    cd "$SCRIPTPATH" && { curl -O url ; cd -; }
+    chmod 660 "$SCRIPTPATH/$THISSCRIPT"
+    after=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
+    if [ "$before" -neq "$after" ]; then
+        # doUpdate was updated, re-run script
+        echo -e "\nThis script was updated, re-executing to pick up changes."
+        eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
+        exit $?
+    fi
+}
+
+############
 ### Process Updates
 ############
 
@@ -228,6 +250,7 @@ main() {
     asroot # Make sure we are running with root privs
     help "$@" # Process help and version requests
     banner "starting"
+    updateme "$@" # See if the updater needs updated before we start
     process "$@" # Check and process updates
     banner "complete"
 }

@@ -130,8 +130,10 @@ function updateRepo() {
         retval=$?
         if [ $retval -eq 0 ]; then
             active_branch=${active_branch##refs/heads/}
-            # Check local against remote
+            # Make sure we have all remote branches
+            git remote set-branches origin '*'
             git fetch
+            # Check local against remote
             changes=$(git log HEAD..origin/"$active_branch" --oneline)
             if [ -z "$changes" ]; then
                 # no changes
@@ -195,7 +197,6 @@ getrepos() {
 process() {
     local doRepo didUpdate arg
     arg="$1"
-    echo -e "\n***Script $THISSCRIPT starting.***"
     if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
     didUpdate=0 # Hold a counter for having to do git pulls
     pushd . &> /dev/null || die # Store current directory
@@ -212,6 +213,7 @@ process() {
             "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
         fi
         "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc files and empty dirs
+        echo -e "\nUpdate complete.  Please restart script to enable changes."
     fi
     popd &> /dev/null || die # Move back to where we started
 }

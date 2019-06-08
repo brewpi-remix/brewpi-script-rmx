@@ -253,6 +253,7 @@ main() {
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
+        echo -e "\nDEBUG: It works."
         process "$@" # Check and process updates
     else
         # Get the latest doUpdate.sh script and run it instead

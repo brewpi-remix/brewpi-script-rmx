@@ -204,8 +204,11 @@ updateme() {
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
     echo -e "\nDownloading current version of $THISSCRIPT."
-    cd "$SCRIPTPATH" && { curl -O "$url" "tmpUpdate.sh"; cd - || die; }
+    cd "$SCRIPTPATH" && { curl "$url" -o "tmpUpdate.sh"; cd - || die; }
+    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
+    chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT."
+    exit
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 

@@ -208,7 +208,6 @@ updateme() {
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT."
-    exit
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 

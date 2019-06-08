@@ -35,9 +35,10 @@ declare SCRIPTPATH GITROOT repoArray
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
-declare HOMEPATH REALUSER rawURL
-
-rawURL="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/BRANCH/utils/doUpdate.sh"
+declare HOMEPATH REALUSER
+# Declare my constants/variables
+declare url
+url="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT.sh"
 
 ############
 ### Init
@@ -197,19 +198,15 @@ getrepos() {
 ############
 
 updateme() {
-    local before after url branch
-    before=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
+    # Download current doUpdate.sh to a temp file and run that instead
+    local url branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
-    url="${rawURL/BRANCH/$branch}"
-    cd "$SCRIPTPATH" && { curl -O "$url" ; cd -; }
-    chmod 755 "$SCRIPTPATH/$THISSCRIPT"
-    after=$(shasum "$SCRIPTPATH/$THISSCRIPT" | cut -d " " -f 1)
-    if [ ! "$before" == "$after" ]; then
-        # doUpdate was updated, re-run script
-        echo -e "\nThis script was updated, re-executing to pick up changes."
-        eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
-        exit $?
-    fi
+    url="${url/THISBRANCH/$branch}"
+    url="${url/THISSCRIPT/$THISSCRIPT}"
+    echo -e "\nDownloading current version of $THISSCRIPT."
+    cd "$SCRIPTPATH" && { curl -O "$url" "tmpUpdate.sh"; cd - || die; }
+    echo -e "\nExecuting current version of $THISSCRIPT."
+    eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 
 ############
@@ -232,7 +229,8 @@ process() {
     # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
     if [ "$didUpdate" -ge 1 ]; then
         if [ ! "$quick" == "true" ]; then
-            "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
+            # Install/update all dependencies and clean local apt cache
+            "$GITROOT/utils/doDepends.sh"
         fi
         # Cleanup *.pyc files and empty dirs, update daemons, do perms
         "$GITROOT/utils/doCleanup.sh"
@@ -250,8 +248,14 @@ main() {
     asroot # Make sure we are running with root privs
     help "$@" # Process help and version requests
     banner "starting"
-    updateme "$@" # See if the updater needs updated before we start
-    process "$@" # Check and process updates
+    if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
+        # Delete the temp script before we do an update
+        rm "$SCRIPTPATH/tmpUpdate.sh"
+        process "$@" # Check and process updates
+    else
+        # Get the latest doUpdate.sh script and run it instead
+        updateme "$@"
+    fi
     banner "complete"
 }
 

@@ -38,7 +38,7 @@ declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 declare HOMEPATH REALUSER
 # Declare my constants/variables
 declare url
-url="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT.sh"
+url="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT"
 
 ############
 ### Init
@@ -199,7 +199,7 @@ getrepos() {
 
 updateme() {
     # Download current doUpdate.sh to a temp file and run that instead
-    local url branch
+    local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"

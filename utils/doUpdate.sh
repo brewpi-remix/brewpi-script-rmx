@@ -241,6 +241,25 @@ process() {
 }
 
 ############
+### Flash controller
+############
+
+flash() {
+    local yn branch
+    branch==$(git branch | grep \* | cut -d ' ' -f2)
+    if [ ! "$branch" == "master" ]; then
+        branch="--beta"
+    else
+        branch=""
+    fi
+    read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
+    case "$yn" in
+        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        * ) ;;
+    esac
+}
+
+############
 ### Main function
 ############
 
@@ -255,6 +274,7 @@ main() {
         rm "$SCRIPTPATH/tmpUpdate.sh"
         echo -e "\nDEBUG: It works."
         process "$@" # Check and process updates
+        flash # Offer to flash controller
     else
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"

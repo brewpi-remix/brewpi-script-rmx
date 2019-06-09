@@ -252,6 +252,7 @@ flash() {
     else
         branch=""
     fi
+    echo ""
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
         [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;

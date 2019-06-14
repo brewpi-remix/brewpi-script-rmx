@@ -43,7 +43,7 @@ asroot() {
         retval="$?"
         if [[ "$retval" == "0" ]]; then
             # If we are not root/sudo, relaunch as such
-            echo -e "\nNot runing as root, relaunching correctly." > /dev/tty
+            echo -e "\nNot running as root, relaunching correctly." > /dev/tty
             sleep 2
             eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
             exit $?

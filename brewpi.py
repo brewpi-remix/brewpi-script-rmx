@@ -667,7 +667,7 @@ while run:
                 raise socket.timeout  # Go to serial communication to update controller
             else:
                 logMessage("Beer temperature setting {0} is outside of allowed".format(str(newTemp)))
-                logMessage("range {0) - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
+                logMessage("range {0} - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
                 logMessage("advanced settings.")
 
         elif messageType == "setFridge":  # New constant fridge temperature received

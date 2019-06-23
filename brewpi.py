@@ -1036,7 +1036,7 @@ while run:
                     elif line[0] == 'D':
                         # Debug message received, should already been filtered out, but print anyway here.
                         logMessage(
-                            "Finding a debug message here should not be possible, report to the devs.")
+                            "Finding a debug message here should not be possible.")
                         logMessage("Line received was: {0}".format(line))
                     elif line[0] == 'L':
                         # LCD content received

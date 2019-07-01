@@ -124,7 +124,6 @@ function updateRepo() {
     thisRepo="$1"
     # First check to see if arg is a valid repo
     gitLoc=$(whatRepo "$thisRepo")
-    echo -e "\nDEBUG: gitLoc = $gitLoc" > /dev/tty && exit
     if [ -n "$gitLoc" ]; then
         # Store the current working directory
         pushd . &> /dev/null || exit 1
@@ -206,7 +205,7 @@ updateme() {
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
     echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
-    cd "$SCRIPTPATH" && { curl "$url" -o "tmpUpdate.sh"; cd - || die; }
+    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
@@ -288,9 +287,6 @@ flash() {
 main() {
     init "$@" # Init and call supporting libs
     const "$@" # Get script constants
-    asroot # Make sure we are running with root privs
-    help "$@" # Process help and version requests
-    banner "starting"
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
@@ -298,6 +294,9 @@ main() {
         process "$@" # Check and process updates
         flash # Offer to flash controller
     else
+        help "$@" # Process help and version requests
+        asroot # Make sure we are running with root privs
+        banner "starting"
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"
     fi

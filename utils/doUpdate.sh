@@ -200,7 +200,7 @@ getrepos() {
 
 updateme() {
     # Download current doUpdate.sh to a temp file and run that instead
-    local branch url
+    local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
@@ -289,8 +289,7 @@ main() {
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
-        getrepos # Get list of repositories to update
-        doRepoUrl # Check/update repo url
+        getrepos "$@" # Get list of repositories to update
         process "$@" # Check and process updates
         flash # Offer to flash controller
     else

@@ -51,7 +51,7 @@ init() {
     cd "$SCRIPTPATH" || exit 1 # Move to where the script is
     GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
     if [ -z "$GITROOT" ]; then
-        echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
+        echo -e "\nERROR: Unable to find my repository, did you not run as root?" > /dev/tty 
         popd &> /dev/null || exit 1
         exit 1
     fi
@@ -88,7 +88,7 @@ init() {
 banner() {
     local adj
     adj="$1"
-    echo -e "\n***Script $THISSCRIPT $adj.***"
+    echo -e "\n***Script $THISSCRIPT $adj.***" > /dev/tty 
 }
 
 ############
@@ -102,7 +102,7 @@ function whatRepo() {
     thisRepo="$1"
     if [ ! -d "$thisRepo" ]; then
         return # Not a directory
-        elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
+    elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
         return # Not part of a repo
     fi
     pushd . &> /dev/null || exit 1
@@ -124,6 +124,7 @@ function updateRepo() {
     thisRepo="$1"
     # First check to see if arg is a valid repo
     gitLoc=$(whatRepo "$thisRepo")
+    echo -e "\nDEBUG: gitLoc = $gitLoc" > /dev/tty && exit
     if [ -n "$gitLoc" ]; then
         # Store the current working directory
         pushd . &> /dev/null || exit 1
@@ -173,7 +174,7 @@ function updateRepo() {
         popd &> /dev/null || exit 1
         return 0
     else
-        echo -e "\nNo valid repo passed to function ($thisRepo)."
+        echo -e "\nNo valid repo passed to function (repo = '$thisRepo')."
     fi
 }
 
@@ -204,11 +205,11 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
-    echo -e "\nDownloading current version of $THISSCRIPT."
+    echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
     cd "$SCRIPTPATH" && { curl "$url" -o "tmpUpdate.sh"; cd - || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
-    echo -e "\nExecuting current version of $THISSCRIPT."
+    echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 
@@ -217,13 +218,17 @@ updateme() {
 ############
 
 doRepoUrl() {
-    local currrentUrl newUrl
+    local currrentUrl newUrl currentRepo
+    currentRepo="$1"
+    pushd . &> /dev/null || die # Store current directory
+    cd "$currentRepo" || die # Move to where the script is
     currrentUrl="$(git config --get remote.origin.url)"
     newUrl="${currrentUrl/lbussy/brewpi-remix}"
     if [ ! "$newUrl" == "$currentUrl" ]; then
         # Repo has moved to a new org, update to current url
         git remote set-url origin "$newUrl"
     fi
+    popd &> /dev/null || die # Move back to where we started
 }
 
 ############
@@ -237,10 +242,10 @@ process() {
     didUpdate=0 # Hold a counter for having to do git pulls
     pushd . &> /dev/null || die # Store current directory
     cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is
-    getrepos # Get array of repos to update
     # Loop through repos and update as necessary
-    for doRepo in "${repoArray[@]}"; do
-        echo -e "\nChecking $doRepo for necessary updates."
+    for doRepo in "${repoArray[@]}"
+    do
+        echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
         doRepoUrl "$doRepo" || warn
         updateRepo || warn
     done
@@ -268,7 +273,7 @@ flash() {
     else
         branch=""
     fi
-    echo ""
+    echo "" > /dev/tty 
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
         [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;

@@ -38,7 +38,7 @@ declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 declare HOMEPATH REALUSER
 # Declare my constants/variables
 declare url
-url="https://raw.githubusercontent.com/lbussy/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT"
+url="https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT"
 
 ############
 ### Init
@@ -183,6 +183,7 @@ function updateRepo() {
 
 getrepos() {
     # Get app locations based on local config
+    local wwwPath toolPath
     wwwPath="$(getVal wwwPath "$GITROOT")"
     toolPath="$(whatRepo "$(eval echo "~$(logname)")"/brewpi-tools-rmx)"
     if [ -z "$toolPath" ]; then
@@ -199,7 +200,7 @@ getrepos() {
 
 updateme() {
     # Download current doUpdate.sh to a temp file and run that instead
-    local branch
+    local branch url
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
@@ -209,6 +210,20 @@ updateme() {
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT."
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
+}
+
+############
+### Update repo URL
+############
+
+doRepoUrl() {
+    local currrentUrl newUrl
+    currrentUrl="$(git config --get remote.origin.url)"
+    newUrl="${currrentUrl/lbussy/brewpi-remix}"
+    if [ ! "$newUrl" == "$currentUrl" ]; then
+        # Repo has moved to a new org, update to current url
+        git remote set-url origin "$newUrl"
+    fi
 }
 
 ############
@@ -226,7 +241,8 @@ process() {
     # Loop through repos and update as necessary
     for doRepo in "${repoArray[@]}"; do
         echo -e "\nChecking $doRepo for necessary updates."
-        updateRepo "$doRepo" || warn
+        doRepoUrl "$doRepo" || warn
+        updateRepo || warn
     done
     # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
     if [ "$didUpdate" -ge 1 ]; then
@@ -273,6 +289,8 @@ main() {
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
+        getrepos # Get list of repositories to update
+        doRepoUrl # Check/update repo url
         process "$@" # Check and process updates
         flash # Offer to flash controller
     else

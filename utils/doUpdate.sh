@@ -246,7 +246,7 @@ process() {
     do
         echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
         doRepoUrl "$doRepo" || warn
-        updateRepo || warn
+        updateRepo "$doRepo" || warn
     done
     # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
     if [ "$didUpdate" -ge 1 ]; then
@@ -299,8 +299,8 @@ main() {
         banner "starting"
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"
+        banner "complete"
     fi
-    banner "complete"
 }
 
 main "$@" && exit 0

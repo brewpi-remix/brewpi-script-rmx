@@ -39,8 +39,9 @@ repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 class gitHubReleases:
     def __init__(self, url):
-        """ Gets all available releases using the GitHub API
-        :param url: URL to a BrewPi firmware repository on GitHub
+        """ 
+        Gets all available releases using the GitHub API
+            :param url:     URL to a BrewPi firmware repository on GitHub
         """
         self.url = url
         self.releases = []
@@ -48,14 +49,15 @@ class gitHubReleases:
 
     def download(self, url, path):
         """
-        Downloads the file at url to destination directory path, saving it with the same filename as in the url.
-        :param url: file to download
-        :param path: directory to download too.
-        :return: full path to file
+        Downloads the file at url to destination directory path, saving it
+        with the same filename as in the url.
+            :param url:     File to download
+            :param path:    Directory into which to download
+            :return:        Full path to file
         """
         try:
             f = urllib2.urlopen(url)
-            print "Downloading from:" + url
+            print("\nDownloading from: \n{0}".format(url))
 
             # Open our local file for writing
             fileName = os.path.join(path, os.path.basename(url))
@@ -66,9 +68,9 @@ class gitHubReleases:
 
         #handle errors
         except urllib2.HTTPError, e:
-            print "HTTP Error:", e.code, url
+            print("HTTP Error: {0} {1}".format(e.code, url))
         except urllib2.URLError, e:
-            print "URL Error:", e.reason, url
+            print("URL Error: {0} {1}".format(e.reason, url))
         return None
 
     def update(self):
@@ -80,8 +82,8 @@ class gitHubReleases:
     def findByTag(self, tag):
         """
         Find release info for release tagged with 'tag'
-        :param tag: tag of release
-        :return: dictionary with release info. None if not found
+            :param tag: Tag of release
+            :return:    Dictionary with release info. None if not found
         """
         try:
             match = (release for release in self.releases if release["tag_name"] == tag).next()
@@ -93,16 +95,17 @@ class gitHubReleases:
     def getBinUrl(self, tag, wordsInFileName):
         """
         Finds the download URL for a binary inside a release
-        :param tag: tag name of the release
-        :param wordsInFileName: words to look for in the filename
-        :return: URL to first binary that has all the words in the filename
+            :param tag:             Tag name of the release
+            :param wordsInFileName: Words to look for in the filename
+            :return:                First URL that has all the words
+                                    in the filename
         """
         release = self.findByTag(tag)
         downloadUrl = None
 
         AllUrls = (asset["browser_download_url"] for asset in release["assets"])
 
-        for url in  AllUrls:
+        for url in AllUrls:
             urlFileName = url.rpartition('/')[2] # isolate filename, which is after the last /
             if all(word.lower() in urlFileName.lower() for word in wordsInFileName):
                 downloadUrl = url
@@ -111,13 +114,13 @@ class gitHubReleases:
 
     def getBin(self, tag, wordsInFileName, path=None):
         """
-        Writes .bin file in release to target directory
-        Defaults to ./downloads/tag_name/ as download location
+        Writes .bin file in release to target directory. Defaults to 
+        ~/downloads/tag_name/ as download location
 
-        :param tag: tag name of the release
-        :param wordsInFileName: words to look for in the filename
-        :param path: optional target directory
-        :return:
+            :param tag:             Tag name of the release
+            :param wordsInFileName: Words to look for in the filename
+            :param path:            Optional target directory
+            :return:
         """
         downloadUrl = self.getBinUrl(tag, wordsInFileName)
         if not downloadUrl:
@@ -136,8 +139,8 @@ class gitHubReleases:
     def getLatestTag(self, board, prerelease):
         """
         Get latest tag that contains a binary for the given board
-        :param board: board name
-        :return: tag of release
+            :param board:   Board name
+            :return:        Tag of release
         """
         for release in self.releases:
             # search for stable release
@@ -147,55 +150,94 @@ class gitHubReleases:
                     return tag
         return None
 
-    def containsSystemImage(self, tag):
-        """
-        Check whether the release contains a new system image for the Photon
-        :param tag: release tag
-        :return: True if release contains a system image
-        """
-        return self.getBinUrl(tag, ['photon', 'system-part1', '.bin']) is not None
+    # def containsSystemImage(self, tag):
+    #     """
+    #     Check whether the release contains a new system image for the Photon
+    #         :param tag:     Release tag
+    #         :return:        True if release contains a system image
+    #     """
+    #     return self.getBinUrl(tag, ['photon', 'system-part1', '.bin']) is not None
 
-    def getLatestTagForSystem(self, prerelease, since = "0.0.0"):
-        """
-        Query what the latest tag was for which a system image was included
-        :param prerelease: True if pre-releases should be included
-        :param since: exclude system images older or equal than version included with this version number
-        :return: release tag
-        """
-        for release in self.releases:
-            # search for stable release
-            tag = release["tag_name"]
-            if LooseVersion(tag) <= LooseVersion(since):
-                continue
-            if not prerelease and release["prerelease"] == True:
-                continue
-            if self.containsSystemImage(tag):
-                return tag
-        return None
+    # def getLatestTagForSystem(self, prerelease, since = "0.0.0"):
+    #     """
+    #     Query what the latest tag was for which a system image was included
+    #         :param prerelease:  True if pre-releases should be included
+    #         :param since:       Exclude system images older or equal than
+    #                             version included with this version number
+    #     :return: release tag
+    #     """
+    #     for release in self.releases:
+    #         # search for stable release
+    #         tag = release["tag_name"]
+    #         if LooseVersion(tag) <= LooseVersion(since):
+    #             continue
+    #         if not prerelease and release["prerelease"] == True:
+    #             continue
+    #         if self.containsSystemImage(tag):
+    #             return tag
+    #     return None
 
     def getTags(self, prerelease):
         """
         Get all available tags in repository
-        :param prerelease: True if unstable (prerelease) tags should be included
-        :return: list of tags
+            :param prerelease:  True if unstable (prerelease) tags should be included
+            :return:            List of tags
         """
         if prerelease:
             return [release["tag_name"] for release in self.releases]
         else:
             return [release["tag_name"] for release in self.releases if release['prerelease']==False]
 
+    def getShields(self):
+        """
+        Get list of shield types in downloads
+            :return:        List of Shields
+        """
+        shields = []
+        # Get everything that has a key name of 'name'
+        names = extract_values(self.releases, 'name')
+        for name in names:
+            # Only keep the firmware file names
+            if name.startswith('brewpi-') and name.endswith('.hex'):
+                file = (name.split('-'))
+                # Keep only uniques
+                if file[3].lower() not in shields:
+                    # Create the list
+                    shields.append(file[3].lower())
+        shields.sort() # Sort the list
+        return shields
+
+def extract_values(obj, key):
+    """Pull all values of specified key from nested JSON."""
+    arr = []
+    def extract(obj, arr, key):
+        """Recursively search for values of key in JSON tree."""
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (dict, list)):
+                    extract(v, arr, key)
+                elif k == key:
+                    arr.append(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract(item, arr, key)
+        return arr
+    results = extract(obj, arr, key)
+    return results
+
 if __name__ == "__main__":
     # test code
     releases = gitHubReleases(repo)
-    latest = releases.getLatestTag('core', False)
+    latest = releases.getLatestTag('uno', False)
     print "Latest tag: " + latest
-    print "Downloading binary for latest tag"
-    localFileName = releases.getBin(latest, ["core", "bin"])
-    if localFileName:
-        print "Latest binary downloaded to " + localFileName
+    # print "Downloading hex for latest tag."
+    # localFileName = releases.getBin(latest, ["uno", "hex"])
+    # if localFileName:
+    #     print "Latest hex file downloaded to: \n" + localFileName
 
     print "Stable releases: ", releases.getTags(prerelease=False)
     print "All releases: ", releases.getTags(prerelease=True)
+    print "All supported shields: ", releases.getShields()
 
-    print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
-    print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)
+    #print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
+    #print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)

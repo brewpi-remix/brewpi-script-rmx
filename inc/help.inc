@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -34,27 +34,36 @@
 ### Include file for --help and --version functionality
 ############
 
-# func_usage outputs to stdout the --help usage message.
-func_usage () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Usage: sudo ./$THISSCRIPT"
-}
-# func_version outputs to stdout the --version message.
-func_version () {
-  echo -e "$THISSCRIPT ($PACKAGE) $VERSION
-Copyright (C) 2018 Lee C. Bussy (@LBussy)
-
-This is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-<https://www.gnu.org/licenses/>
-
-There is NO WARRANTY, to the extent permitted by law."
+# Outputs to stdout the --help usage message.
+usage() {
+    echo -e "\n$SCRIPTNAME usage: sudo $SCRIPTPATH/$THISSCRIPT"
 }
 
-if [ -n "$1" ]; then
-  arg="${1//-}" # Strip out all dashes
-  if [[ "$arg" == "h"* ]]; then func_usage; exit 0; fi
-  if [[ "$arg" == "v"* ]]; then func_version; exit 0; fi
-fi
+# Outputs to stdout the --version message.
+version() {
+cat << EOF
+
+"$SCRIPTNAME" Copyright (C) 2019 Lee C. Bussy (@LBussy)
+
+This program comes with ABSOLUTELY NO WARRANTY.
+
+This is free software, and you are welcome to redistribute it
+under certain conditions.
+
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+}
+
+# Processes help/version arguments
+help() {
+    declare arg
+    arg="$1"
+    if [ -n "$arg" ]; then
+        arg="${arg//-}" # Strip out all dashes
+        if [[ "$arg" == "h"* ]]; then usage; exit 0; fi
+        if [[ "$arg" == "v"* ]]; then version; exit 0; fi
+    fi
+}
+
+# Check if we were used as an include or called directly,
+(return 0 2>/dev/null) || echo "Intended to be used as an include file only."

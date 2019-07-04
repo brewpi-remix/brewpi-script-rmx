@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,59 +30,100 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Declare this script's constants
+declare SCRIPTPATH GITROOT
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
+
 ############
 ### Init
 ############
 
-# Change to current dir (assumed to be in a repo) so we can get the git info
-pushd . &> /dev/null || exit 1
-SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-cd "$SCRIPTPATH" || exit 1 # Move to where the script is
-GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
-  popd &> /dev/null || exit 1
-  exit 1
-fi
+init() {
+    # Change to current dir (assumed to be in a repo) so we can get the git info
+    pushd . &> /dev/null || exit 1
+    SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+    cd "$SCRIPTPATH" || exit 1 # Move to where the script is
+    GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+    if [ -z "$GITROOT" ]; then
+        echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
+        popd &> /dev/null || exit 1
+        exit 1
+    fi
+    
+    # Get project constants
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/const.inc" "$@"
+    
+    # Get error handling functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/error.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/asroot.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/help.inc" "$@"
+}
 
-# Get project constants
-. "$GITROOT/inc/const.inc"
+############
+### Create a banner
+############
 
-# Get error handling functionality
-. "$GITROOT/inc/error.inc"
-
-# Get help and version functionality
-. "$GITROOT/inc/asroot.inc"
-
-# Get help and version functionality
-. "$GITROOT/inc/help.inc" "$@"
-
-echo -e "\n***Script $THISSCRIPT starting.***"
+banner() {
+    local adj
+    adj="$1"
+    echo -e "\n***Script $THISSCRIPT $adj.***"
+}
 
 ############
 ### Cleanup compiler files and empty directories
 ############
 
-# Delete old .pyc files
-echo -e "\nCleaning up BrewPi script directory."
-numPYC=$( find "$GITROOT" -name "*.pyc" | wc -l | tr -d ' ' )
-if [ $numPYC -gt 0 ]; then
-  find "$GITROOT" -name "*.pyc" -delete
-  echo -e "Deleted $numPYC old .pyc files."
-fi
-#  Delete empty directories from script directory
-echo -e "\nCleaning up empty directories."
-numEmptyDirs=$( find "$GITROOT" -type d -empty | wc -l | tr -d ' ' )
-if [ $numEmptyDirs -gt 0 ]; then
- find "$GITROOT" -type d -empty -delete
- echo -e "Deleted $numEmptyDirs empty directories."
-fi
+cleanup() {
+    local numPYC numEmptyDirs
+    # Delete old .pyc files
+    echo -e "\nCleaning up BrewPi script directory."
+    numPYC=$( find "$GITROOT" -name "*.pyc" | wc -l | tr -d ' ' )
+    if [ "$numPYC" -gt 0 ]; then
+        find "$GITROOT" -name "*.pyc" -exec rm -f {} \;
+        echo -e "Deleted $numPYC old .pyc files."
+    fi
+    #  Delete empty directories from script directory
+    echo -e "\nCleaning up empty directories."
+    numEmptyDirs=$( find "$GITROOT" -type d -empty | wc -l | tr -d ' ' )
+    if [ "$numEmptyDirs" -gt 0 ]; then
+        find "$GITROOT" -type d -empty -delete
+        echo -e "Deleted $numEmptyDirs empty directories."
+    fi
+}
 
 ############
 ### Do the needful via the other scripts
 ############
 
-sudo bash "$GITROOT/utils/doDaemon.sh"  # Set up or upgrade cron
-sudo bash "$GITROOT/utils/doPerms.sh"   # Fix file permissions
+extern() {
+    sudo bash "$GITROOT/utils/doDaemon.sh" "$@"  # Set up or upgrade cron
+    sudo bash "$GITROOT/utils/doPerms.sh" "$@"   # Fix file permissions
+}
 
-echo -e "\n***Script $THISSCRIPT complete.***"
+############
+### Main function
+############
+
+main() {
+    init "$@" # Init and call supporting libs
+    const "$@" # Get script constants
+    asroot # Make sure we are running with root privs
+    help "$@" # Allow help and version response
+    banner "starting"
+    cleanup # Remove *.pyc files and empty directories
+    extern "$@" # Call other scripts
+    banner "complete"
+}
+
+main "$@" && exit 0

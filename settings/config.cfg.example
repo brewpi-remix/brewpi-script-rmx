@@ -8,6 +8,8 @@
 # boardType = arduino
 # startupDelay = 1.0
 # debug = true
+# tiltColor = Purple
+# logJson = True
 
 # On a standard pi installation, the defaults should work.
 # If you are using a different linux flavor or Windows, you can
@@ -18,7 +20,8 @@
 # avrsizeHome = # defaults to empty string because avrsize is on path on Linux
 # avrConf = # location of global avr conf. Defaults to avrdudeHome/avrdude.conf
 
-# on Windows, the scripts defaults to an Internet socket instead of a system socket.
+# On Windows, the scripts defaults to an Internet socket instead of a system
+# socket.
 # useInetSocket=true
 # socketPort=6332
 # socketHost=127.0.0.1

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -34,13 +34,19 @@
 ### Include file to check network connection
 ###########
 
-echo -e "\nChecking for connection to GitHub."
-wget -q --spider "$GITURL"
-if [ $? -ne 0 ]; then
-  echo -e "\n-----------------------------------------------------------------------------"
-  echo -e "\nCould not connect to GitHub.  Please check your network and try again. A"
-  echo -e "\nconnection to GitHub is required to download the $PACKAGE packages."
-  die
-else
-  echo -e "\nConnection to GitHub ok."
-fi
+nettest() {
+    echo -e "\nChecking for connection to GitHub." > /dev/tty
+    declare retval
+    wget -q --spider "$GITURL"
+    retval="$?"
+    if [ "$retval" -ne 0 ]; then
+        echo -e "\nError: Could not connect to GitHub.  Please check your network" > /dev/tty
+        echo -e "and try again. A connection to GitHub is required to proceed." > /dev/tty
+        die
+    else
+        echo -e "\nConnection to GitHub ok." > /dev/tty
+    fi
+}
+
+# Check if we were used as an include or called directly,
+(return 0 2>/dev/null) || echo "Intended to be used as an include file only."

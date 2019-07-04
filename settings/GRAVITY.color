@@ -1,0 +1,15 @@
+# Gravity Calibration file for Tilt
+
+# To be active, the file should be named GRAVITY.{color} in the settings
+# folder and have at least one calibration value inside.
+
+# To calibrate a Red Tilt, the file would be called GRAVITY.red
+
+# In the following example two calibration points are used. 
+# 0.997 read from the Tilt will be calibrated to the actual value of 0.999
+# 1.056 read from the Tilt will be calibrated to the actual value of 1.060
+# Other calibration points will be calculated.
+
+# Format: Original SG Value, Calibrated Value
+0.997, 0.999
+1.056, 1.060

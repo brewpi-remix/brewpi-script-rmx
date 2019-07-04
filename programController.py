@@ -44,18 +44,25 @@ import subprocess
 import platform
 import sys
 
-# Log to stderr.txt
+
+msg_map = {"a": "Arduino"}
+
+
 def printStdErr(*objs):
+    # Log to stderr.txt
     print(*objs, file=sys.stderr)
     sys.stderr.flush()
 
-# Log to stdout.txt
-def printStdErr(*objs):
+
+def printStdOut(*objs):
+    # Log to stdout.txt
     print(*objs, file=sys.stdout)
     sys.stderr.flush()
 
+
 def asbyte(v):
     return chr(v & 0xFF)
+
 
 class LightYModem:
     """
@@ -81,7 +88,7 @@ class LightYModem:
     eot = 4
     ack = 6
     nak = 0x15
-    ca =  0x18
+    ca = 0x18
     crc16 = 0x43
     abort1 = 0x41
     abort2 = 0x61
@@ -95,9 +102,9 @@ class LightYModem:
         while not ch1:
             ch1 = self.ymodem.read(1)
         ch1 = ord(ch1)
-        if ch1==LightYModem.ack and self.seq==0:    # may send also a crc16
+        if ch1 == LightYModem.ack and self.seq == 0:    # may send also a crc16
             ch2 = self.ymodem.read(1)
-        elif ch1==LightYModem.ca:                   # cancel, always sent in pairs
+        elif ch1 == LightYModem.ca:                   # cancel, always sent in pairs
             ch2 = self.ymodem.read(1)
         return ch1
 
@@ -108,13 +115,13 @@ class LightYModem:
         seqchr_neg = asbyte((-self.seq-1) & 0xFF)
         crc16 = '\x00\x00'
         packet = asbyte(LightYModem.stx) + seqchr + seqchr_neg + data + crc16
-        if len(packet)!=1029:
+        if len(packet) != 1029:
             raise Exception("packet length is wrong!")
 
         self.ymodem.write(packet)
         self.ymodem.flush()
         response = self._read_response()
-        if response==LightYModem.ack:
+        if response == LightYModem.ack:
             printStdErr("Sent packet nr %d " % (self.seq))
             self.seq += 1
         return response
@@ -148,55 +155,61 @@ class LightYModem:
         size = file.tell()
         file.seek(0, os.SEEK_SET)
         response = self.send_filename_header("binary", size)
-        while response==LightYModem.ack:
+        while response == LightYModem.ack:
             response = self.send_packet(file, output)
 
         file.close()
-        if response==LightYModem.eot:
+        if response == LightYModem.eot:
             self._send_close()
 
         return response
+
 
 def fetchBoardSettings(boardsFile, boardType):
     boardSettings = {}
     for line in boardsFile:
         if line.startswith(boardType):
-            setting = line.replace(boardType + '.', '', 1).strip()  # strip board name, period and \n
+            # strip board name, period and \n
+            setting = line.replace(boardType + '.', '', 1).strip()
             [key, sign, val] = setting.rpartition('=')
             boardSettings[key] = val
     return boardSettings
 
+
 def loadBoardsFile(arduinohome):
     boardsFileContent = None
     try:
-        boardsFileContent = open(arduinohome + 'hardware/arduino/boards.txt', 'rb').readlines()
+        boardsFileContent = open(
+            arduinohome + 'hardware/arduino/boards.txt', 'rb').readlines()
     except IOError:
-        printStdErr("Could not read boards.txt from Arduino, probably because Arduino has not been installed.")
+        printStdErr(
+            "Could not read boards.txt from Arduino, probably because Arduino has not been installed.")
         printStdErr("Please install it with: 'sudo apt install arduino-core'")
     return boardsFileContent
 
-def programController(config, boardType, hexFile, system1File, system2File, useDfu, restoreWhat):
+
+def programController(config, boardType, hexFile, restoreWhat):
     programmer = SerialProgrammer.create(config, boardType)
-    return programmer.program(hexFile, system1File, system2File, useDfu, restoreWhat)
+    return programmer.program(hexFile, restoreWhat)
+
 
 def json_decode_response(line):
     try:
         return json.loads(line[2:])
     except json.decoder.JSONDecodeError, e:
-        printStdErr("JSON decode error: " + str(e))
-        printStdErr("Line received was: " + line)
+        printStdErr("\nJSON decode error: {0}".format(str(e)))
+        printStdErr("\nLine received was: {0}".format(line))
 
-msg_map = { "a" : "Arduino" }
 
 class SerialProgrammer:
     @staticmethod
     def create(config, boardType):
-        if boardType=='core':
-            msg_map["a"] = "Spark Core"
-            programmer = SparkProgrammer(config, boardType)
-        elif boardType == 'photon':
-            msg_map["a"] = "Photon"
-            programmer = SparkProgrammer(config, boardType)
+        if boardType == 'arduino':
+            msg_map["a"] = "Arduino"
+            programmer = ArduinoProgrammer(config, boardType)
+        if boardType == 'uno':
+            msg_map["a"] = "Arduino"
+            programmer = ArduinoProgrammer(config, boardType)
         else:
             msg_map["a"] = "Arduino"
             programmer = ArduinoProgrammer(config, boardType)
@@ -211,13 +224,13 @@ class SerialProgrammer:
         self.versionOld = None
         self.oldSettings = {}
 
-    def program(self, hexFile, system1File, system2File, useDfu, restoreWhat):
-        printStdErr("\n%(a)s program script started.\n" % msg_map)
+    def program(self, hexFile, restoreWhat):
+        printStdErr("\n%(a)s program script started." % msg_map)
 
         self.parse_restore_settings(restoreWhat)
 
         if self.restoreSettings or self.restoreDevices:
-            printStdErr("Checking old version before programming.")
+            printStdErr("\nChecking old version before programming.")
             if not self.open_serial(self.config, 57600, 0.2):
                 return 0
             self.delay_serial_open()
@@ -226,105 +239,36 @@ class SerialProgrammer:
                 self.retrieve_settings_from_serial()
                 self.save_settings_to_file()
 
-        running_as_root = False
-        try:
-            running_as_root = os.getuid() == 0
-        except AttributeError:
-            pass # not running on Linux, use serial
-        if running_as_root and self.boardType == "photon":
-            # default to DFU mode when possible on the Photon. Serial is not always stable
-            printStdErr("\nFound a Photon and running as root/sudo, using DFU mode to flash firmware.")
-            useDfu = True
+        if not self.ser:
+            if not self.open_serial(self.config, 57600, 0.2):
+                return 0
+        self.delay_serial_open()
 
-        if useDfu:
-            printStdErr("\nTrying to automatically reboot into DFU mode and update your firmware.")
-            printStdErr("\nIf the Photon does not reboot into DFU mode automatically, please put it in DFU mode manually.")
-
-            if self.ser:
-                self.ser.close()
-
-            myDir = os.path.dirname(os.path.abspath(__file__))
-            flashDfuPath = os.path.join(myDir, 'utils', 'flashDfu.py')
-            command = sys.executable + ' ' + flashDfuPath + " --autodfu --noreset --file={0}".format(os.path.dirname(hexFile))
-            if system1File is not None and system2File is not None:
-                systemParameters = " --system1={0} --system2={1}".format(system1File, system2File)
-                command = command + systemParameters
-            if platform.system() == "Linux":
-                command =  'sudo ' + command
-            printStdErr("Running command: " + command)
-            process = subprocess.Popen(command, shell=True)
-            process.wait()
-
-            printStdErr("\nUpdating firmware over DFU finished.\n")
-
-        else:
-            if not self.ser:
-                if not self.open_serial(self.config, 57600, 0.2):
-                    return 0
-            self.delay_serial_open()
-            if system1File:
-                printStdErr("Flashing system part 1.")
-                if not self.flash_file(system1File):
-                    return 0
-
-                printStdErr("Waiting for device to reset.")
-                time.sleep(15) # give time to reboot and process binary
-                if not self.open_serial_with_retry(self.config, 57600, 0.2):
-                    printStdErr("Error opening serial port after flashing system part 1. Program script will exit.")
-                    printStdErr("If your device stopped working, use flashDfu.py to restore it.")
-                    return False
-
-            if system2File:
-                printStdErr("Flashing system part 2.")
-                if not self.flash_file(system2File):
-                    return 0
-
-                printStdErr("Waiting for device to reset.")
-                time.sleep(15) # give time to reboot and process binary
-                if not self.open_serial_with_retry(self.config, 57600, 0.2):
-                    printStdErr("Error opening serial port after flashing system part 2. Program script will exit.")
-                    printStdErr("If your device stopped working, use flashDfu.py to restore it.")
-                    return False
-
-            if(hexFile):
-                if not self.flash_file(hexFile):
-                    return 0
-
-                printStdErr("Waiting for device to reset.")
-                time.sleep(15) # give time to reboot and process binary
-                if not self.open_serial_with_retry(self.config, 57600, 0.2):
-                    printStdErr("Error opening serial port after flashing user part. Program script will exit.")
-                    printStdErr("If your device stopped working, use flashDfu.py to restore it.")
-                    return False
-
-        printStdErr("Waiting for device to reset.")
-        time.sleep(15) # give time to reboot
-
-        if not self.open_serial_with_retry(self.config, 57600, 0.2):
-            printStdErr("Error opening serial port after programming. Program script will exit. Settings are not restored.")
-            printStdErr("If your device stopped working, use flashDfu.py to restore it.")
-            return False
+        if(hexFile):
+            if not self.flash_file(hexFile):
+                return 0
 
         self.fetch_new_version()
         self.reset_settings()
         if self.restoreSettings or self.restoreDevices:
-            printStdErr("Now checking which settings and devices can be restored.")
+            printStdErr(
+                "\nChecking which settings and devices may be restored.")
         if self.versionNew is None:
-            printStdErr(("Warning: Cannot receive version number from controller after programming. "
-                         "\nSomething must have gone wrong. Restoring settings/devices settings failed.\n"))
+            printStdErr("\nWarning: Cannot receive version number from controller after programming.",
+                         "\nRestoring settings/devices settings failed.")
             return 0
 
         if not self.versionOld and (self.restoreSettings or self.restoreDevices):
-            printStdErr("Could not receive valid version number from old board, " +
-                        "No settings/devices are restored.")
+            printStdErr("\nCould not receive valid version number from old board, no settings/devices",
+                        "\nhave been restored.")
             return 0
 
         if self.restoreSettings:
-            printStdErr("Trying to restore compatible settings from " +
-                        self.versionOld.toString() + " to " + self.versionNew.toString())
+            printStdErr("\nTrying to restore compatible settings from {0} to {1}".format(self.versionOld.toString(), self.versionNew.toString()))
 
             if(self.versionNew.isNewer("0.2")):
-                printStdErr("Sorry, settings can only be restored when updating to BrewPi 0.2.0 or higher")
+                printStdErr(
+                    "\nSettings may only be restored when updating to BrewPi 0.2.0 or higher")
                 self.restoreSettings = False
 
         if self.restoreSettings:
@@ -333,7 +277,7 @@ class SerialProgrammer:
         if self.restoreDevices:
             self.restore_devices()
 
-        printStdErr("\n%(a)s program script done.\n" % msg_map)
+        printStdErr("\n%(a)s program script complete." % msg_map)
         self.ser.close()
         self.ser = None
         return 1
@@ -350,10 +294,9 @@ class SerialProgrammer:
         # Even when restoreSettings and restoreDevices are set to True here,
         # they might be set to false due to version incompatibility later
 
-        printStdErr("Settings will " + ("" if restoreSettings else "not ") + "be restored" +
-                    (" if possible" if restoreSettings else ""))
-        printStdErr("Devices will " + ("" if restoreDevices else "not ") + "be restored" +
-                    (" if possible" if restoreSettings else ""))
+        printStdErr("\nSettings will {0}be restored{1}.".format(("" if restoreSettings else "not "), (" if possible" if restoreSettings else "")))
+        printStdErr("\nDevices will {0}be restored{1}.\n".format(("" if restoreDevices else "not "), (" if possible" if restoreDevices else "")))
+
         self.restoreSettings = restoreSettings
         self.restoreDevices = restoreDevices
 
@@ -361,7 +304,7 @@ class SerialProgrammer:
         if self.ser:
             self.ser.close()
         self.ser = None
-        self.ser = util.setupSerial(config, baud, timeout)
+        self.ser = util.setupSerial(config, baud, timeout, 1.0, True)
         if self.ser is None:
             return False
         return True
@@ -383,28 +326,28 @@ class SerialProgrammer:
     def fetch_version(self, msg):
         version = brewpiVersion.getVersionFromSerial(self.ser)
         if version is None:
-            printStdErr("Warning: Cannot receive version number from controller. " +
-                        "Your controller is either not programmed yet or running a very old version of BrewPi. " +
-                        "It will be reset to defaults.")
+            printStdErr("\nWarning: Cannot receive version number from controller. Your controller is",
+                        "\neither not programmed yet or running a very old version of BrewPi. It will",
+                        "\nbe reset to defaults.")
         else:
-            printStdErr(msg+"Found\n" + version.toExtendedString() +
-                        "\non port " + self.ser.name + ".\n")
+            printStdErr("{0}\nFound:\n{1}\non port:{2}".format(msg, version.toExtendedString(), self.ser.name))
         return version
 
     def fetch_current_version(self):
-        self.versionOld = self.fetch_version("Checking current version: ")
+        self.versionOld = self.fetch_version("\nChecking current version:\n")
         return self.versionOld
 
     def fetch_new_version(self):
-        self.versionNew = self.fetch_version("Checking new version: ")
+        self.versionNew = self.fetch_version("\nChecking new version:\n")
         return self.versionNew
 
     def retrieve_settings_from_serial(self):
         ser = self.ser
         self.oldSettings.clear()
-        printStdErr("Requesting old settings from %(a)s." % msg_map)
+        printStdErr("\nRequesting old settings from %(a)s." % msg_map)
         expected_responses = 2
-        if not self.versionOld.isNewer("0.2.0"):  # versions older than 2.0.0 did not have a device manager
+        # versions older than 2.0.0 did not have a device manager
+        if not self.versionOld.isNewer("0.2.0"):
             expected_responses += 1
             ser.write("d{}")  # installed devices
             time.sleep(1)
@@ -418,40 +361,44 @@ class SerialProgrammer:
                 line = util.asciiToUnicode(line)
                 if line[0] == 'C':
                     expected_responses -= 1
-                    self.oldSettings['controlConstants'] = json_decode_response(line)
+                    self.oldSettings['controlConstants'] = json_decode_response(
+                        line)
                 elif line[0] == 'S':
                     expected_responses -= 1
-                    self.oldSettings['controlSettings'] = json_decode_response(line)
+                    self.oldSettings['controlSettings'] = json_decode_response(
+                        line)
                 elif line[0] == 'd':
                     expected_responses -= 1
-                    self.oldSettings['installedDevices'] = json_decode_response(line)
+                    self.oldSettings['installedDevices'] = json_decode_response(
+                        line)
 
     def save_settings_to_file(self):
-        oldSettingsFileName = 'settings-' + time.strftime("%Y-%m-%d-%H-%M-%S") + '.json' # This is format" "2019-01-08-16-50-15"
-        #oldSettingsFileName = 'settings-' + time.strftime("%b-%d-%Y-%H-%M-%S") + '.json' # This is format: "Jan-08-2019-16-31-56"
-        settingsBackupDir = util.scriptPath() + '/settings/controller-backup/'
+        # This is format" "2019-01-08-16-50-15"
+        oldSettingsFileName = 'settings-{0}.json'.format(time.strftime("%Y-%m-%dT%H-%M-%S"))
+        # oldSettingsFileName = 'settings-' + time.strftime("%b-%d-%Y-%H-%M-%S") + '.json' # This is format: "Jan-08-2019-16-31-56"
+        settingsBackupDir = '{0}settings/controller-backup/'.format(util.addSlash(util.scriptPath()))
         if not os.path.exists(settingsBackupDir):
             os.makedirs(settingsBackupDir, 0777)
 
-        oldSettingsFilePath = os.path.join(settingsBackupDir, oldSettingsFileName)
+        oldSettingsFilePath = os.path.join(
+            settingsBackupDir, oldSettingsFileName)
         oldSettingsFile = open(oldSettingsFilePath, 'wb')
         oldSettingsFile.write(json.dumps(self.oldSettings))
         oldSettingsFile.truncate()
         oldSettingsFile.close()
-        os.chmod(oldSettingsFilePath, 0777) # make sure file can be accessed by all in case the script ran as root
-        printStdErr("Saved old settings to file " + oldSettingsFileName)
+        # Make sure file can be accessed by all in case the script ran as root
+        os.chmod(oldSettingsFilePath, 0777)
+        printStdErr("\nSaved old settings to file {0}.".format(oldSettingsFileName))
 
     def delay(self, countDown):
+        printStdErr("")
         while countDown > 0:
             time.sleep(1)
-            printStdErr("Back up in " + str(countDown) + ".")
+            printStdErr("Back up in {0}.".format(str(countDown)))
             countDown -= 1
 
-    def flash_file(self, hexFile):
-        raise Exception("Not implemented.")
-
-    def reset_settings(self, setTestMode = False):
-        printStdErr("Resetting EEPROM to default settings.")
+    def reset_settings(self, setTestMode=False):
+        printStdErr("\nResetting EEPROM to default settings.")
         self.ser.write('E\n')
         if setTestMode:
             self.ser.write('j{mode:t}')
@@ -470,7 +417,7 @@ class SerialProgrammer:
             expandedMessage = expandLogMessage.expandLogMessage(line[2:])
             printStdErr(expandedMessage)
         except Exception, e:  # catch all exceptions, because out of date file could cause errors
-            printStdErr("Error while expanding log message: " + str(e))
+            printStdErr("\nError while expanding log message: {0}".format(str(e)))
             printStdErr(("%(a)s debug message: " % msg_map) + line[2:])
 
     def restore_settings(self):
@@ -480,20 +427,23 @@ class SerialProgrammer:
                                                 self.versionOld.toString(),
                                                 self.versionNew.toString())
 
-        printStdErr("Migrating these settings: " + json.dumps(restored.items()))
-        printStdErr("Omitting these settings: " + json.dumps(omitted.items()))
+        printStdErr("\nMigrating these settings:\n{0}".format(json.dumps(restored.items())))
+        printStdErr("\nOmitting these settings:\n{0}".format(json.dumps(omitted.items())))
 
         self.send_restored_settings(restored)
 
     def get_combined_settings_dict(self, oldSettings):
-        combined = oldSettings.get('controlConstants').copy() # copy keys/values from controlConstants
-        combined.update(oldSettings.get('controlSettings')) # add keys/values from controlSettings
+        # copy keys/values from controlConstants
+        combined = oldSettings.get('controlConstants').copy()
+        # add keys/values from controlSettings
+        combined.update(oldSettings.get('controlSettings'))
         return combined
 
     def send_restored_settings(self, restoredSettings):
         for key in restoredSettings:
-            setting =  restoredSettings[key]
-            command = "j{" + json.dumps(key) + ":" + json.dumps(setting) + "}\n"
+            setting = restoredSettings[key]
+            command = "j{" + json.dumps(key) + ":" + \
+                json.dumps(setting) + "}\n"
             self.ser.write(command)
             # make readline blocking for max 5 seconds to give the controller time to respond after every setting
             oldTimeout = self.ser.timeout
@@ -504,8 +454,8 @@ class SerialProgrammer:
                 if line:  # line available?
                     if line[0] == 'D':
                         self.print_debug_log(line)
-                # if self.ser.inWaiting() == 0: # WiFi Change
-                if self.ser.readline() == 0:
+                if self.ser.inWaiting() == 0:
+                #if self.ser.readline() == 0:  # WiFi Change
                     break
             self.ser.timeout = 5
 
@@ -514,19 +464,19 @@ class SerialProgrammer:
 
         oldDevices = self.oldSettings.get('installedDevices')
         if oldDevices:
-            printStdErr("Now trying to restore previously installed devices: " + str(oldDevices))
+            printStdErr("\nNow trying to restore previously installed devices:\n{0}".format(oldDevices))
         else:
-            printStdErr("No devices to restore.")
+            printStdErr("\nNo devices to restore.")
             return
 
         detectedDevices = None
         for device in oldDevices:
-            printStdErr("Restoring device: " + json.dumps(device))
-            if "a" in device.keys(): # check for sensors configured as first on bus
+            printStdErr("\nRestoring device:\n{0}".format(json.dumps(device)))
+            if "a" in device.keys():  # check for sensors configured as first on bus
                 if int(device['a'], 16) == 0:
-                    printStdErr("OneWire sensor was configured to autodetect the first sensor on the bus, " +
-                                "but this is no longer supported. " +
-                                "We'll attempt to automatically find the address and add the sensor based on its address")
+                    printStdErr("A OneWire sensor was configured to be autodetected as the first sensor on the",
+                                "\nbus, but this is no longer supported. We'll attempt to automatically find the",
+                                "\naddress and add the sensor based on its address.")
                     if detectedDevices is None:
                         ser.write("h{}")  # installed devices
                         time.sleep(1)
@@ -537,7 +487,8 @@ class SerialProgrammer:
 
                     for detectedDevice in detectedDevices:
                         if device['p'] == detectedDevice['p']:
-                            device['a'] = detectedDevice['a'] # get address from sensor that was first on bus
+                            # get address from sensor that was first on bus
+                            device['a'] = detectedDevice['a']
 
             ser.write("U" + json.dumps(device))
 
@@ -549,30 +500,13 @@ class SerialProgrammer:
                     if line[0] == 'D':
                         self.print_debug_log(line)
                     elif line[0] == 'U':
-                        printStdErr(("%(a)s reports: device updated to: " % msg_map) + line[2:])
+                        printStdErr(
+                            ("%(a)s reports: device updated to: " % msg_map) + line[2:])
                         break
                 if time.time() > requestTime + 5:  # wait max 5 seconds for an answer
                     break
-        printStdErr("Restoring installed devices done.")
+        printStdErr("\nRestoring installed devices done.")
 
-class SparkProgrammer(SerialProgrammer):
-    def __init__(self, config, boardType):
-        SerialProgrammer.__init__(self, config)
-        self.boardType = boardType
-
-    def flash_file(self, hexFile):
-        self.ser.write('F')
-        line = self.ser.readline()
-        printStdErr(line)
-        time.sleep(0.2)
-
-        file = open(hexFile, 'rb')
-        result = LightYModem().transfer(file, self.ser, stderr)
-        file.close()
-        success = result==LightYModem.eot
-        printStdErr("File flashed successfully" if success else "Problem flashing file: " + str(result) +
-                                                                "\nPlease try again.")
-        return success
 
 class ArduinoProgrammer(SerialProgrammer):
     def __init__(self, config, boardType):
@@ -581,29 +515,21 @@ class ArduinoProgrammer(SerialProgrammer):
 
     def delay_serial_open(self):
         if self.boardType == "uno":
-            time.sleep(10)  # give the arduino some time to reboot in case of an Arduino UNO
-
-    def reset_leonardo(self):
-        if self.ser:
-            self.ser.close()
-        del self.ser
-        self.ser = None
-        if self.open_serial(self.config, 1200, None):
-            self.ser.close()
-            time.sleep(2)  # give the bootloader time to start up
-            self.ser = None
-            return True
-        else:
-            printStdErr("Could not open serial port at 1200 baud to reset Arduino Leonardo")
-            return False
+            # give the arduino some time to reboot in case of an Arduino UNO
+            time.sleep(10)
 
     def flash_file(self, hexFile):
         config, boardType = self.config, self.boardType
-        printStdErr("Loading programming settings from board.txt")
-        arduinohome = config.get('arduinoHome', '/usr/share/arduino/')  # location of Arduino sdk
-        avrdudehome = config.get('avrdudeHome', arduinohome + 'hardware/tools/')  # location of avr tools
-        avrsizehome = config.get('avrsizeHome', '')  # default to empty string because avrsize is on path
-        avrconf = config.get('avrConf', avrdudehome + 'avrdude.conf')  # location of global avr conf
+        printStdErr("\nLoading programming settings from board.txt.")
+        # location of Arduino sdk
+        arduinohome = config.get('arduinoHome', '/usr/share/arduino/')
+        # location of avr tools
+        avrdudehome = config.get(
+            'avrdudeHome', arduinohome + 'hardware/tools/')
+        # default to empty string because avrsize is on path
+        avrsizehome = config.get('avrsizeHome', '')
+        # location of global avr conf
+        avrconf = config.get('avrConf', avrdudehome + 'avrdude.conf')
 
         boardsFile = loadBoardsFile(arduinohome)
         if not boardsFile:
@@ -618,43 +544,41 @@ class ArduinoProgrammer(SerialProgrammer):
                 [key, sign, val] = setting.rpartition('=')
                 boardSettings[key] = val
 
-        printStdErr("Checking hex file size with avr-size.")
+        printStdErr("\nChecking hex file size with avr-size.")
 
         # start programming the Arduino
         avrsizeCommand = avrsizehome + 'avr-size ' + "\"" + hexFile + "\""
 
         # check program size against maximum size
-        p = sub.Popen(avrsizeCommand, stdout=sub.PIPE, stderr=sub.PIPE, shell=True)
+        p = sub.Popen(avrsizeCommand, stdout=sub.PIPE,
+                      stderr=sub.PIPE, shell=True)
         output, errors = p.communicate()
         if errors != "":
-            printStdErr('avr-size error: ' + errors)
+            printStdErr('\navr-size error: {0}'.format(errors))
             return False
 
         programSize = output.split()[7]
-        printStdErr(('Program size: ' + programSize +
-                     ' bytes out of max ' + boardSettings['upload.maximum_size']))
+        printStdErr('\nProgram size: {0} bytes out of max {1}.'.format(programSize, boardSettings['upload.maximum_size']))
 
         # Another check just to be sure!
         if int(programSize) > int(boardSettings['upload.maximum_size']):
-            printStdErr("ERROR: program size is bigger than maximum size for your Arduino " + boardType + ".")
+            printStdErr(
+                "\nERROR: Program size is bigger than maximum size for your Arduino {0}.".format(boardType))
             return False
 
         hexFileDir = os.path.dirname(hexFile)
         hexFileLocal = os.path.basename(hexFile)
 
-        if boardType == 'leonardo':
-            if not self.reset_leonardo():
-                return False
-
         time.sleep(1)
         # Get serial port while in bootloader
-        bootLoaderPort = util.findSerialPort(bootLoader=True)
+        bootLoaderPort = util.findSerialPort(bootLoader=True, my_port=config['port'])
+        # bootLoaderPort = util.findSerialPort(bootLoader=True)
         if not bootLoaderPort:
-            printStdErr("ERROR: could not find port in bootloader")
+            printStdErr("\nERROR: Could not find port in bootloader.")
 
         programCommand = (avrdudehome + 'avrdude' +
-                          ' -F ' +  # override device signature check
-                          ' -e ' +  # erase flash and eeprom before programming. This prevents issues with corrupted EEPROM
+                          ' -F' +  # override device signature check
+                          ' -e' +  # erase flash and eeprom before programming. This prevents issues with corrupted EEPROM
                           ' -p ' + boardSettings['build.mcu'] +
                           ' -c ' + boardSettings['upload.protocol'] +
                           ' -b ' + boardSettings['upload.speed'] +
@@ -662,14 +586,14 @@ class ArduinoProgrammer(SerialProgrammer):
                           ' -U ' + 'flash:w:' + "\"" + hexFileLocal + "\"" +
                           ' -C ' + avrconf)
 
-        printStdErr("Programming Arduino with avrdude:\n" + programCommand)
+        printStdErr("\nProgramming Arduino with avrdude.")
 
-
-        p = sub.Popen(programCommand, stdout=sub.PIPE, stderr=sub.PIPE, shell=True, cwd=hexFileDir)
+        p = sub.Popen(programCommand, stdout=sub.PIPE,
+                      stderr=sub.PIPE, shell=True, cwd=hexFileDir)
         output, errors = p.communicate()
 
         # avrdude only uses stderr, append its output to the returnString
-        printStdErr("Result of invoking avrdude:\n" + errors)
+        printStdErr("\nResult of invoking avrdude:{0}".format(errors))
 
         if("bytes of flash verified" in errors):
             printStdErr("Avrdude done, programming successful.")
@@ -677,7 +601,6 @@ class ArduinoProgrammer(SerialProgrammer):
             printStdErr("There was an error while programming.")
             return False
 
-        printStdErr("Giving the Arduino a few seconds to power up.")
+        printStdErr("\nGiving the Arduino 10 seconds to reset.")
         self.delay(10)
         return True
-

@@ -30,38 +30,66 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+# Declare this script's constants/variables
+declare SCRIPTPATH GITROOT repoArray
+# Declare /inc/const.inc file constants
+declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+# Declare /inc/asroot.inc file constants
+declare HOMEPATH REALUSER
+# Declare my constants/variables
+declare url
+url="https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT"
+
 ############
 ### Init
 ############
 
-# Change to current dir (assumed to be in a repo) so we can get the git info
-pushd . &> /dev/null || exit 1
-SCRIPTPATH="$( cd $(dirname $0) ; pwd -P )"
-cd "$SCRIPTPATH" || exit 1 # Move to where the script is
-GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
-  popd &> /dev/null || exit 1
-  exit 1
-fi
+init() {
+    # Change to current dir (assumed to be in a repo) so we can get the git info
+    pushd . &> /dev/null || exit 1
+    SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+    cd "$SCRIPTPATH" || exit 1 # Move to where the script is
+    GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+    if [ -z "$GITROOT" ]; then
+        echo -e "\nERROR: Unable to find my repository, did you not run as root?" > /dev/tty 
+        popd &> /dev/null || exit 1
+        exit 1
+    fi
+    
+    # Get project constants
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/const.inc" "$@"
+    
+    # Get error handling functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/error.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/asroot.inc" "$@"
+    
+    # Get help and version functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/help.inc" "$@"
+    
+    # Get network test functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/nettest.inc" "$@"
+    
+    # Get config reading functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/config.inc" "$@"
+}
 
-# Get project constants
-. "$GITROOT/inc/const.inc" "$@"
+############
+### Create a banner
+############
 
-# Get error handling functionality
-. "$GITROOT/inc/error.inc" "$@"
-
-# Get help and version functionality
-. "$GITROOT/inc/asroot.inc" "$@"
-
-# Get help and version functionality
-. "$GITROOT/inc/help.inc" "$@"
-
-# Network test
-. "$GITROOT/inc/nettest.inc" "$@"
-
-# Read configuration
-. "$GITROOT/inc/config.inc" "$@"
+banner() {
+    local adj
+    adj="$1"
+    echo -e "\n***Script $THISSCRIPT $adj.***" > /dev/tty 
+}
 
 ############
 ### Function: whatRepo
@@ -70,17 +98,18 @@ fi
 ############
 
 function whatRepo() {
-  local thisRepo="$1"
-  if [ ! -d "$thisRepo" ]; then
-    return # Not a directory
-  elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
-    return # Not part of a repo
-  fi
-  pushd . &> /dev/null || exit 1
-  cd "$thisRepo" || exit 1
-  local thisReturn=$(git rev-parse --show-toplevel)
-  popd &> /dev/null || exit 1
-  echo "$thisReturn"
+    local thisRepo thisReturn
+    thisRepo="$1"
+    if [ ! -d "$thisRepo" ]; then
+        return # Not a directory
+    elif ! ( cd "$thisRepo" && git rev-parse --git-dir &> /dev/null ); then
+        return # Not part of a repo
+    fi
+    pushd . &> /dev/null || exit 1
+    cd "$thisRepo" || exit 1
+    thisReturn=$(git rev-parse --show-toplevel)
+    popd &> /dev/null || exit 1
+    echo "$thisReturn"
 }
 
 ############
@@ -91,104 +120,187 @@ function whatRepo() {
 
 # Checks for proper repo, tries to update from GitHub if it is
 function updateRepo() {
-  local thisRepo="$1"
-  # First check to see if arg is a valid repo
-  gitLoc=$(whatRepo "$thisRepo")
-  if [ -n "$gitLoc" ]; then
-    # Store the current working directory
-    pushd . &> /dev/null || exit 1
-    cd "$thisRepo" || exit 1
-    # See if we can get the active branch
-    active_branch=$(git symbolic-ref -q HEAD)
-    retval=$?
-    if [ $retval -eq 0 ]; then
-      active_branch=${active_branch##refs/heads/}
-      # Check local against remote
-      git fetch
-      changes=$(git log HEAD..origin/"$active_branch" --oneline)
-      if [ -z "$changes" ]; then
-        # no changes
-        echo -e "\n$thisRepo is up to date."
-          popd &> /dev/null || exit 1
-        return 0
-      else
-        echo -e "\n$thisRepo is not up to date, updating from GitHub:"
-        git pull
+    local thisRepo
+    thisRepo="$1"
+    # First check to see if arg is a valid repo
+    gitLoc=$(whatRepo "$thisRepo")
+    if [ -n "$gitLoc" ]; then
+        # Store the current working directory
+        pushd . &> /dev/null || exit 1
+        cd "$thisRepo" || exit 1
+        # See if we can get the active branch
+        active_branch=$(git symbolic-ref -q HEAD)
         retval=$?
-        if [ $retval -ne 0 ]; then
-          # Not able to make a pull, probably because of changed local files
-          echo -e "\nAn error occurred during the git pull. Please update this repo manually:"
-          echo -e "$thisRepo"
-          echo -e "\nIf this is a result of having made local changes, you can stash your local"
-          echo -e "changes and then pull the current GitHub repo with:"
-          echo -e "'cd $thisRepo; sudo git stash; sudo git pull'"
-          echo -e "\nUnder normal conditions you should never see this message.  If you have no"
-          echo -e "idea what is going on, restarting the entire process or reinstalling should"
-          echo -e "reset things to normal."
-          popd &> /dev/null || exit 1
-          return 1
+        if [ $retval -eq 0 ]; then
+            active_branch=${active_branch##refs/heads/}
+            # Make sure we have all remote branches
+            git remote set-branches origin '*'
+            git fetch
+            # Check local against remote
+            changes=$(git log HEAD..origin/"$active_branch" --oneline)
+            if [ -z "$changes" ]; then
+                # no changes
+                echo -e "\n$thisRepo is up to date."
+                popd &> /dev/null || exit 1
+                return 0
+            else
+                echo -e "\n$thisRepo is not up to date, updating from GitHub:"
+                git pull
+                retval=$?
+                if [ $retval -ne 0 ]; then
+                    # Not able to make a pull, probably because of changed local files
+                    echo -e "\nAn error occurred during the git pull. Please update this repo manually:"
+                    echo -e "$thisRepo"
+                    echo -e "\nIf this is a result of having made local changes, you can stash your local"
+                    echo -e "changes and then pull the current GitHub repo with:"
+                    echo -e "'cd $thisRepo; sudo git stash; sudo git pull'"
+                    echo -e "\nUnder normal conditions you should never see this message.  If you have no"
+                    echo -e "idea what is going on, restarting the entire process or reinstalling should"
+                    echo -e "reset things to normal."
+                    popd &> /dev/null || exit 1
+                    return 1
+                else
+                    ((didUpdate++))
+                fi
+            fi
         else
-          ((didUpdate++))
+            # No local repository found
+            echo -e "\nNo local repository found (you should never see this error.)"
+            popd &> /dev/null || exit 1
+            return 1
         fi
-      fi
+        # Back to where we started
+        popd &> /dev/null || exit 1
+        return 0
     else
-      # No local repository found
-      echo -e "\nNo local repository found (you should never see this error.)"
-      popd &> /dev/null || exit 1
-      return 1
+        echo -e "\nNo valid repo passed to function (repo = '$thisRepo')."
     fi
-    # Back to where we started
-    popd &> /dev/null || exit 1
-    return 0
-  else
-    echo -e "\nNo valid repo passed to function ($thisRepo)."
-  fi
 }
 
 ############
 ### Set up repos
 ############
 
-func_getrepos() {
-  # Get app locations based on local config
-  wwwPath="$(getVal wwwPath $GITROOT)"
-  toolPath="$(whatRepo $(eval echo ~$(logname))/brewpi-tools-rmx)"
-  if [ -z "$toolPath" ]; then
-    echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
-    repoArray=("$GITROOT" "$wwwPath" )
-  else
-    repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
-  fi
+getrepos() {
+    # Get app locations based on local config
+    local wwwPath toolPath
+    wwwPath="$(getVal wwwPath "$GITROOT")"
+    toolPath="$(whatRepo "$(eval echo "~$(logname)")"/brewpi-tools-rmx)"
+    if [ -z "$toolPath" ]; then
+        echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
+        repoArray=("$GITROOT" "$wwwPath" )
+    else
+        repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
+    fi
 }
 
 ############
-### Main
+### Check for Updated doUpdate Script
+############
+
+updateme() {
+    # Download current doUpdate.sh to a temp file and run that instead
+    local branch
+    branch=$(git branch | grep \* | cut -d ' ' -f2)
+    url="${url/THISBRANCH/$branch}"
+    url="${url/THISSCRIPT/$THISSCRIPT}"
+    echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
+    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
+    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
+    chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
+    echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
+    eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
+}
+
+############
+### Update repo URL
+############
+
+doRepoUrl() {
+    local currrentUrl newUrl currentRepo
+    currentRepo="$1"
+    pushd . &> /dev/null || die # Store current directory
+    cd "$currentRepo" || die # Move to where the script is
+    currrentUrl="$(git config --get remote.origin.url)"
+    newUrl="${currrentUrl/lbussy/brewpi-remix}"
+    if [ ! "$newUrl" == "$currentUrl" ]; then
+        # Repo has moved to a new org, update to current url
+        git remote set-url origin "$newUrl"
+    fi
+    popd &> /dev/null || die # Move back to where we started
+}
+
+############
+### Process Updates
+############
+
+process() {
+    local doRepo didUpdate arg
+    arg="$1"
+    if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
+    didUpdate=0 # Hold a counter for having to do git pulls
+    pushd . &> /dev/null || die # Store current directory
+    cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is
+    # Loop through repos and update as necessary
+    for doRepo in "${repoArray[@]}"
+    do
+        echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
+        doRepoUrl "$doRepo" || warn
+        updateRepo "$doRepo" || warn
+    done
+    # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
+    if [ "$didUpdate" -ge 1 ]; then
+        if [ ! "$quick" == "true" ]; then
+            # Install/update all dependencies and clean local apt cache
+            "$GITROOT/utils/doDepends.sh"
+        fi
+        # Cleanup *.pyc files and empty dirs, update daemons, do perms
+        "$GITROOT/utils/doCleanup.sh"
+    fi
+    popd &> /dev/null || die # Move back to where we started
+}
+
+############
+### Flash controller
+############
+
+flash() {
+    local yn branch
+    branch==$(git branch | grep \* | cut -d ' ' -f2)
+    if [ ! "$branch" == "master" ]; then
+        branch="--beta"
+    else
+        branch=""
+    fi
+    echo "" > /dev/tty 
+    read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
+    case "$yn" in
+        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        * ) ;;
+    esac
+}
+
+############
+### Main function
 ############
 
 main() {
-  echo -e "\n***Script $THISSCRIPT starting.***"
-  arg="${1//-}" # Strip out all dashes
-  if [[ "$arg" == "q"* ]]; then quick=true; else quick=false; fi
-  declare -i didUpdate=0 # Hold a counter for having to do git pulls
-  declare -a repoArray # Hold repositories to update
-  pushd . &> /dev/null || die # Store current directory
-  cd "$(dirname $(readlink -e $0))" || die # Move to where the script is
-  func_getrepos # Get array of repos to update
-  # Loop through repos and update as necessary
-  for doRepo in "${repoArray[@]}"; do
-    echo -e "\nChecking $doRepo for necessary updates."
-    updateRepo "$doRepo" || warn
-  done
-  # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
-  if [ "$didUpdate" -ge 1 ]; then
-    if [ ! "$quick" == "true" ]; then
-      "$GITROOT/utils/doDepends.sh" # Install/update all dependencies and clean local apt cache
+    init "$@" # Init and call supporting libs
+    const "$@" # Get script constants
+    if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
+        # Delete the temp script before we do an update
+        rm "$SCRIPTPATH/tmpUpdate.sh"
+        getrepos "$@" # Get list of repositories to update
+        process "$@" # Check and process updates
+        flash # Offer to flash controller
+    else
+        help "$@" # Process help and version requests
+        asroot # Make sure we are running with root privs
+        banner "starting"
+        # Get the latest doUpdate.sh script and run it instead
+        updateme "$@"
+        banner "complete"
     fi
-    "$GITROOT/utils/doCleanup.sh" # Cleanup *.pyc files and empty dirs
-  fi
-  popd &> /dev/null || die # Move back to where we started
-  echo -e "\n***Script $THISSCRIPT complete.***"
 }
 
-main "$@"
-exit 0
+main "$@" && exit 0

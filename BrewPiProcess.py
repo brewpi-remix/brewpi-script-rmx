@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -47,7 +47,8 @@ try:
         sys.exit(1)
 
 except ImportError:
-    print "BrewPi requires psutil to run, please install it via pip: 'sudo pip install psutil --upgrade"
+    print "BrewPi requires psutil to run, please install it via pip:"
+    print "  sudo pip install psutil --upgrade"
     sys.exit(1)
 
 import BrewPiSocket
@@ -60,14 +61,14 @@ class BrewPiProcess:
     It can also use the socket to send a quit signal or the pid to kill the other instance.
     """
     def __init__(self):
-        self.pid = None  # pid of process
-        self.cfg = None  # config file of process, full path
-        self.port = None  # serial port the process is connected to
+        self.pid = None  # PID of process
+        self.cfg = None  # Config file of process, full path
+        self.port = None  # Serial port the process is connected to
         self.sock = None  # BrewPiSocket object which the process is connected to
 
     def as_dict(self):
         """
-        Returns: member variables as a dictionary
+        Returns: Member variables as a dictionary
         """
         return self.__dict__
 
@@ -79,14 +80,12 @@ class BrewPiProcess:
             conn = self.sock.connect()
             if conn:
                 conn.send('quit')
-                conn.close()  # do not shutdown the socket, other processes are still connected to it.
+                conn.close()  # Do not shutdown the socket, other processes are still connected to it.
                 print "Quit message sent to BrewPi instance with pid %s." % self.pid
                 return True
             else:
-                print "Could not connect to socket of BrewPi process, maybe it just started and is not"
-                print "listening yet."
-                print "Could not send quit message to BrewPi instance with pid %d." % self.pid
-                print "Killing it instead."
+                print "Could not connect to socket of BrewPi process in order to send a quit message."
+                print "Maybe it just started and is not listening yet."
                 self.kill()
                 return False
 
@@ -94,7 +93,7 @@ class BrewPiProcess:
         """
         Kills this BrewPiProcess with force, use when quit fails.
         """
-        process = psutil.Process(self.pid)  # get psutil process my pid
+        process = psutil.Process(self.pid)  # Get psutil process my pid
         try:
             process.kill()
             print "SIGKILL sent to BrewPi instance with pid %d." % self.pid
@@ -104,7 +103,7 @@ class BrewPiProcess:
 
     def conflict(self, otherProcess):
         if self.pid == otherProcess.pid:
-            return 0  # this is me! I don't have a conflict with myself
+            return 0  # This is me! I don't have a conflict with myself
         if otherProcess.cfg == self.cfg:
             print "Conflict: same config file as another BrewPi instance already running."
             return 1
@@ -134,7 +133,7 @@ class BrewPiProcesses():
 
         # some OS's (OS X) do not allow processes to read info from other processes.
         try:
-            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'brewpi.py'in s for s in p.cmdline())]
+            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'brewpi.py' in s for s in p.cmdline())]
         except psutil.AccessDenied:
             pass
 
@@ -147,24 +146,24 @@ class BrewPiProcesses():
 
     def parseProcess(self, process):
         """
-        Converts a psutil process into a BrewPiProcess object by parsing the config file it has been called with.
-        Params: a psutil.Process object
-        Returns: BrewPiProcess object
+        Converts a psutil process into a BrewPiProcess object by parsing the
+        config file it has been called with.
+            :Params:    A psutil.Process object
+            :Returns:   A BrewPiProcess object
         """
         bp = BrewPiProcess()
         try:
             bp.pid = process._pid
             cfg = [s for s in process.cmdline() if '.cfg' in s]  # get config file argument
-            # Get brewpi.py file argument so we can grab path to fix multi-chamber bug
+            # Get brewpi.py file argument so we can grab path
             bps = [s for s in process.cmdline() if 'brewpi.py' in s]
         except psutil.NoSuchProcess:
             # process no longer exists
             return None
+
         if cfg:
             cfg = cfg[0]  # add full path to config file
         else:
-            # use default config file location
-            # Added use of cfgpath to fix multi-chamber bug
             # Get path from arguments and use that to build default path to config
             cfgpath = os.path.dirname(str(bps).translate(None, '\[\]\'')) + '/settings/'
             cfg = cfgpath + "config.cfg"
@@ -201,13 +200,6 @@ class BrewPiProcesses():
 
         # some OS's (OS X) do not allow processes to read info from other processes.
         matching = []
-        try:
-            matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'flashDfu.py'in s for s in p.cmdline())]
-        except psutil.AccessDenied:
-            pass
-
-        if len(matching) > 0:
-            return 1
 
         try:
             matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'updateFirmware.py'in s for s in p.cmdline())]

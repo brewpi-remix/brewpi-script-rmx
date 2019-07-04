@@ -43,7 +43,7 @@ def getVersionFromSerial(ser):
     oldTimeOut = ser.timeout
     startTime = time.time()
     if not ser.isOpen():
-        print "Cannot get version from serial port that is not open."
+        print "\nCannot get version from serial port that is not open."
 
     ser.timeout = 1
     ser.write('n')  # request version info
@@ -82,7 +82,8 @@ def getVersionFromSerial(ser):
     return version
 
 class AvrInfo:
-    """ Parses and stores the version and other compile-time details reported by the controller """
+    """ Parses and stores the version and other compile-time details reported by the controller. """
+
     version = "v"
     build = "n"
     simulator = "y"
@@ -91,35 +92,41 @@ class AvrInfo:
     log = "l"
     commit = "c"
 
+    shield_diy = "DIY"
     shield_revA = "revA"
     shield_revC = "revC"
     spark_shield_v1 = "V1"
     spark_shield_v2 = "V2"
+    shield_i2c = "I2C"
 
-    shields = {1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2}
+    shields = {0: shield_diy, 1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2, 5: shield_i2c}
 
     board_leonardo = "leonardo"
     board_standard = "uno"
     board_mega = "mega"
     board_spark_core = "core"
     board_photon = "photon"
+    board_esp8266 = "esp8266"
 
-    boards = {'l': board_leonardo, 's': board_standard, 'm': board_mega, 'x': board_spark_core, 'y': board_photon}
+    boards = {'l': board_leonardo, 's': board_standard, 'm': board_mega, 'x': board_spark_core, 'y': board_photon, 'e': board_esp8266}
 
     family_arduino = "Arduino"
     family_spark = "Particle"
+    family_esp8266 = "ESP8266"
 
     families = { board_leonardo: family_arduino,
                 board_standard: family_arduino,
                 board_mega: family_arduino,
                 board_spark_core: family_spark,
-                board_photon: family_spark}
+                board_photon: family_spark,
+                board_esp8266: family_esp8266}
 
     board_names = { board_leonardo: "Leonardo",
                 board_standard: "Uno",
                 board_mega: "Mega",
                 board_spark_core: "Core",
-                board_photon: "Photon"}
+                board_photon: "Photon",
+                board_esp8266: "ESP8266"}
 
     def __init__(self, s=None):
         self.version = LooseVersion("0.0.0")
@@ -196,16 +203,15 @@ class AvrInfo:
 
     def toExtendedString(self):
         string = "BrewPi v" + self.toString()
-        if self.commit:
-            string += ", running commit " + str(self.commit)
         if self.build:
             string += " build " + str(self.build)
         if self.board:
             string += ", running on "+ self.articleFullName()
         if self.shield:
-            string += " with a " + str(self.shield) + " shield"
+            string += " with " + self.article(str(self.shield)) + " "
+            string += str(self.shield) + " shield"
         if(self.simulator):
-           string += ", running as simulator"
+            string += ", running as simulator."
         return string
 
     def isNewer(self, versionString):
@@ -231,4 +237,3 @@ class AvrInfo:
 
     def articleFullName(self):
         return self.article(self.family) + " " + self.fullName()
-

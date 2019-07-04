@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,44 +30,53 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+declare GITROOT
+
 ############
 ### Init
 ############
 
-# Change to current dir (assumed to be in a repo) so we can get the git info
-pushd . &> /dev/null || exit 1
-cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
-GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
-if [ -z "$GITROOT" ]; then
-  echo -e "\nERROR:  Unable to find my repository, did you move this file?"
-  popd &> /dev/null || exit 1
-  exit 1
-fi
+init() {
+    # Change to current dir (assumed to be in a repo) so we can get the git info
+    pushd . &> /dev/null || exit 1
+    cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
+    GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
+    if [ -z "$GITROOT" ]; then
+        echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+        popd &> /dev/null || exit 1
+        exit 1
+    fi
 
-# Get project constants
-. "$GITROOT/inc/const.inc"
-
-# Get error handling functionality
-. "$GITROOT/inc/error.inc"
-
-# Get help and version functionality
-#. "$GITROOT/inc/asroot.inc" # (runs as 'brewpi')
-
-# Get help and version functionality
-. "$GITROOT/inc/help.inc" "$@"
+    # Get help and version functionality
+    . "$GITROOT/inc/help.inc" "$@"
+}
 
 ############
 ### Loop and keep Brewpi running
 ############
 
-script="$GITROOT/brewpi.py"
-stdOut="$GITROOT/logs/stdout.txt"
-stdErr="$GITROOT/logs/stderr.txt"
+loop() {
+    local script stdOut stdErr
+    script="$GITROOT/brewpi.py"
 
-while :
-do
-  if ! python "$script" --checkstartuponly --dontrunfile
-    then python -u "$script" 1>"$stdOut" 2>>"$stdErr"
-  fi
-  sleep 5
-done
+    while :
+    do
+        if ! python "$script" --checkstartuponly --dontrunfile
+            then python -u "$script" --log
+        else
+            sleep 1
+        fi
+    done
+}
+
+############
+### Main function
+############
+
+main() {
+    init "$@" # Get environment information
+    help "$@" # Process help and version requests
+    loop "$@" # Loop forever
+}
+
+main "$@" && exit 0

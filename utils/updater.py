@@ -42,28 +42,6 @@ import os
 import urllib2
 import getopt
 
-try:
-    import git
-except ImportError:
-    print("This update script requires gitpython, please install it with:\n'sudo pip install gitpython'")
-    sys.exit(1)
-
-# Read in command line arguments
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "a", ['ask'])
-except getopt.GetoptError:
-    print ("Unknown parameter, available options: \n" + \
-          "  updater.py --ask     Do not use default options, but ask me which branches\n" + \
-          "                       to check out")
-    sys.exit()
-
-userInput = False
-for o, a in opts:
-    # print help message for command line options
-    if o in ('-a', '--ask'):
-        print("\nUsing interactive (advanced) update with user input.\n")
-        userInput = True
-
 ### Quits all running instances of BrewPi
 def quitBrewPi(webPath):
     print("\nStopping running instances of BrewPi.")
@@ -336,120 +314,149 @@ def check_repo(repo):
         print("Your local version of " + localName + " is up to date.")
     return updated or checkedOutDifferentBranch
 
-
-print("######################################################")
-print("####                                              ####")
-print("####        Welcome to the BrewPi Updater         ####")
-print("####                                              ####")
-print("######################################################")
-print("")
-
-if os.geteuid() != 0:
-    print("This update script should be run as root.")
-    print("Try running it again with sudo, exiting.")
-    exit(1)
-
-checkForUpdates()
-print("")
-
-print("It is not recommended to update during a brew.\n" \
-      "If you are actively logging a brew we recommend canceling the the update with ctrl-c.")
-
-changed = False
-scriptPath = '/home/brewpi'
-
-# set a first guess for the web path. If files are not found here, the user is asked later
-webPath = '/var/www/html' # default since Jessie
-if not os.path.isdir('/var/www/html'):
-    webPath = '/var/www' # earlier default www dir
-
-print("\n\n*** Updating BrewPi script repository ***")
-
-for i in range(3):
-    correctRepo = False
+def main():
     try:
-        scriptRepo = git.Repo(scriptPath)
-        gitConfig = open(scriptPath + '/.git/config', 'r')
-        for line in gitConfig:
-            if "url =" in line and "brewpi-script" in line:
-                correctRepo = True
-                break
-        gitConfig.close()
-    except git.NoSuchPathError:
-        print("The path '%s' does not exist" % scriptPath)
-        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-        continue
-    except (git.InvalidGitRepositoryError, IOError):
-        print("The path '%s' does not seem to be a valid git repository." % scriptPath)
-        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-        continue
+        import git
+    except ImportError:
+        print("This update script requires gitpython, please install it with:\n'sudo pip install gitpython'")
+        sys.exit(1)
 
-    if not correctRepo:
-        print("The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath)
-        scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-        continue
-    ### Add BrewPi repo into the sys path, so we can import those modules as needed later
-    sys.path.insert(0, scriptPath)
-    quitBrewPi(webPath) # exit running instances of BrewPi
-    changed = check_repo(scriptRepo) or changed
-    break
-else:
-    print("Maximum number of tries reached, updating BrewPi scripts aborted.")
-
-print("\n\n*** Updating BrewPi web interface repository ***")
-for i in range(3):
-    correctRepo = False
+    # Read in command line arguments
     try:
-        webRepo = git.Repo(webPath)
-        gitConfig = open(webPath + '/.git/config', 'r')
-        for line in gitConfig:
-            if "url =" in line and "brewpi-www" in line:
-                correctRepo = True
-                break
-        gitConfig.close()
-    except git.NoSuchPathError:
-        print("The path '%s' does not exist" % webPath)
-        webPath = raw_input("To which path did you install the BrewPi web application?  ")
-        continue
-    except (git.InvalidGitRepositoryError, IOError):
-        print("The path '%s' does not seem to be a valid git repository." % webPath)
-        webPath = raw_input("To which path did you install the BrewPi web application?  ")
-        continue
-    if not correctRepo:
-        print("The path '%s' does not seem to be the BrewPi web interface git repository." % webPath)
-        webPath = raw_input("To which path did you install the BrewPi web application?  ")
-        continue
-    changed = check_repo(webRepo) or changed
-    break
-else:
-    print("Maximum number of tries reached, updating BrewPi web interface aborted.")
+        opts, args = getopt.getopt(sys.argv[1:], "a", ['ask'])
+    except getopt.GetoptError:
+        print ("Unknown parameter, available options: \n" + \
+            "  updater.py --ask     Do not use default options, but ask me which branches\n" + \
+            "                       to check out")
+        sys.exit()
 
-if changed:
-    print("\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath)
-    runAfterUpdate(scriptPath)
-else:
-    print("\nNo changes were made, skipping runAfterUpdate.sh.")
-    print("If you encounter problems, you can start it manually with:")
-    print("'sudo %s/utils/runAfterUpdate.sh'" % scriptPath)
+    userInput = False
+    for o, a in opts:
+        # print help message for command line options
+        if o in ('-a', '--ask'):
+            print("\nUsing interactive (advanced) update with user input.\n")
+            userInput = True
 
-print("\nThe update script can automatically check your controller firmware version\n" + \
-      "and program it with the latest release on GitHub, would you like to do this")
-choice = raw_input("now? [Y/n]: ")
-if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-    # start as a separate python process, or it will not use the updated modules
-    updateScript = os.path.join(scriptPath, 'utils', 'updateFirmware.py')
-    if userInput:
-        p = subprocess.Popen("python {0} --beta".format(updateScript), shell=True)
+
+    print("######################################################")
+    print("####                                              ####")
+    print("####        Welcome to the BrewPi Updater         ####")
+    print("####                                              ####")
+    print("######################################################")
+    print("")
+
+    if os.geteuid() != 0:
+        print("This update script should be run as root.")
+        print("Try running it again with sudo, exiting.")
+        exit(1)
+
+    checkForUpdates()
+    print("")
+
+    print("It is not recommended to update during a brew.\n" \
+        "If you are actively logging a brew we recommend canceling the the update with ctrl-c.")
+
+    changed = False
+    scriptPath = '/home/brewpi'
+
+    # set a first guess for the web path. If files are not found here, the user is asked later
+    webPath = '/var/www/html' # default since Jessie
+    if not os.path.isdir('/var/www/html'):
+        webPath = '/var/www' # earlier default www dir
+
+    print("\n\n*** Updating BrewPi script repository ***")
+
+    for i in range(3):
+        correctRepo = False
+        try:
+            scriptRepo = git.Repo(scriptPath)
+            gitConfig = open(scriptPath + '/.git/config', 'r')
+            for line in gitConfig:
+                if "url =" in line and "brewpi-script" in line:
+                    correctRepo = True
+                    break
+            gitConfig.close()
+        except git.NoSuchPathError:
+            print("The path '%s' does not exist" % scriptPath)
+            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+            continue
+        except (git.InvalidGitRepositoryError, IOError):
+            print("The path '%s' does not seem to be a valid git repository." % scriptPath)
+            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+            continue
+
+        if not correctRepo:
+            print("The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath)
+            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
+            continue
+        ### Add BrewPi repo into the sys path, so we can import those modules as needed later
+        sys.path.insert(0, scriptPath)
+        quitBrewPi(webPath) # exit running instances of BrewPi
+        changed = check_repo(scriptRepo) or changed
+        break
     else:
-        p = subprocess.Popen("python {0} --silent".format(updateScript), shell=True)
-    p.wait()
-    result = p.returncode
-    if(result == 0):
-        print("Firmware update complete.")
-else:
-    print("Skipping controller update.")
+        print("Maximum number of tries reached, updating BrewPi scripts aborted.")
 
-startBrewPi(webPath)
-print("\n\n*** Done updating BrewPi ***\n")
-print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
+    print("\n\n*** Updating BrewPi web interface repository ***")
+    for i in range(3):
+        correctRepo = False
+        try:
+            webRepo = git.Repo(webPath)
+            gitConfig = open(webPath + '/.git/config', 'r')
+            for line in gitConfig:
+                if "url =" in line and "brewpi-www" in line:
+                    correctRepo = True
+                    break
+            gitConfig.close()
+        except git.NoSuchPathError:
+            print("The path '%s' does not exist" % webPath)
+            webPath = raw_input("To which path did you install the BrewPi web application?  ")
+            continue
+        except (git.InvalidGitRepositoryError, IOError):
+            print("The path '%s' does not seem to be a valid git repository." % webPath)
+            webPath = raw_input("To which path did you install the BrewPi web application?  ")
+            continue
+        if not correctRepo:
+            print("The path '%s' does not seem to be the BrewPi web interface git repository." % webPath)
+            webPath = raw_input("To which path did you install the BrewPi web application?  ")
+            continue
+        changed = check_repo(webRepo) or changed
+        break
+    else:
+        print("Maximum number of tries reached, updating BrewPi web interface aborted.")
 
+    if changed:
+        print("\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath)
+        runAfterUpdate(scriptPath)
+    else:
+        print("\nNo changes were made, skipping runAfterUpdate.sh.")
+        print("If you encounter problems, you can start it manually with:")
+        print("'sudo %s/utils/runAfterUpdate.sh'" % scriptPath)
+
+    print("\nThe update script can automatically check your controller firmware version\n" + \
+        "and program it with the latest release on GitHub, would you like to do this")
+    choice = raw_input("now? [Y/n]: ")
+    if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
+        # start as a separate python process, or it will not use the updated modules
+        updateScript = os.path.join(scriptPath, 'utils', 'updateFirmware.py')
+        if userInput:
+            p = subprocess.Popen("python {0} --beta".format(updateScript), shell=True)
+        else:
+            p = subprocess.Popen("python {0} --silent".format(updateScript), shell=True)
+        p.wait()
+        result = p.returncode
+        if(result == 0):
+            print("Firmware update complete.")
+    else:
+        print("Skipping controller update.")
+
+    startBrewPi(webPath)
+    print("\n\n*** Done updating BrewPi ***\n")
+    print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
+
+if __name__ == '__main__':
+    print('This script is currently broken. Please use the doUpdate.sh script while I', 
+            '\nfigure out whether to keep this one going.')
+    #result = main()
+    #exit(result)
+    sys.exit()

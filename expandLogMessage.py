@@ -43,22 +43,22 @@ infoDict = parseEnum.parseEnumInFile(logMessagesFile, 'infoMessages')
 warningDict = parseEnum.parseEnumInFile(logMessagesFile, 'warningMessages')
 
 def valToFunction(val):
-    functions = ['None',  # 0
-                 'Chamber Door',  # 1
-                 'Chamber Heater',  # 2
-                 'Chamber Cooler',  # 3
-                 'Chamber Light',  # 4
-                 'Chamber Temp',  # 5
-                 'Room Temp',  # 6
-                 'Chamber Fan',  # 7
+    functions = ['None',                # 0
+                 'Chamber Door',        # 1
+                 'Chamber Heater',      # 2
+                 'Chamber Cooler',      # 3
+                 'Chamber Light',       # 4
+                 'Chamber Temp',        # 5
+                 'Room Temp',           # 6
+                 'Chamber Fan',         # 7
                  'Chamber Reserved 1',  # 8
-                 'Beer Temp',  # 9
+                 'Beer Temp',           # 9
                  'Beer Temperature 2',  # 10
-                 'Beer Heater',  # 11
-                 'Beer Cooler',  # 12
-                 'Beer S.G.',  # 13
-                 'Beer Reserved 1',  # 14
-                 'Beer Reserved 2']  # 15
+                 'Beer Heater',         # 11
+                 'Beer Cooler',         # 12
+                 'Beer S.G.',           # 13
+                 'Beer Reserved 1',     # 14
+                 'Beer Reserved 2']     # 15
     if val < len(functions):
         return functions[val]
     else:
@@ -70,7 +70,7 @@ def getVersion():
         if 'BREWPI_LOG_MESSAGES_VERSION ' in line:
             splitLine = line.split('BREWPI_LOG_MESSAGES_VERSION')
             return int(splitLine[1])  # return version number
-    print "ERROR: could not find version number in log messages header file"
+    print("ERROR: could not find version number in log messages header file.")
     return 0
 
 def expandLogMessage(logMessageJsonString):
@@ -114,7 +114,7 @@ def expandLogMessage(logMessageJsonString):
         if numVars == numReceived:
             expanded += printString % tuple(values)
         else:
-            expanded += printString + "  | Number of arguments mismatch!, expected " + str(
+            expanded += printString + "  | Argument number mismatch, expected " + str(
                 numVars) + "arguments, received " + str(values)
     else:
         expanded += logTypeString + " with unknown ID " + str(logId)
@@ -122,9 +122,9 @@ def expandLogMessage(logMessageJsonString):
     return expanded
 
 def filterOutLogMessages(input_string):
-    # removes log messages from string received from Serial
-    # log messages are sometimes printed in the middle of a JSON string, which causes decode errors
-    # this function filters them out and prints them
+    # Removes log messages from string received from Serial. Log messages
+    # are sometimes printed in the middle of a JSON string, which causes
+    # decode errors. This function filters them out and prints them.
     m = re.compile("D:\{.*?\}\r?\n")
     log_messages = m.findall(input_string)
     stripped = m.sub('', input_string)
@@ -132,11 +132,11 @@ def filterOutLogMessages(input_string):
     return (stripped, log_messages)
 
 if __name__ == '__main__':
-    # Quick dirty test (this code will be removed when ControlBox is ready anyway
+    # Quick dirty test
+    # (this code will be removed when ControlBox is ready anyway)
     test_string = 'd:[{"i":0,"t":4,"c":1,"b":0,"f":2,"h":1,"d":0,"p":17,"v":0.0,"x":0}D:{"logType":"I","logID":22,"V":["3AB0122100000098"]}\r\n,{"i":2,"t":5,"c":1,"b":0,"f":8,"h":3,"d":0,"p":0,"v":0,"x":0,"a":"3AB0122100000098","n":1}]'
     stripped, messages = filterOutLogMessages(test_string)
     print('Stripped line: {0}'.format(stripped))
     print('messages: {0}'.format(messages))
 
 getVersion()
-

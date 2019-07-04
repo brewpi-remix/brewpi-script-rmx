@@ -1,0 +1,16 @@
+# Temperature Calibration file for Tilt
+
+# To be active, the file should be named TEMPERATURE.{color} in the
+# settings folder and have at least one calibration value inside.
+
+# To calibrate a Red Tilt, the file would be called TEMPERATURE.red
+
+# In the following example, 67.5°F read from the Tilt will be calibrated
+# to an actual value of 68°F
+# 67.5, 68
+
+# Since Tilt reports natively in °F, calibration must currently be done
+# with values in °F.  Conversion to °C happens within BrewPi.
+
+# Format: Original Value, Actual Value
+67.5, 68

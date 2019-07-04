@@ -183,12 +183,14 @@ function updateRepo() {
 
 getrepos() {
     # Get app locations based on local config
-    local wwwPath toolPath
     wwwPath="$(getVal wwwPath "$GITROOT")"
     toolPath="$(whatRepo "$(eval echo "~$(logname)")"/brewpi-tools-rmx)"
     if [ -z "$toolPath" ]; then
-        echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
-        repoArray=("$GITROOT" "$wwwPath" )
+        toolPath="$(whatRepo /home/pi/brewpi-tools-rmx)"
+        if [ -z "$toolPath" ]; then
+            echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
+            repoArray=("$GITROOT" "$wwwPath" )
+        fi
     else
         repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
     fi
@@ -204,7 +206,6 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     echo -e "\nDownloading current version of this script." > /dev/tty 
-    echo -e "\nDEBUG: URL=$url"
     cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"

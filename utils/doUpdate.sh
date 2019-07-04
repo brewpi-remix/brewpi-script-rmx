@@ -109,6 +109,9 @@ function whatRepo() {
     pushd . &> /dev/null || exit 1
     cd "$thisRepo" || exit 1
     thisReturn=$(git rev-parse --show-toplevel)
+    if [ ! -d "$thisReturn" ]; then
+        thisReturn=""
+    fi
     popd &> /dev/null || exit 1
     echo "$thisReturn"
 }
@@ -186,9 +189,9 @@ getrepos() {
     # Get app locations based on local config
     wwwPath="$(getVal wwwPath "$GITROOT")"
     toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx/")")"
-    if [ -d "$toolPath" ] || [ -z "$toolPath" ]; then
+    if [ ! -d "$toolPath" ] || [ -z "$toolPath" ]; then
         toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
-        if [ -d "$toolPath" ]; then
+        if [ ! -d "$toolPath" ]; then
             echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
             repoArray=("$GITROOT" "$wwwPath" )
         fi

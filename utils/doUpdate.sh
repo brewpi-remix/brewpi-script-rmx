@@ -59,6 +59,9 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
+    if [ "$THISSCRIPT" == "bash" ]; then
+        $THISSCRIPT="tmpUpdate.sh"
+    fi
     
     # Get error handling functionality
     # shellcheck source=/dev/null

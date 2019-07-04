@@ -186,7 +186,7 @@ getrepos() {
     # Get app locations based on local config
     wwwPath="$(getVal wwwPath "$GITROOT")"
     toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx")")"
-    if [ -d "$toolPath" ]; then
+    if [ -d "$toolPath" ] || [ -z "$toolPath" ]; then
         toolPath="$(whatRepo /home/pi/brewpi-tools-rmx)"
         if [ -d "$toolPath" ]; then
             echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
@@ -210,7 +210,7 @@ updateme() {
     cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
-    echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
+    echo -e "\nExecuting current version of script." > /dev/tty 
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 

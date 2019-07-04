@@ -301,6 +301,7 @@ main() {
         banner "starting"
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"
+        THISSCRIPT="doUpdate.sh"
         banner "complete"
     fi
 }

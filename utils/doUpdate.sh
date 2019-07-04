@@ -204,11 +204,12 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
-    echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
+    echo -e "\nDownloading current version of $THISSCRIPT to $SCRIPTPATH." > /dev/tty 
     cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
+    echo -e "\nDEBUG: sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 

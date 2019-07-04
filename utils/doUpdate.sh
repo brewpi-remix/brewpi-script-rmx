@@ -59,9 +59,6 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    if [ "$THISSCRIPT" == "bash" ]; then
-        $THISSCRIPT="tmpUpdate.sh"
-    fi
     
     # Get error handling functionality
     # shellcheck source=/dev/null
@@ -205,6 +202,10 @@ updateme() {
     # Download current doUpdate.sh to a temp file and run that instead
     local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
+    if [ "$THISSCRIPT" == "bash" ]; then
+        echo -e "\nDEBUG: Replacing with $THISSCRIPT"
+        $THISSCRIPT="tmpUpdate.sh"
+    fi
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
     echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 

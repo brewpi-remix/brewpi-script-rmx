@@ -185,9 +185,9 @@ function updateRepo() {
 getrepos() {
     # Get app locations based on local config
     wwwPath="$(getVal wwwPath "$GITROOT")"
-    toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx")")"
+    toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx/")")"
     if [ -d "$toolPath" ] || [ -z "$toolPath" ]; then
-        toolPath="$(whatRepo /home/pi/brewpi-tools-rmx)"
+        toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
         if [ -d "$toolPath" ]; then
             echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
             repoArray=("$GITROOT" "$wwwPath" )

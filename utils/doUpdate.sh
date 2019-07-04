@@ -203,7 +203,7 @@ updateme() {
     local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     if [ "$THISSCRIPT" == "bash" ]; then
-        THISSCRIPT="tmpUpdate.sh"
+        THISSCRIPT="doUpdate.sh"
         echo -e "\nDEBUG: Replacing 'bash' with '$THISSCRIPT.'"
     fi
     url="${url/THISBRANCH/$branch}"

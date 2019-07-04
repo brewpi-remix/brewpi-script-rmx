@@ -51,7 +51,8 @@ init() {
     cd "$SCRIPTPATH" || exit 1 # Move to where the script is
     GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
     if [ -z "$GITROOT" ]; then
-        echo -e "\nERROR: Unable to find my repository, did you not run as root?" > /dev/tty 
+        echo -e "\nERROR: Unable to find repository, did you not run as root or from" > /dev/tty
+        echo -e "brewpi directory?" > /dev/tty
         popd &> /dev/null || exit 1
         exit 1
     fi

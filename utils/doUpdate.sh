@@ -204,7 +204,8 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     url="${url/THISSCRIPT/$THISSCRIPT}"
-    echo -e "\nDownloading current version of $THISSCRIPT to $SCRIPTPATH." > /dev/tty 
+    echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
+    echo -e "\nDEBUG: URL=$url"
     cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"

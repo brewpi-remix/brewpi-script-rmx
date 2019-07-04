@@ -38,7 +38,7 @@ declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 declare HOMEPATH REALUSER
 # Declare my constants/variables
 declare url
-url="https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/THISSCRIPT"
+url="https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/doUpdate.sh"
 
 ############
 ### Init
@@ -202,19 +202,13 @@ updateme() {
     # Download current doUpdate.sh to a temp file and run that instead
     local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
-    if [ "$THISSCRIPT" == "bash" ]; then
-        THISSCRIPT="doUpdate.sh"
-        echo -e "\nDEBUG: Replacing 'bash' with '$THISSCRIPT.'"
-    fi
     url="${url/THISBRANCH/$branch}"
-    url="${url/THISSCRIPT/$THISSCRIPT}"
-    echo -e "\nDownloading current version of $THISSCRIPT." > /dev/tty 
+    echo -e "\nDownloading current version of this script." > /dev/tty 
     echo -e "\nDEBUG: URL=$url"
     cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
     chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
     chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
     echo -e "\nExecuting current version of $THISSCRIPT." > /dev/tty 
-    echo -e "\nDEBUG: sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
     eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
 }
 

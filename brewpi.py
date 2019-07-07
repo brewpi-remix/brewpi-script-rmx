@@ -994,17 +994,60 @@ while run:
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.
                         shutil.copyfile(localJsonFileName, wwwJsonFileName)
-                        # Now write a csv file as well
+
+                        # Check if CSV file exists, if not do a header
+                        if not os.path.exists(localCsvFileName):
+                            csvFile = open(localCsvFileName, "a")
+                            delim = ','
+                            try:
+                                lineToWrite = ('Timestamp' + delim +
+                                               'Beer Temp' + delim +
+                                               'Beer Set' + delim +
+                                               'Beer Annot' + delim +
+                                               'Chamber Temp' + delim +
+                                               'Chamber Set' + delim +
+                                               'Chamber Annot' + delim +
+                                               'Room Temp' + delim +
+                                               'State')
+
+                                # If we are configured to run a Tilt
+                                if tilt:
+                                    # Write out Tilt Temp and SG Values
+                                    for color in Tilt.TILT_COLORS:
+                                        # Only log the Tilt if the color is correct according to config
+                                        if color == config["tiltColor"]:
+                                            if prevTempJson.get(color + 'Temp') is not None:
+                                                lineToWrite += (delim +
+                                                                color + 'Tilt Temp' + delim +
+                                                                color + 'Tilt SG')
+
+                                # If we are configured to run an iSpindel
+                                if ispindel:
+                                    lineToWrite += (delim +
+                                                    'iSpindel Temp' + delim +
+                                                    'iSpindel Batt Level' + delim +
+                                                    'iSpindel SG')
+
+                                lineToWrite += '\r\n'
+                                csvFile.write(lineToWrite)
+                                csvFile.close()
+
+                            except IOError, e:
+                                logMessage(
+                                    "Unknown error: %s" % str(e))
+
+                        # Now write data to csv file as well
                         csvFile = open(localCsvFileName, "a")
+                        delim = ','
                         try:
-                            lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S;") +
-                                           json.dumps(newRow['BeerTemp']) + ';' +
-                                           json.dumps(newRow['BeerSet']) + ';' +
-                                           json.dumps(newRow['BeerAnn']) + ';' +
-                                           json.dumps(newRow['FridgeTemp']) + ';' +
-                                           json.dumps(newRow['FridgeSet']) + ';' +
-                                           json.dumps(newRow['FridgeAnn']) + ';' +
-                                           json.dumps(newRow['RoomTemp']) + ';' +
+                            lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S") + delim +
+                                           json.dumps(newRow['BeerTemp']) + delim +
+                                           json.dumps(newRow['BeerSet']) + delim +
+                                           json.dumps(newRow['BeerAnn']) + delim +
+                                           json.dumps(newRow['FridgeTemp']) + delim +
+                                           json.dumps(newRow['FridgeSet']) + delim +
+                                           json.dumps(newRow['FridgeAnn']) + delim +
+                                           json.dumps(newRow['RoomTemp']) + delim +
                                            json.dumps(newRow['State']))
 
                             # If we are configured to run a Tilt
@@ -1014,15 +1057,15 @@ while run:
                                     # Only log the Tilt if the color is correct according to config
                                     if color == config["tiltColor"]:
                                         if prevTempJson.get(color + 'Temp') is not None:
-                                            lineToWrite += (';' +
-                                                            json.dumps(prevTempJson[color + 'Temp']) + ';' +
+                                            lineToWrite += (delim +
+                                                            json.dumps(prevTempJson[color + 'Temp']) + delim +
                                                             json.dumps(prevTempJson[color + 'SG']))
 
                             # If we are configured to run an iSpindel
                             if ispindel:
-                                lineToWrite += (';' +
-                                                json.dumps(newRow['SpinTemp']) + ';' +
-                                                json.dumps(newRow['SpinBatt']) + ';' +
+                                lineToWrite += (delim +
+                                                json.dumps(newRow['SpinTemp']) + delim +
+                                                json.dumps(newRow['SpinBatt']) + delim +
                                                 json.dumps(newRow['SpinSG']))
 
                             lineToWrite += '\r\n'

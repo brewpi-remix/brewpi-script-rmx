@@ -316,7 +316,8 @@ def setFiles():
     global lastDay
     global day
 
-    # Create directory for the data if it does not exist
+    # Concatenate directory names for the data
+    beerFileName = config['beerName']
     dataPath = '{0}data/{1}/'.format(
         util.addSlash(util.scriptPath()), beerFileName)
     wwwDataPath = '{0}data/{1}/'.format(
@@ -342,7 +343,6 @@ def setFiles():
                 os.chmod(file, fileMode) # chmod files
 
     # Keep track of day and make new data file for each day
-    beerFileName = config['beerName']
     day = time.strftime("%Y%m%d")
     lastDay = day
     # Define a JSON file to store the data

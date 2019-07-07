@@ -92,7 +92,7 @@ class BrewPiSocket:
             self.sock.bind(self.file)  # Bind BEERSOCKET
             # Set owner and permissions for socket
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP  # 660
-            owner = 'www-data'
+            owner = 'brewpi'
             group = 'www-data'
             uid = pwd.getpwnam(owner).pw_uid
             gid = grp.getgrnam(group).gr_gid

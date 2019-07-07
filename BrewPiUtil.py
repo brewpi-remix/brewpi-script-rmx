@@ -172,7 +172,7 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
                     os.utime(path, None)
             # Set owner and permissions for file
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
-            owner = 'www-data'
+            owner = 'brewpi'
             group = 'www-data'
             uid = pwd.getpwnam(owner).pw_uid
             gid = grp.getgrnam(group).gr_gid

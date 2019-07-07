@@ -325,20 +325,41 @@ def setFiles():
 
     # Create path and set owner and perms (recursively) on directories and files
     owner = 'brewpi'
+    group = 'brewpi'
+    uid = pwd.getpwnam(owner).pw_uid # Get UID
+    gid = grp.getgrnam(group).gr_gid # Get GID
+    fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
+    dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
+    if not os.path.exists(dataPath):
+        os.makedirs(dataPath) # Create path if it does not exist
+    os.chown(dataPath, uid, gid) # chown root directory
+    os.chmod(dataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(dataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
+                os.chown(os.path.join(root, file), uid, gid) # chown files
+                os.chmod(file, fileMode) # chmod files
+
+    # Create path and set owner and perms (recursively) on directories and files
+    owner = 'brewpi'
     group = 'www-data'
     uid = pwd.getpwnam(owner).pw_uid # Get UID
     gid = grp.getgrnam(group).gr_gid # Get GID
     fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
     dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
-    paths = dataPath, wwwDataPath
-    for path in paths:
-        if not os.path.exists(path):
-            os.makedirs(path) # Create path if it does not exist
-        for root, dirs, files in os.walk(path):  
-            for dir in dirs:  
-                os.chown(os.path.join(root, dir), uid, gid) # chown directories
-                os.chmod(dir, dirMode) # chmod directories
-            for file in files:
+    if not os.path.exists(wwwDataPath):
+        os.makedirs(wwwDataPath) # Create path if it does not exist
+    os.chown(wwwDataPath, uid, gid) # chown root directory
+    os.chmod(wwwDataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(wwwDataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
                 os.chown(os.path.join(root, file), uid, gid) # chown files
                 os.chmod(file, fileMode) # chmod files
 

@@ -102,7 +102,7 @@ perms() {
     echo -e "\nFixing file permissions for $GITROOT."
     chown -R brewpi:brewpi "$GITROOT" || warn
     chown -R brewpi:www-data "$GITROOT/settings" || warn
-    if [ -f "$GITROOT/BEERSOCKET" ]; then
+    if [ -e "$GITROOT/BEERSOCKET" ]; then
         chown -R brewpi:www-data "$GITROOT/BEERSOCKET" || warn
     fi
     find "$GITROOT" -type d -exec chmod 775 {} \; || warn

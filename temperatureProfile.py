@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import time
 import csv
 import sys
@@ -37,13 +38,13 @@ import BrewPiUtil as util
 
 # also defined in brewpi.py. TODO: move to shared import
 def logMessage(message):
-    print >> sys.stderr, time.strftime("%Y-%m-%d %H:%M:%S   ") + message # This is format: "2019-01-08 16:50:15"
+    print(time.strftime("%Y-%m-%d %H:%M:%S   ") + message, file=sys.stderr) # This is format: "2019-01-08 16:50:15"
     #print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message # This is format: "Jan 08 2019 16:31:56"
 
 def getNewTemp(scriptPath):
     temperatureReader = csv.reader(     open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rb'),
                                     delimiter=',', quoting=csv.QUOTE_ALL)
-    temperatureReader.next()  # discard the first row, which is the table header
+    next(temperatureReader)  # discard the first row, which is the table header
     prevTemp = None
     nextTemp = None
     interpolatedTemp = -99

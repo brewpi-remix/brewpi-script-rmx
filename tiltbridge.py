@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 class Server(BaseHTTPRequestHandler):
@@ -43,7 +44,7 @@ class Server(BaseHTTPRequestHandler):
 def run(server_class=HTTPServer, handler_class=Server, port=8080):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    print 'Starting httpd.'
+    print('Starting httpd.')
     httpd.serve_forever()
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import sys
 import os
 import termios
@@ -45,8 +46,8 @@ import BrewPiUtil as util
 
 # Read in command line arguments
 if len(sys.argv) < 2:
-    print >> sys.stderr, "\nUsing default config path ./settings/config.cfg, to override use:"
-    print >> sys.stderr, "%s <config file full path>" % sys.argv[0]
+    print("\nUsing default config path ./settings/config.cfg, to override use:", file=sys.stderr)
+    print("%s <config file full path>" % sys.argv[0], file=sys.stderr)
     configFile = util.addSlash(sys.path[0]) + '../settings/config.cfg'
 else:
     configFile = sys.argv[1]
@@ -56,17 +57,17 @@ if not os.path.exists(configFile):
 
 config = util.readCfgWithDefaults(configFile)
 
-print "\n        ********     BrewPi Terminal     *******"
-print "This simple Python script lets you send commands to the controller. It"
-print "also echoes everything the controller returns. On known debug ID's in"
-print "JSON format, it expands the messages to the full message.\n"
-print "Press 's' to send a string to the controller, press 'q' to quit"
+print("\n        ********     BrewPi Terminal     *******")
+print("This simple Python script lets you send commands to the controller. It")
+print("also echoes everything the controller returns. On known debug ID's in")
+print("JSON format, it expands the messages to the full message.\n")
+print("Press 's' to send a string to the controller, press 'q' to quit")
 
 # open serial port
 ser = util.setupSerial(config)
 
 if not ser:
-    print "Unable to open serial port; is script still running?"
+    print("Unable to open serial port; is script still running?")
     exit(1)
 
 try:
@@ -91,7 +92,7 @@ try:
             termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
             fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
             userInput = raw_input("Type the string you want to send to the controller: ")
-            print "Sending: " + userInput
+            print("Sending: " + userInput)
             ser.write(userInput)
 
         line = ser.readline()
@@ -99,13 +100,13 @@ try:
             if(line[0]=='D'):
                 try:
                     decoded = json.loads(line[2:])
-                    print "Debug message received: " + expandLogMessage.expandLogMessage(line[2:])
+                    print("Debug message received: " + expandLogMessage.expandLogMessage(line[2:]))
                 except json.JSONDecodeError:
                     # Print line normally, is not json
-                    print "Debug message received: " + line[2:]
+                    print("Debug message received: " + line[2:])
 
             else:
-                print line
+                print(line)
 
 finally:
     # Reset the terminal:

@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import pprint
 import os
 import sys
@@ -39,16 +40,16 @@ from distutils.version import LooseVersion
 try:
     import psutil
     if LooseVersion(psutil.__version__) < LooseVersion("2.0"):
-        print >> sys.stderr, "Your version of pstuil is %s \n" \
+        print("Your version of pstuil is %s \n" \
         "BrewPi requires psutil 2.0 or higher, please upgrade your version of psutil.\n" \
         "This can best be done via pip, please run:\n" \
         "  sudo apt-get install build-essential python-dev python-pip\n" \
-        "  sudo pip install psutil --upgrade\n" % psutil.__version__
+        "  sudo pip install psutil --upgrade\n" % psutil.__version__, file=sys.stderr)
         sys.exit(1)
 
 except ImportError:
-    print "BrewPi requires psutil to run, please install it via pip:"
-    print "  sudo pip install psutil --upgrade"
+    print("BrewPi requires psutil to run, please install it via pip:")
+    print("  sudo pip install psutil --upgrade")
     sys.exit(1)
 
 import BrewPiSocket
@@ -81,11 +82,11 @@ class BrewPiProcess:
             if conn:
                 conn.send('quit')
                 conn.close()  # Do not shutdown the socket, other processes are still connected to it.
-                print "Quit message sent to BrewPi instance with pid %s." % self.pid
+                print("Quit message sent to BrewPi instance with pid %s." % self.pid)
                 return True
             else:
-                print "Could not connect to socket of BrewPi process in order to send a quit message."
-                print "Maybe it just started and is not listening yet."
+                print("Could not connect to socket of BrewPi process in order to send a quit message.")
+                print("Maybe it just started and is not listening yet.")
                 self.kill()
                 return False
 
@@ -96,23 +97,23 @@ class BrewPiProcess:
         process = psutil.Process(self.pid)  # Get psutil process my pid
         try:
             process.kill()
-            print "SIGKILL sent to BrewPi instance with pid %d." % self.pid
+            print("SIGKILL sent to BrewPi instance with pid %d." % self.pid)
         except psutil.AccessDenied:
-            print >> sys.stderr, "Cannot kill process %d, you need root permission to do that." % self.pid
-            print >> sys.stderr, "Is the process running under the same user?"
+            print("Cannot kill process %d, you need root permission to do that." % self.pid, file=sys.stderr)
+            print("Is the process running under the same user?", file=sys.stderr)
 
     def conflict(self, otherProcess):
         if self.pid == otherProcess.pid:
             return 0  # This is me! I don't have a conflict with myself
         if otherProcess.cfg == self.cfg:
-            print "Conflict: same config file as another BrewPi instance already running."
+            print("Conflict: same config file as another BrewPi instance already running.")
             return 1
         if otherProcess.port == self.port:
-            print "Conflict: same serial port as another BrewPi instance already running."
+            print("Conflict: same serial port as another BrewPi instance already running.")
             return 1
         if [otherProcess.sock.type, otherProcess.sock.file, otherProcess.sock.host, otherProcess.sock.port] == \
                 [self.sock.type, self.sock.file, self.sock.host, self.sock.port]:
-            print "Conflict: same socket as another BrewPi instance already running."
+            print("Conflict: same socket as another BrewPi instance already running.")
             return 1
         return 0
 

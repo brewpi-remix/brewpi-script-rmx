@@ -2,6 +2,10 @@
 .bash_logout
 .bashrc
 .profile
+.bash_history
+.cache/
+.python_history
+brewpi-env/
 
 *.py[co]
 

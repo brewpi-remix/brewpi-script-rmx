@@ -285,7 +285,7 @@ main() {
     help "$@" # Process help and version requests
     banner "starting"
     INTERACT=$(getinteract "$@")
-    iwconfig wlan0 power off # Turn off power management for WiFi
+    sudo iw dev wlan0 set power_save off # Turn off power management for WiFi
     # If we're interactive, just run it once
     if [ "$INTERACT" == true ]; then
         banner "starting"

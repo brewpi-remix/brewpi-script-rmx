@@ -36,11 +36,6 @@ import csv
 import sys
 import BrewPiUtil as util
 
-# # also defined in brewpi.py. TODO: move to shared import
-# def logMessage(message):
-#     print(time.strftime("%Y-%m-%d %H:%M:%S   ") + message, file=sys.stdout) # This is format: "2019-01-08 16:50:15"
-#     #print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message # This is format: "Jan 08 2019 16:31:56"
-
 def getNewTemp(scriptPath):
     with open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rU') as csvfile:
         dialect = csv.Sniffer().sniff(csvfile.readline())

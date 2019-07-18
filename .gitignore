@@ -6,8 +6,11 @@
 .cache/
 .python_history
 brewpi-env/
-htmlcov/
 coverage.xml
+htmlcov/
+
+# Compiled Python
+=======
 *.py[co]
 
 # Packages

@@ -131,14 +131,14 @@ def logMessage(*objs):
     """
     Prints a timestamped message to stdout
     """
-    printStdOut(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
+    printStdOut(strftime("%Y-%m-%d %H:%M:%S "), *objs)
 
 
 def logError(*objs):
     """
     Prints a timestamped message to stderr
     """
-    printStdErr(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
+    printStdErr(strftime("%Y-%m-%d %H:%M:%S "), *objs)
 
 
 def scriptPath():

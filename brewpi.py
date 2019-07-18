@@ -1080,7 +1080,7 @@ while run:
                                 csvFile.write(lineToWrite)
                                 csvFile.close()
 
-                            except IOError, e:
+                            except IOError as e:
                                 logMessage(
                                     "Unknown error: %s" % str(e))
 
@@ -1118,7 +1118,7 @@ while run:
 
                             lineToWrite += '\r\n'
                             csvFile.write(lineToWrite)
-                        except KeyError, e:
+                        except KeyError as e:
                             logMessage(
                                 "KeyError in line from controller: %s" % str(e))
 
@@ -1164,17 +1164,16 @@ while run:
                         logMessage(
                             "Cannot process line from controller: " + line)
                     # End of processing a line
-                except json.decoder.JSONDecodeError, e: # Bad message received
+                except json.decoder.JSONDecodeError as e:
                     logMessage("JSON decode error: %s" % str(e))
                     logMessage("Line received was: " + line)
 
             if message is not None: # Other (debug?) message received
                 try:
-                    pass
-                    # Not sure we need to log this
+                    pass # I don't think we need to log this
                     # expandedMessage = expandLogMessage.expandLogMessage(message)
                     # logMessage("Controller debug message: " + expandedMessage)
-                except Exception, e:
+                except Exception as e:
                     # Catch all exceptions, because out of date file could
                     # cause errors
                     logMessage(

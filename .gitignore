@@ -7,8 +7,10 @@
 .python_history
 brewpi-env/
 coverage.xml
+htmlcov/
 
 # Compiled Python
+=======
 *.py[co]
 
 # Packages

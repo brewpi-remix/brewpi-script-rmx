@@ -6,6 +6,13 @@
 .cache/
 .python_history
 brewpi-env/
+coverage.xml
+start.bat
+sftp-config.json
+requirements.txt
+!.gitignore
+.idea/
+utils/downloads/
 
 # Compiled Python files
 *.py[co]
@@ -35,11 +42,3 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-
-start.bat
-
-sftp-config.json
-requirements.txt
-!.gitignore
-.idea/
-utils/downloads/

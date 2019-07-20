@@ -301,7 +301,7 @@ main() {
         echo -e "\nDEBUG: about to run getrepos with "$@""
         getrepos "$@" # Get list of repositories to update
         read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
-        echo -e "\nDEBUG: about to run process with "0$@""
+        echo -e "\nDEBUG: about to run process with "$@""
         process "$@" # Check and process updates
         read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         flash # Offer to flash controller

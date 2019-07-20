@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits. */
 
-# System Imports
+# Standard Imports
 from __future__ import print_function
 import thread
 from distutils.version import LooseVersion
@@ -43,14 +43,16 @@ import os
 import socket
 import time
 import sys
+import stat
+import pwd
+import grp
 
-# Check needed software dependencies
-if sys.version_info < (2, 7):
+
+if sys.version_info < (2, 7): # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
     sys.exit(1)
 
-# Load non standard packages, exit if they are not installed
-try:
+try: # Load non standard packages, exit if they are not installed
     import serial
     if LooseVersion(serial.VERSION) < LooseVersion("3.0"):
         print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION),
@@ -83,6 +85,7 @@ import temperatureProfile
 import programController as programmer
 import brewpiJson
 from BrewPiUtil import logMessage
+from BrewPiUtil import logError
 import BrewPiUtil as util
 import brewpiVersion
 import pinList
@@ -97,11 +100,11 @@ compatibleHwVersion = "0.2.4"
 # controller. This is mainly to show what's expected. Will all be overwritten
 # on the first update from the controller
 
-# Control Settings
+# Control Settings Dictionary
 cs = dict(mode='b', beerSet=20.0, fridgeSet=20.0, heatEstimator=0.2,
           coolEstimator=5)
 
-# Control Constants
+# Control Constants Dictionary
 cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0,
           Kp=20.000, Ki=0.600, Kd=-3.000, iMaxErr=0.500, idleRangeH=1.000,
           idleRangeL=-1.000, heatTargetH=0.301, heatTargetL=-0.199,
@@ -110,7 +113,7 @@ cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0,
           fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5",
           beerSlopeFilt="4", lah=0, hs=0)
 
-# Control variables
+# Control Variables Dictionary
 cv = dict(beerDiff=0.000, diffIntegral=0.000, beerSlope=0.000, p=0.000,
           i=0.000, d=0.000, estPeak=0.000, negPeakEst=0.000,
           posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
@@ -312,19 +315,52 @@ def setFiles():
     global lastDay
     global day
 
-    # Create directory for the data if it does not exist
+    # Concatenate directory names for the data
     beerFileName = config['beerName']
     dataPath = '{0}data/{1}/'.format(
         util.addSlash(util.scriptPath()), beerFileName)
     wwwDataPath = '{0}data/{1}/'.format(
         util.addSlash(config['wwwPath']), beerFileName)
 
+    # Create path and set owner and perms (recursively) on directories and files
+    owner = 'brewpi'
+    group = 'brewpi'
+    uid = pwd.getpwnam(owner).pw_uid # Get UID
+    gid = grp.getgrnam(group).gr_gid # Get GID
+    fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
+    dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
     if not os.path.exists(dataPath):
-        os.makedirs(dataPath)
-        os.chmod(dataPath, 0775)  # Give group all permissions
+        os.makedirs(dataPath) # Create path if it does not exist
+    os.chown(dataPath, uid, gid) # chown root directory
+    os.chmod(dataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(dataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
+                os.chown(os.path.join(root, file), uid, gid) # chown files
+                os.chmod(file, fileMode) # chmod files
+
+    # Create path and set owner and perms (recursively) on directories and files
+    owner = 'brewpi'
+    group = 'www-data'
+    uid = pwd.getpwnam(owner).pw_uid # Get UID
+    gid = grp.getgrnam(group).gr_gid # Get GID
+    fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
+    dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
     if not os.path.exists(wwwDataPath):
-        os.makedirs(wwwDataPath)
-        os.chmod(wwwDataPath, 0775)  # Give group all permissions
+        os.makedirs(wwwDataPath) # Create path if it does not exist
+    os.chown(wwwDataPath, uid, gid) # chown root directory
+    os.chmod(wwwDataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(wwwDataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
+                os.chown(os.path.join(root, file), uid, gid) # chown files
+                os.chmod(file, fileMode) # chmod files
 
     # Keep track of day and make new data file for each day
     day = time.strftime("%Y%m%d")
@@ -355,7 +391,7 @@ def setFiles():
     # Define a CSV file to store the data as CSV (might be useful one day)
     localCsvFileName = (dataPath + beerFileName + '.csv')
     wwwCsvFileName = (wwwDataPath + beerFileName + '.csv')
-
+    
 
 def startBeer(beerName):
     if config['dataLogging'] == 'active':
@@ -369,7 +405,7 @@ def startNewBrew(newName):
         config = util.configSet(configFile, 'beerName', newName)
         config = util.configSet(configFile, 'dataLogging', 'active')
         startBeer(newName)
-        logMessage("Notification: Restarted logging for beer '%s'." % newName)
+        logMessage("Restarted logging for beer '%s'." % newName)
         return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.unquote(newName) +
                                               "Please reload the page."}
     else:
@@ -475,14 +511,31 @@ if not prevTempJson:
         'FridgeSet': 0}
 
 
-# Start script
+# Start the logs
 if logToFiles:
+    # Make sure we send a message to daemon
     print('Starting BrewPi.', file=sys.__stdout__)
+else:
+    logMessage('Starting BrewPi.')
+
+logError('Starting BrewPi.') # Timestamp stderr
+
+# Output the current script version
+version = os.popen('git describe --tags $(git rev-list --tags --max-count=1)').read().strip()
+branch = os.popen('git branch | grep \* | cut -d " " -f2').read().strip()
+commit = os.popen('git -C . log --oneline -n1').read().strip()
+logMessage('{0} ({1}) [{2}]'.format(version, branch, commit))
+
 lcdText = ['Script starting up.', ' ', ' ', ' ']
-logMessage("Notification: Starting '" +
-           urllib.unquote(config['beerName']) + "'")
+
+if config['beerName'] == 'None':
+    logMessage("Logging is stopped.")
+else:
+    logMessage("Starting '" +
+            urllib.unquote(config['beerName']) + ".'")
+
 logMessage("Waiting 10 seconds for board to restart.")
-# Wait for 10 seconds to allow an Uno to reboot (in case an Uno is being used)
+# Wait for 10 seconds to allow an Uno to reboot
 time.sleep(float(config.get('startupDelay', 10)))
 
 logMessage("Checking software version on controller.")
@@ -538,8 +591,14 @@ else:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(socketFile)  # Bind BEERSOCKET
-    # Set all permissions for socket
-    os.chmod(socketFile, 0777)
+    # Set owner and permissions for socket
+    fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
+    owner = 'brewpi'
+    group = 'www-data'
+    uid = pwd.getpwnam(owner).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+    os.chown(socketFile, uid, gid) # chown socket
+    os.chmod(socketFile, fileMode) # chmod socket
 
 serialCheckInterval = 0.5
 s.setblocking(1)  # Set socket functions to be blocking
@@ -595,36 +654,37 @@ while run:
         lastDay = day
         day = time.strftime("%Y%m%d")
         if lastDay != day:
-            logMessage("Notification: New day, creating new JSON file.")
+            logMessage("New day, creating new JSON file.")
             setFiles()
 
     # Wait for incoming socket connections.
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
     # When messages are expected on serial, the timeout is raised 'manually'
-    try:
+
+    try: # Process socket messages
         conn, addr = s.accept()
         conn.setblocking(1)
         # Blocking receive, times out in serialCheckInterval
         message = conn.recv(4096)
-        if "=" in message:
+        if "=" in message: # Split to message/value if message has an '='
             messageType, value = message.split("=", 1)
         else:
             messageType = message
             value = ""
-        if messageType == "ack":  # Acknowledge request
+        if messageType == "ack": # Acknowledge request
             conn.send('ack')
-        elif messageType == "lcd":  # LCD contents requested
+        elif messageType == "lcd": # LCD contents requested
             conn.send(json.dumps(lcdText))
-        elif messageType == "getMode":  # Echo cs['mode'] setting
+        elif messageType == "getMode": # Echo mode setting
             conn.send(cs['mode'])
-        elif messageType == "getFridge":  # Echo fridge temperature setting
+        elif messageType == "getFridge": # Echo fridge temperature setting
             conn.send(json.dumps(cs['fridgeSet']))
-        elif messageType == "getBeer":  # Echo beer temperature setting
+        elif messageType == "getBeer": # Echo beer temperature setting
             conn.send(json.dumps(cs['beerSet']))
-        elif messageType == "getControlConstants":
+        elif messageType == "getControlConstants": # Echo control constants
             conn.send(json.dumps(cc))
-        elif messageType == "getControlSettings":
+        elif messageType == "getControlSettings": # Echo control settings
             if cs['mode'] == "p":
                 profileFile = util.addSlash(
                     util.scriptPath()) + 'settings/tempProfile.csv'
@@ -632,15 +692,15 @@ while run:
                     cs['profile'] = prof.readline().split(",")[-1].rstrip("\n")
             cs['dataLogging'] = config['dataLogging']
             conn.send(json.dumps(cs))
-        elif messageType == "getControlVariables":
+        elif messageType == "getControlVariables": # Echo control variables
             conn.send(json.dumps(cv))
-        elif messageType == "refreshControlConstants":
+        elif messageType == "refreshControlConstants": # Request control constants from controller
             bg_ser.write("c")
             raise socket.timeout
-        elif messageType == "refreshControlSettings":
+        elif messageType == "refreshControlSettings": # Request control settings from controller
             bg_ser.write("s")
             raise socket.timeout
-        elif messageType == "refreshControlVariables":
+        elif messageType == "refreshControlVariables": # Request control variables from controller
             bg_ser.write("v")
             raise socket.timeout
         elif messageType == "loadDefaultControlSettings":
@@ -662,37 +722,33 @@ while run:
                 cs['beerSet'] = round(newTemp, 2)
                 bg_ser.write(
                     "j{mode:b, beerSet:" + json.dumps(cs['beerSet']) + "}")
-                logMessage("Notification: Beer temperature set to {0} degrees in".format(str(cs['beerSet'])))
-                logMessage("web interface.")
+                logMessage("Beer temperature set to {0} degrees by web.".format(str(cs['beerSet'])))
                 raise socket.timeout  # Go to serial communication to update controller
             else:
                 logMessage("Beer temperature setting {0} is outside of allowed".format(str(newTemp)))
                 logMessage("range {0} - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
                 logMessage("advanced settings.")
-
         elif messageType == "setFridge":  # New constant fridge temperature received
             try:
                 newTemp = float(value)
             except ValueError:
                 logMessage("Cannot convert temperature '{0}' to float.".format(value))
                 continue
-
             if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
                 cs['mode'] = 'f'
                 cs['fridgeSet'] = round(newTemp, 2)
                 bg_ser.write("j{mode:f, fridgeSet:" +
                              json.dumps(cs['fridgeSet']) + "}")
-                logMessage("Notification: Fridge temperature set to {0} degrees".format(str(cs['fridgeSet'])))
-                logMessage("in web interface.")
+                logMessage("Fridge temperature set to {0} degrees by web.".format(str(cs['fridgeSet'])))
                 raise socket.timeout  # Go to serial communication to update controller
             else:
                 logMessage("Fridge temperature setting {0} is outside of allowed".format(str(newTemp)))
                 logMessage("range {0} - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
                 logMessage("advanced settings.")
-        elif messageType == "setOff":  # cs['mode'] set to OFF
+        elif messageType == "setOff":  # Control mode set to OFF
             cs['mode'] = 'o'
             bg_ser.write("j{mode:o}")
-            logMessage("Notification: Temperature control disabled.")
+            logMessage("Temperature control disabled.")
             raise socket.timeout
         elif messageType == "setParameters":
             # Receive JSON key:value pairs to set parameters on the controller
@@ -703,7 +759,7 @@ while run:
                     # Change in web interface settings too
                     changeWwwSetting('tempFormat', decoded['tempFormat'])
             except json.JSONDecodeError:
-                logMessage("Error: Invalid JSON parameter.  String received:")
+                logMessage("ERROR: Invalid JSON parameter.  String received:")
                 logMessage(value)
             raise socket.timeout
         elif messageType == "stopScript":  # Exit instruction received. Stop script.
@@ -718,7 +774,7 @@ while run:
             wwwPath = util.addSlash(config['wwwPath'])
             dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
             util.createDontRunFile(dontRunFilePath)
-        elif messageType == "quit":
+        elif messageType == "quit": # Quit but do not write semaphore
             # Quit instruction received. Probably sent by another brewpi
             # script instance
             logMessage("Quit message received on socket.")
@@ -727,11 +783,11 @@ while run:
             # This instruction is meant to restart the script or replace
             # it with another instance.
             continue
-        elif messageType == "eraseLogs":
-            # Erase the log files for stderr and stdout
+        elif messageType == "eraseLogs": # Erase stderr and stdout
             open(util.scriptPath() + '/logs/stderr.txt', 'wb').close()
             open(util.scriptPath() + '/logs/stdout.txt', 'wb').close()
             logMessage("Log files erased.")
+            logError("Log files erased.")
             continue
         elif messageType == "interval":  # New interval received
             newInterval = int(value)
@@ -742,25 +798,25 @@ while run:
                 except ValueError:
                     logMessage("Cannot convert interval '{0}' to float.".format(value))
                     continue
-                logMessage("Notification: Interval changed to {0} seconds.".format(str(newInterval)))
+                logMessage("Interval changed to {0} seconds.".format(str(newInterval)))
         elif messageType == "startNewBrew":  # New beer name
             newName = value
             result = startNewBrew(newName)
             conn.send(json.dumps(result))
-        elif messageType == "pauseLogging":
+        elif messageType == "pauseLogging": # Pause logging
             result = pauseLogging()
             conn.send(json.dumps(result))
-        elif messageType == "stopLogging":
+        elif messageType == "stopLogging": # Stop logging
             result = stopLogging()
             conn.send(json.dumps(result))
-        elif messageType == "resumeLogging":
+        elif messageType == "resumeLogging": # Resume logging
             result = resumeLogging()
             conn.send(json.dumps(result))
-        elif messageType == "dateTimeFormatDisplay":
+        elif messageType == "dateTimeFormatDisplay": # Change date time format
             config = util.configSet(configFile, 'dateTimeFormatDisplay', value)
             changeWwwSetting('dateTimeFormatDisplay', value)
             logMessage("Changing date format config setting: " + value)
-        elif messageType == "setActiveProfile":
+        elif messageType == "setActiveProfile": # Get and process beer profile
             # Copy the profile CSV file to the working directory
             logMessage("Setting profile '%s' as active profile." % value)
             config = util.configSet(configFile, 'profileName', value)
@@ -793,9 +849,9 @@ while run:
                 if cs['mode'] is not 'p':
                     cs['mode'] = 'p'
                     bg_ser.write("j{mode:p}")
-                    logMessage("Notification: Profile mode enabled.")
+                    logMessage("Profile mode enabled.")
                     raise socket.timeout  # Go to serial communication to update controller
-        elif messageType == "programController" or messageType == "programArduino":
+        elif messageType == "programController" or messageType == "programArduino": # Reprogram controller
             if bg_ser is not None:
                 bg_ser.stop()
             if ser is not None:
@@ -813,8 +869,7 @@ while run:
                 logMessage(
                     "New program uploaded to controller, script will restart.")
             except json.JSONDecodeError:
-                logMessage(
-                    "Error. Cannot decode programming parameters: " + value)
+                logMessage("ERROR. Cannot decode programming parameters: " + value)
                 logMessage("Restarting script without programming.")
 
             # Restart the script when done. This replaces this process with
@@ -822,7 +877,7 @@ while run:
             time.sleep(5)  # Give the controller time to reboot
             python = sys.executable
             os.execl(python, python, *sys.argv)
-        elif messageType == "refreshDeviceList":
+        elif messageType == "refreshDeviceList": # Request devices from controller
             deviceList['listState'] = ""  # Invalidate local copy
             if value.find("readValues") != -1:
                 bg_ser.write("d{r:1}")  # Request installed devices
@@ -832,7 +887,7 @@ while run:
                 bg_ser.write("d{}")  # Request installed devices
                 # Request available, but not installed devices
                 bg_ser.write("h{u:-1}")
-        elif messageType == "getDeviceList":
+        elif messageType == "getDeviceList": # Echo device list
             if deviceList['listState'] in ["dh", "hd"]:
                 response = dict(board=hwVersion.board,
                                 shield=hwVersion.shield,
@@ -841,26 +896,24 @@ while run:
                 conn.send(json.dumps(response))
             else:
                 conn.send("device-list-not-up-to-date")
-        elif messageType == "applyDevice":
+        elif messageType == "applyDevice": # Change device settings
             try:
                 # Load as JSON to check syntax
                 configStringJson = json.loads(value)
             except json.JSONDecodeError:
-                logMessage(
-                    "Error. Invalid JSON parameter string received: {0}".format(value))
+                logMessage("ERROR. Invalid JSON parameter string received: {0}".format(value))
                 continue
             bg_ser.write("U{0}".format(json.dumps(configStringJson)))
             deviceList['listState'] = ""  # Invalidate local copy
-        elif messageType == "writeDevice":
+        elif messageType == "writeDevice": # Configure a device
             try:
                 # Load as JSON to check syntax
                 configStringJson = json.loads(value)
             except json.JSONDecodeError:
-                logMessage(
-                    "Error: invalid JSON parameter string received: " + value)
+                logMessage("ERROR: invalid JSON parameter string received: " + value)
                 continue
             bg_ser.write("d" + json.dumps(configStringJson))
-        elif messageType == "getVersion":
+        elif messageType == "getVersion": # Get firmware version from controller
             if hwVersion:
                 response = hwVersion.__dict__
                 # Replace LooseVersion with string, because it is not
@@ -870,34 +923,29 @@ while run:
                 response = {}
             response_str = json.dumps(response)
             conn.send(response_str)
-        elif messageType == "resetController":
+        elif messageType == "resetController": # Erase EEPROM
             logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
-        else:
-            logMessage("Error. Received invalid message on socket: " + message)
+        else: # Invalid message received
+            logMessage("ERROR. Received invalid message on socket: " + message)
 
         if (time.time() - prevTimeOut) < serialCheckInterval:
             continue
-        else:
-            # Raise exception to check serial for data immediately
+        else: # Raise exception to check serial for data immediately
             raise socket.timeout
 
-    except socket.timeout:
-        # Do serial communication and update settings every SerialCheckInterval
+    except socket.timeout: # Do serial communication and update settings every SerialCheckInterval
         prevTimeOut = time.time()
 
-        if hwVersion is None:
-            # Do nothing with the serial port when the controller
-            # has not been recognized
+        if hwVersion is None: # Do nothing if we cannot read version
+            # Controller has not been recognized
             continue
 
-        if(time.time() - prevLcdUpdate) > 5:
-            # Request new LCD text
+        if(time.time() - prevLcdUpdate) > 5: # Request new LCD value
             prevLcdUpdate += 5  # Give the controller some time to respond
             bg_ser.write('l')
 
-        if(time.time() - prevSettingsUpdate) > 60:
-            # Request Settings from controller to stay up to date.
+        if(time.time() - prevSettingsUpdate) > 60: # Request Settings from controller
             # Controller should send updates on changes, this is a periodic
             # update to ensure it is up to date
             prevSettingsUpdate += 5  # Give the controller some time to respond
@@ -911,19 +959,17 @@ while run:
             bg_ser.write("t")  # Request new from controller
             prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
 
-        elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
-            # Something is wrong: controller is not responding to data requests
-            logMessage(
-                "Error: Controller is not responding to new data requests.")
+        elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']): # Controller not responding
+            logMessage("ERROR: Controller is not responding to new data requests.")
 
-        while True:
+        while True: # Read lines from controller
             line = bg_ser.read_line()
             message = bg_ser.read_message()
             if line is None and message is None:
                 break
             if line is not None:
                 try:
-                    if line[0] == 'T':
+                    if line[0] == 'T': # Temp info received
                         # Store time of last new data for interval check
                         prevDataTime = time.time()
 
@@ -994,17 +1040,60 @@ while run:
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.
                         shutil.copyfile(localJsonFileName, wwwJsonFileName)
-                        # Now write a csv file as well
+
+                        # Check if CSV file exists, if not do a header
+                        if not os.path.exists(localCsvFileName):
+                            csvFile = open(localCsvFileName, "a")
+                            delim = ','
+                            try:
+                                lineToWrite = ('Timestamp' + delim +
+                                               'Beer Temp' + delim +
+                                               'Beer Set' + delim +
+                                               'Beer Annot' + delim +
+                                               'Chamber Temp' + delim +
+                                               'Chamber Set' + delim +
+                                               'Chamber Annot' + delim +
+                                               'Room Temp' + delim +
+                                               'State')
+
+                                # If we are configured to run a Tilt
+                                if tilt:
+                                    # Write out Tilt Temp and SG Values
+                                    for color in Tilt.TILT_COLORS:
+                                        # Only log the Tilt if the color is correct according to config
+                                        if color == config["tiltColor"]:
+                                            if prevTempJson.get(color + 'Temp') is not None:
+                                                lineToWrite += (delim +
+                                                                color + 'Tilt Temp' + delim +
+                                                                color + 'Tilt SG')
+
+                                # If we are configured to run an iSpindel
+                                if ispindel:
+                                    lineToWrite += (delim +
+                                                    'iSpindel Temp' + delim +
+                                                    'iSpindel Batt Level' + delim +
+                                                    'iSpindel SG')
+
+                                lineToWrite += '\r\n'
+                                csvFile.write(lineToWrite)
+                                csvFile.close()
+
+                            except IOError as e:
+                                logMessage(
+                                    "Unknown error: %s" % str(e))
+
+                        # Now write data to csv file as well
                         csvFile = open(localCsvFileName, "a")
+                        delim = ','
                         try:
-                            lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S;") +
-                                           json.dumps(newRow['BeerTemp']) + ';' +
-                                           json.dumps(newRow['BeerSet']) + ';' +
-                                           json.dumps(newRow['BeerAnn']) + ';' +
-                                           json.dumps(newRow['FridgeTemp']) + ';' +
-                                           json.dumps(newRow['FridgeSet']) + ';' +
-                                           json.dumps(newRow['FridgeAnn']) + ';' +
-                                           json.dumps(newRow['RoomTemp']) + ';' +
+                            lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S") + delim +
+                                           json.dumps(newRow['BeerTemp']) + delim +
+                                           json.dumps(newRow['BeerSet']) + delim +
+                                           json.dumps(newRow['BeerAnn']) + delim +
+                                           json.dumps(newRow['FridgeTemp']) + delim +
+                                           json.dumps(newRow['FridgeSet']) + delim +
+                                           json.dumps(newRow['FridgeAnn']) + delim +
+                                           json.dumps(newRow['RoomTemp']) + delim +
                                            json.dumps(newRow['State']))
 
                             # If we are configured to run a Tilt
@@ -1014,85 +1103,81 @@ while run:
                                     # Only log the Tilt if the color is correct according to config
                                     if color == config["tiltColor"]:
                                         if prevTempJson.get(color + 'Temp') is not None:
-                                            lineToWrite += (';' +
-                                                            json.dumps(prevTempJson[color + 'Temp']) + ';' +
+                                            lineToWrite += (delim +
+                                                            json.dumps(prevTempJson[color + 'Temp']) + delim +
                                                             json.dumps(prevTempJson[color + 'SG']))
 
                             # If we are configured to run an iSpindel
                             if ispindel:
-                                lineToWrite += (';' +
-                                                json.dumps(newRow['SpinTemp']) + ';' +
-                                                json.dumps(newRow['SpinBatt']) + ';' +
+                                lineToWrite += (delim +
+                                                json.dumps(newRow['SpinTemp']) + delim +
+                                                json.dumps(newRow['SpinBatt']) + delim +
                                                 json.dumps(newRow['SpinSG']))
 
                             lineToWrite += '\r\n'
                             csvFile.write(lineToWrite)
-                        except KeyError, e:
+                        except KeyError as e:
                             logMessage(
                                 "KeyError in line from controller: %s" % str(e))
 
                         csvFile.close()
                         shutil.copyfile(localCsvFileName, wwwCsvFileName)
-                    elif line[0] == 'D':
-                        # Debug message received, should already been filtered out, but print anyway here.
+                    elif line[0] == 'D': # Debug message received
+                        # Should already been filtered out, but print anyway here.
                         logMessage(
                             "Finding a debug message here should not be possible.")
                         logMessage("Line received was: {0}".format(line))
-                    elif line[0] == 'L':
-                        # LCD content received
+                    elif line[0] == 'L': # LCD content received
                         prevLcdUpdate = time.time()
                         lcdText = json.loads(line[2:])
-                    elif line[0] == 'C':
-                        # Control constants received
+                    elif line[0] == 'C': # Control constants received
                         cc = json.loads(line[2:])
                         # Update the json with the right temp format for the web page
                         if 'tempFormat' in cc:
                             changeWwwSetting('tempFormat', cc['tempFormat'])
-                    elif line[0] == 'S':
-                        # Control settings received
+                    elif line[0] == 'S': # Control settings received
                         prevSettingsUpdate = time.time()
                         cs = json.loads(line[2:])
-                    # Do not print this to the log file. This is requested continuously.
-                    elif line[0] == 'V':
-                        # Control settings received
+                        # Do not print this to the log file. This is requested continuously.
+                    elif line[0] == 'V': # Control variables received
                         cv = json.loads(line[2:])
-                    elif line[0] == 'N':
-                        pass  # Version number received. Do nothing, just ignore
-                    elif line[0] == 'h':
+                    elif line[0] == 'N': # Version number received
+                        # Do nothing, just ignore
+                        pass
+                    elif line[0] == 'h': # Available devices received
                         deviceList['available'] = json.loads(line[2:])
                         oldListState = deviceList['listState']
                         deviceList['listState'] = oldListState.strip('h') + "h"
                         logMessage("Available devices received: " +
                                    json.dumps(deviceList['available']))
-                    elif line[0] == 'd':
+                    elif line[0] == 'd': # Installed devices received
                         deviceList['installed'] = json.loads(line[2:])
                         oldListState = deviceList['listState']
                         deviceList['listState'] = oldListState.strip('d') + "d"
                         logMessage("Installed devices received: " +
                                    json.dumps(deviceList['installed']).encode('utf-8'))
-                    elif line[0] == 'U':
+                    elif line[0] == 'U': # Device update received
                         logMessage("Device updated to: " + line[2:])
-                    else:
+                    else: # Unknown message received
                         logMessage(
                             "Cannot process line from controller: " + line)
                     # End of processing a line
-                except json.decoder.JSONDecodeError, e:
+                except json.decoder.JSONDecodeError as e:
                     logMessage("JSON decode error: %s" % str(e))
                     logMessage("Line received was: " + line)
 
-            if message is not None:
+            if message is not None: # Other (debug?) message received
                 try:
-                    expandedMessage = expandLogMessage.expandLogMessage(
-                        message)
-                    logMessage("Controller debug message: " + expandedMessage)
-                except Exception, e:
+                    pass # I don't think we need to log this
+                    # expandedMessage = expandLogMessage.expandLogMessage(message)
+                    # logMessage("Controller debug message: " + expandedMessage)
+                except Exception as e:
                     # Catch all exceptions, because out of date file could
                     # cause errors
                     logMessage(
                         "Error while expanding log message: '" + message + "'" + str(e))
 
-        # Check for update from temperature profile
-        if cs['mode'] == 'p':
+        if cs['mode'] == 'p': # Check for update from temperature profile
             newTemp = temperatureProfile.getNewTemp(util.scriptPath())
             if newTemp != cs['beerSet']:
                 cs['beerSet'] = newTemp
@@ -1103,27 +1188,22 @@ while run:
         logMessage("Socket error(%d): %s" % (e.errno, e.strerror))
         traceback.print_exc()
 
-# If we are running background serial, stop it
-if bg_ser:
+if bg_ser: # If we are running background serial, stop it
     bg_ser.stop()
 
-# If we are running a Tilt, stop it
-if tilt:
+if tilt: # If we are running a Tilt, stop it
     tilt.stop()
 
-# Allow any spawned threads to quit
-if thread:
+if thread: # Allow any spawned threads to quit
     for thread in threads:
         thread.join()
 
-# If we opened a serial port, close it
-if ser:
+if ser: # If we opened a serial port, close it
     if ser.isOpen():
         ser.close()  # Close port
 
-# Close any open socket
-if conn:
+if conn: # Close any open socket
     conn.shutdown(socket.SHUT_RDWR)  # Close socket
     conn.close()
 
-sys.exit(0)
+sys.exit(0) # Exit script

@@ -186,7 +186,7 @@ createdaemon () {
 
 [Unit]
 Description=BrewPi Remix daemon for: $daemonName
-Documentation=https://github.com/lbussy/brewpi-tools-rmx/
+Documentation=https://docs.brewpiremix.com/
 After=multi-user.target
 
 [Service]

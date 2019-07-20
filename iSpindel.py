@@ -25,6 +25,7 @@
 # with me for now.
 # Stephan Schreiber <stephan@sschreiber.de>, 2017-03-15
 
+from __future__ import print_function
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from datetime import datetime
 import thread

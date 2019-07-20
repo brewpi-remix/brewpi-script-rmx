@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import urllib2
 import simplejson as json
 import os
@@ -63,13 +64,21 @@ class gitHubReleases:
             fileName = os.path.join(path, os.path.basename(url))
             with open(fileName, "wb") as localFile:
                 localFile.write(f.read())
-            os.chmod(fileName, 0777) # make sure file can be overwritten by a normal user if this ran as root
+
+            # Set owner and permissions for file
+            fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
+            owner = 'brewpi'
+            group = 'brewpi'
+            uid = pwd.getpwnam(owner).pw_uid
+            gid = grp.getgrnam(group).gr_gid
+            os.chown(file, uid, gid) # chown file
+            os.chmod(file, fileMode) # chmod file
             return os.path.abspath(fileName)
 
         #handle errors
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             print("HTTP Error: {0} {1}".format(e.code, url))
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             print("URL Error: {0} {1}".format(e.reason, url))
         return None
 
@@ -86,9 +95,9 @@ class gitHubReleases:
             :return:    Dictionary with release info. None if not found
         """
         try:
-            match = (release for release in self.releases if release["tag_name"] == tag).next()
+            match = next((release for release in self.releases if release["tag_name"] == tag))
         except StopIteration:
-            print "tag '{0}' not found".format(tag)
+            print("tag '{0}' not found".format(tag))
             return None
         return match
 
@@ -131,7 +140,7 @@ class gitHubReleases:
 
         downloadDir = os.path.join(os.path.abspath(path), tag)
         if not os.path.exists(downloadDir):
-            os.makedirs(downloadDir, 0777) # make sure files can be accessed by all in case the script was run as root
+            os.makedirs(downloadDir, 0o777) # make sure files can be accessed by all in case the script was run as root
 
         fileName = self.download(downloadUrl, downloadDir)
         return fileName
@@ -229,15 +238,15 @@ if __name__ == "__main__":
     # test code
     releases = gitHubReleases(repo)
     latest = releases.getLatestTag('uno', False)
-    print "Latest tag: " + latest
+    print("Latest tag: " + latest)
     # print "Downloading hex for latest tag."
     # localFileName = releases.getBin(latest, ["uno", "hex"])
     # if localFileName:
     #     print "Latest hex file downloaded to: \n" + localFileName
 
-    print "Stable releases: ", releases.getTags(prerelease=False)
-    print "All releases: ", releases.getTags(prerelease=True)
-    print "All supported shields: ", releases.getShields()
+    print("Stable releases: ", releases.getTags(prerelease=False))
+    print("All releases: ", releases.getTags(prerelease=True))
+    print("All supported shields: ", releases.getShields())
 
     #print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
     #print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)

@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import simplejson as json
 import sys
 import time
@@ -43,7 +44,7 @@ def getVersionFromSerial(ser):
     oldTimeOut = ser.timeout
     startTime = time.time()
     if not ser.isOpen():
-        print "\nCannot get version from serial port that is not open."
+        print("\nCannot get version from serial port that is not open.")
 
     ser.timeout = 1
     ser.write('n')  # request version info
@@ -152,15 +153,15 @@ class AvrInfo:
         j = None
         try:
             j = json.loads(s)
-        except json.decoder.JSONDecodeError, e:
-            print >> sys.stderr, "JSON decode error: %s" % str(e)
-            print >> sys.stderr, "Could not parse version number: " + s
-        except UnicodeDecodeError, e:
-            print >> sys.stderr, "Unicode decode error: %s" % str(e)
-            print >> sys.stderr, "Could not parse version number: " + s
-        except TypeError, e:
-            print >> sys.stderr, "TypeError: %s" % str(e)
-            print >> sys.stderr, "Could not parse version number: " + s
+        except json.decoder.JSONDecodeError as e:
+            print("JSON decode error: %s" % str(e), file=sys.stderr)
+            print("Could not parse version number: " + s, file=sys.stderr)
+        except UnicodeDecodeError as e:
+            print("Unicode decode error: %s" % str(e), file=sys.stderr)
+            print("Could not parse version number: " + s, file=sys.stderr)
+        except TypeError as e:
+            print("TypeError: %s" % str(e), file=sys.stderr)
+            print("Could not parse version number: " + s, file=sys.stderr)
 
         self.family = None
         self.board_name = None

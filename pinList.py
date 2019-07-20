@@ -30,6 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
+from __future__ import print_function
 import simplejson as json
 
 def getPinList(boardType, shieldType):
@@ -176,7 +177,7 @@ def getPinList(boardType, shieldType):
                    {'val': 2, 'text': 'D2 (SDA)', 'type': 'i2c'},
                    {'val': 4, 'text': 'D4', 'type': 'free'}]
     else:
-        print 'Unknown controller or board type'
+        print('Unknown controller or board type')
         pinList = {}
     return pinList
 
@@ -185,19 +186,19 @@ def getPinListJson(boardType, shieldType):
         pinList = getPinList(boardType, shieldType)
         return json.dumps(pinList)
     except json.JSONDecodeError:
-        print "Cannot process pin list JSON"
+        print("Cannot process pin list JSON")
         return 0
 
 def pinListTest():
-    print getPinListJson("leonardo", "revA")
-    print getPinListJson("leonardo", "revC")
-    print getPinListJson("uno", "revA")
-    print getPinListJson("uno", "revC")
-    print getPinListJson("uno", "I2C")
-    print getPinListJson("core", "V1")
-    print getPinListJson("core", "V2")
-    print getPinListJson("photon", "V1")
-    print getPinListJson("photon", "V2")
+    print(getPinListJson("leonardo", "revA"))
+    print(getPinListJson("leonardo", "revC"))
+    print(getPinListJson("uno", "revA"))
+    print(getPinListJson("uno", "revC"))
+    print(getPinListJson("uno", "I2C"))
+    print(getPinListJson("core", "V1"))
+    print(getPinListJson("core", "V2"))
+    print(getPinListJson("photon", "V1"))
+    print(getPinListJson("photon", "V2"))
 
 if __name__ == "__main__":
     pinListTest()

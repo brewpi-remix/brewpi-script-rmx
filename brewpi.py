@@ -43,6 +43,9 @@ import os
 import socket
 import time
 import sys
+import stat
+import pwd
+import grp
 
 # Check needed software dependencies
 if sys.version_info < (2, 7):
@@ -83,6 +86,7 @@ import temperatureProfile
 import programController as programmer
 import brewpiJson
 from BrewPiUtil import logMessage
+from BrewPiUtil import logError
 import BrewPiUtil as util
 import brewpiVersion
 import pinList
@@ -312,19 +316,52 @@ def setFiles():
     global lastDay
     global day
 
-    # Create directory for the data if it does not exist
+    # Concatenate directory names for the data
     beerFileName = config['beerName']
     dataPath = '{0}data/{1}/'.format(
         util.addSlash(util.scriptPath()), beerFileName)
     wwwDataPath = '{0}data/{1}/'.format(
         util.addSlash(config['wwwPath']), beerFileName)
 
+    # Create path and set owner and perms (recursively) on directories and files
+    owner = 'brewpi'
+    group = 'brewpi'
+    uid = pwd.getpwnam(owner).pw_uid # Get UID
+    gid = grp.getgrnam(group).gr_gid # Get GID
+    fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
+    dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
     if not os.path.exists(dataPath):
-        os.makedirs(dataPath)
-        os.chmod(dataPath, 0775)  # Give group all permissions
+        os.makedirs(dataPath) # Create path if it does not exist
+    os.chown(dataPath, uid, gid) # chown root directory
+    os.chmod(dataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(dataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
+                os.chown(os.path.join(root, file), uid, gid) # chown files
+                os.chmod(file, fileMode) # chmod files
+
+    # Create path and set owner and perms (recursively) on directories and files
+    owner = 'brewpi'
+    group = 'www-data'
+    uid = pwd.getpwnam(owner).pw_uid # Get UID
+    gid = grp.getgrnam(group).gr_gid # Get GID
+    fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH # 664
+    dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH # 775
     if not os.path.exists(wwwDataPath):
-        os.makedirs(wwwDataPath)
-        os.chmod(wwwDataPath, 0775)  # Give group all permissions
+        os.makedirs(wwwDataPath) # Create path if it does not exist
+    os.chown(wwwDataPath, uid, gid) # chown root directory
+    os.chmod(wwwDataPath, dirMode) # chmod root directory
+    for root, dirs, files in os.walk(wwwDataPath):  
+        for dir in dirs:  
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
+        for file in files:
+            if os.path.isfile(file):
+                os.chown(os.path.join(root, file), uid, gid) # chown files
+                os.chmod(file, fileMode) # chmod files
 
     # Keep track of day and make new data file for each day
     day = time.strftime("%Y%m%d")
@@ -355,7 +392,7 @@ def setFiles():
     # Define a CSV file to store the data as CSV (might be useful one day)
     localCsvFileName = (dataPath + beerFileName + '.csv')
     wwwCsvFileName = (wwwDataPath + beerFileName + '.csv')
-
+    
 
 def startBeer(beerName):
     if config['dataLogging'] == 'active':
@@ -475,14 +512,19 @@ if not prevTempJson:
         'FridgeSet': 0}
 
 
-# Start script
+# Start script, make sure to stamp the stderr too
 if logToFiles:
+    # Make sure we send a message to daemon
     print('Starting BrewPi.', file=sys.__stdout__)
+else:
+    logMessage('Starting BrewPi.')
+logError('Starting BrewPi.')
+
 lcdText = ['Script starting up.', ' ', ' ', ' ']
 logMessage("Notification: Starting '" +
            urllib.unquote(config['beerName']) + "'")
 logMessage("Waiting 10 seconds for board to restart.")
-# Wait for 10 seconds to allow an Uno to reboot (in case an Uno is being used)
+# Wait for 10 seconds to allow an Uno to reboot
 time.sleep(float(config.get('startupDelay', 10)))
 
 logMessage("Checking software version on controller.")
@@ -538,8 +580,14 @@ else:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(socketFile)  # Bind BEERSOCKET
-    # Set all permissions for socket
-    os.chmod(socketFile, 0777)
+    # Set owner and permissions for socket
+    fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
+    owner = 'brewpi'
+    group = 'www-data'
+    uid = pwd.getpwnam(owner).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+    os.chown(socketFile, uid, gid) # chown socket
+    os.chmod(socketFile, fileMode) # chmod socket
 
 serialCheckInterval = 0.5
 s.setblocking(1)  # Set socket functions to be blocking
@@ -1037,9 +1085,8 @@ while run:
                                     "Unknown error: %s" % str(e))
 
                         # Now write data to csv file as well
-
-                        delim = ','
                         csvFile = open(localCsvFileName, "a")
+                        delim = ','
                         try:
                             lineToWrite = (time.strftime("%Y-%m-%d %H:%M:%S") + delim +
                                            json.dumps(newRow['BeerTemp']) + delim +

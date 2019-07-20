@@ -93,18 +93,23 @@ perms() {
     # Get app locations based on local config
     wwwPath="$(getVal wwwPath "$GITROOT")"
     echo -e "\nFixing file permissions for $wwwPath."
-    chown -R www-data:www-data "$wwwPath"||warn
+    chown -R www-data:www-data "$wwwPath" || warn
+    chown -R brewpi:www-data "$wwwPath/data" || warn
     find "$wwwPath" -type d -exec chmod 2770 {} \; || warn
-    find "$wwwPath" -type f -exec chmod 640 {} \;||warn
-    find "$wwwPath/data" -type f -exec chmod 660 {} \;||warn
-    find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \;||warn
+    find "$wwwPath" -type f -exec chmod 640 {} \; || warn
+    find "$wwwPath/data" -type f -exec chmod 660 {} \; || warn
+    find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \; || warn
     echo -e "\nFixing file permissions for $GITROOT."
-    chown -R brewpi:brewpi "$GITROOT"||warn
-    find "$GITROOT" -type d -exec chmod 775 {} \;||warn
-    find "$GITROOT" -type f -exec chmod 660 {} \;||warn
-    find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \;||warn
-    find "$GITROOT"/logs -type f -iname "*.txt" -exec chmod 777 {} \;
-    find "$GITROOT"/settings -type f -exec chmod 664 {} \;||warn
+    chown -R brewpi:brewpi "$GITROOT" || warn
+    chown -R brewpi:www-data "$GITROOT/settings" || warn
+    if [ -e "$GITROOT/BEERSOCKET" ]; then
+        chown -R brewpi:www-data "$GITROOT/BEERSOCKET" || warn
+    fi
+    find "$GITROOT" -type d -exec chmod 775 {} \; || warn
+    find "$GITROOT" -type f -exec chmod 660 {} \; || warn
+    find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \; || warn
+    find "$GITROOT/logs" -type f -iname "*.txt" -exec chmod 777 {} \; || warn
+    find "$GITROOT/settings" -type f -exec chmod 664 {} \; || warn
     echo -e "\nAllowing BrewPi python access to Bluetooth interfaces."
     setcap cap_net_raw+eip $(eval readlink -f `which python`)
 }

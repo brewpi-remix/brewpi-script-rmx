@@ -35,12 +35,16 @@ import sys
 from sys import path, stderr, stdout, platform
 import os
 import serial
-import autoSerial
-import BrewPiProcess
 import psutil
+import stat
+import pwd
+import grp
 from psutil import process_iter as ps
 from time import sleep, strftime
 import BrewPiSocket
+import autoSerial
+import BrewPiProcess
+
 
 try:
     import configobj
@@ -106,7 +110,8 @@ def configSet(configFile, settingName, value):
         config = configobj.ConfigObj(configFile)
         config[settingName] = value
         config.write()
-        os.chmod(configFile, 0770)
+        fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
+        os.chmod(configFile, fileMode)
     except IOError as e:
         logMessage(
             "I/O error({0}) while updating {1}: {2}\n".format(e.errno, configFile, e.strerror))
@@ -128,6 +133,13 @@ def logMessage(*objs):
     Prints a timestamped message to stdout
     """
     printStdOut(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
+
+
+def logError(*objs):
+    """
+    Prints a timestamped message to stderr
+    """
+    printStdErr(strftime("%Y-%m-%d %H:%M:%S  "), *objs)
 
 
 def scriptPath():
@@ -159,7 +171,14 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
         try:
             with open(path, 'w'):
                     os.utime(path, None)
-            os.chmod(path, 0666)
+            # Set owner and permissions for file
+            fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
+            owner = 'brewpi'
+            group = 'www-data'
+            uid = pwd.getpwnam(owner).pw_uid
+            gid = grp.getgrnam(group).gr_gid
+            os.chown(path, uid, gid) # chown file
+            os.chmod(path, fileMode) # chmod file
             # File creation successful
             return True
         except:

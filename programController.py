@@ -35,14 +35,14 @@ import subprocess as sub
 import time
 import simplejson as json
 import os
-import brewpiVersion
-import expandLogMessage
-from MigrateSettings import MigrateSettings
 from sys import stderr
-import BrewPiUtil as util
 import subprocess
 import platform
 import sys
+import BrewPiUtil as util
+import brewpiVersion
+import expandLogMessage
+from MigrateSettings import MigrateSettings
 
 
 msg_map = {"a": "Arduino"}
@@ -375,10 +375,18 @@ class SerialProgrammer:
     def save_settings_to_file(self):
         # This is format" "2019-01-08-16-50-15"
         oldSettingsFileName = 'settings-{0}.json'.format(time.strftime("%Y-%m-%dT%H-%M-%S"))
-        # oldSettingsFileName = 'settings-' + time.strftime("%b-%d-%Y-%H-%M-%S") + '.json' # This is format: "Jan-08-2019-16-31-56"
         settingsBackupDir = '{0}settings/controller-backup/'.format(util.addSlash(util.scriptPath()))
         if not os.path.exists(settingsBackupDir):
-            os.makedirs(settingsBackupDir, 0777)
+            os.makedirs(settingsBackupDir)
+
+        # Set owner and permissions for directory
+        fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH # 775
+        owner = 'brewpi'
+        group = 'brewpi'
+        uid = pwd.getpwnam(owner).pw_uid
+        gid = grp.getgrnam(group).gr_gid
+        os.chown(settingsBackupDir, uid, gid) # chown dir
+        os.chmod(settingsBackupDir, fileMode) # chmod dir
 
         oldSettingsFilePath = os.path.join(
             settingsBackupDir, oldSettingsFileName)
@@ -386,8 +394,16 @@ class SerialProgrammer:
         oldSettingsFile.write(json.dumps(self.oldSettings))
         oldSettingsFile.truncate()
         oldSettingsFile.close()
-        # Make sure file can be accessed by all in case the script ran as root
-        os.chmod(oldSettingsFilePath, 0777)
+
+        # Set owner and permissions for file
+        fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
+        owner = 'brewpi'
+        group = 'brewpi'
+        uid = pwd.getpwnam(owner).pw_uid
+        gid = grp.getgrnam(group).gr_gid
+        os.chown(oldSettingsFilePath, uid, gid) # chown file
+        os.chmod(oldSettingsFilePath, fileMode) # chmod file
+
         printStdErr("\nSaved old settings to file {0}.".format(oldSettingsFileName))
 
     def delay(self, countDown):

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -34,10 +34,14 @@ from __future__ import print_function
 import sys
 import socket
 import os
+import stat
+import pwd
+import grp
 import BrewPiUtil as util
 import stat
 import pwd
 import grp
+
 
 
 class BrewPiSocket:

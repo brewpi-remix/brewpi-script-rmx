@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -64,7 +64,7 @@ class gitHubReleases:
             fileName = os.path.join(path, os.path.basename(url))
             with open(fileName, "wb") as localFile:
                 localFile.write(f.read())
-            
+
             # Set owner and permissions for file
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
             owner = 'brewpi'
@@ -73,7 +73,6 @@ class gitHubReleases:
             gid = grp.getgrnam(group).gr_gid
             os.chown(file, uid, gid) # chown file
             os.chmod(file, fileMode) # chmod file
-
             return os.path.abspath(fileName)
 
         #handle errors

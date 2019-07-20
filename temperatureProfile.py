@@ -36,6 +36,11 @@ import csv
 import sys
 import BrewPiUtil as util
 
+# # also defined in brewpi.py. TODO: move to shared import
+# def logMessage(message):
+#     print >> sys.stderr, time.strftime("%Y-%m-%d %H:%M:%S   ") + message # This is format: "2019-01-08 16:50:15"
+#     #print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message # This is format: "Jan 08 2019 16:31:56"
+
 def getNewTemp(scriptPath):
     with open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rU') as csvfile:
         dialect = csv.Sniffer().sniff(csvfile.readline())
@@ -52,12 +57,12 @@ def getNewTemp(scriptPath):
 
         now = time.mktime(time.localtime())  # get current time in seconds since epoch
 
-        for row in temperatureReader:
-            dateString = row[0]
-            try:
-                date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
-            except ValueError:
-                continue  # skip dates that cannot be parsed
+    for row in temperatureReader:
+        dateString = row[0]
+        try:
+            date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
+        except ValueError:
+            continue  # Skip dates that cannot be parsed
 
             try:
                 temperature = float(row[1])

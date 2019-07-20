@@ -7,9 +7,14 @@
 .python_history
 brewpi-env/
 coverage.xml
-htmlcov/
+start.bat
+sftp-config.json
+requirements.txt
+!.gitignore
+.idea/
+utils/downloads/
 
-# Compiled Python
+# Compiled Python files
 =======
 *.py[co]
 
@@ -31,6 +36,7 @@ pip-log.txt
 
 # Unit test / coverage reports
 .coverage
+htmlcov/
 .tox
 
 #Translations
@@ -38,11 +44,3 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-
-start.bat
-
-sftp-config.json
-requirements.txt
-!.gitignore
-.idea/
-utils/downloads/

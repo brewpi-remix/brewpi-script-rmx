@@ -47,8 +47,8 @@ import stat
 import pwd
 import grp
 
-# Check needed software dependencies
-if sys.version_info < (2, 7):
+
+if sys.version_info < (2, 7): # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
     sys.exit(1)
 
@@ -391,7 +391,7 @@ def setFiles():
     # Define a CSV file to store the data as CSV (might be useful one day)
     localCsvFileName = (dataPath + beerFileName + '.csv')
     wwwCsvFileName = (wwwDataPath + beerFileName + '.csv')
-
+    
 
 def startBeer(beerName):
     if config['dataLogging'] == 'active':
@@ -527,11 +527,13 @@ commit = os.popen('git -C . log --oneline -n1').read().strip()
 logMessage('{0} ({1}) [{2}]'.format(version, branch, commit))
 
 lcdText = ['Script starting up.', ' ', ' ', ' ']
+
 if config['beerName'] == 'None':
     logMessage("Logging is stopped.")
 else:
     logMessage("Starting '" +
             urllib.unquote(config['beerName']) + ".'")
+
 logMessage("Waiting 10 seconds for board to restart.")
 # Wait for 10 seconds to allow an Uno to reboot
 time.sleep(float(config.get('startupDelay', 10)))
@@ -670,15 +672,15 @@ while run:
         else:
             messageType = message
             value = ""
-        if messageType == "ack":  # Acknowledge request
+        if messageType == "ack": # Acknowledge request
             conn.send('ack')
-        elif messageType == "lcd":  # LCD contents requested
+        elif messageType == "lcd": # LCD contents requested
             conn.send(json.dumps(lcdText))
-        elif messageType == "getMode":  # Echo mode setting
+        elif messageType == "getMode": # Echo mode setting
             conn.send(cs['mode'])
-        elif messageType == "getFridge":  # Echo fridge temperature setting
+        elif messageType == "getFridge": # Echo fridge temperature setting
             conn.send(json.dumps(cs['fridgeSet']))
-        elif messageType == "getBeer":  # Echo beer temperature setting
+        elif messageType == "getBeer": # Echo beer temperature setting
             conn.send(json.dumps(cs['beerSet']))
         elif messageType == "getControlConstants": # Echo control constants
             conn.send(json.dumps(cc))
@@ -867,8 +869,7 @@ while run:
                 logMessage(
                     "New program uploaded to controller, script will restart.")
             except json.JSONDecodeError:
-                logMessage(
-                    "ERROR. Cannot decode programming parameters: " + value)
+                logMessage("ERROR. Cannot decode programming parameters: " + value)
                 logMessage("Restarting script without programming.")
 
             # Restart the script when done. This replaces this process with
@@ -900,8 +901,7 @@ while run:
                 # Load as JSON to check syntax
                 configStringJson = json.loads(value)
             except json.JSONDecodeError:
-                logMessage(
-                    "ERROR. Invalid JSON parameter string received: {0}".format(value))
+                logMessage("ERROR. Invalid JSON parameter string received: {0}".format(value))
                 continue
             bg_ser.write("U{0}".format(json.dumps(configStringJson)))
             deviceList['listState'] = ""  # Invalidate local copy
@@ -910,8 +910,7 @@ while run:
                 # Load as JSON to check syntax
                 configStringJson = json.loads(value)
             except json.JSONDecodeError:
-                logMessage(
-                    "ERROR: invalid JSON parameter string received: " + value)
+                logMessage("ERROR: invalid JSON parameter string received: " + value)
                 continue
             bg_ser.write("d" + json.dumps(configStringJson))
         elif messageType == "getVersion": # Get firmware version from controller
@@ -961,8 +960,7 @@ while run:
             prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
 
         elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']): # Controller not responding
-            logMessage(
-                "ERROR: Controller is not responding to new data requests.")
+            logMessage("ERROR: Controller is not responding to new data requests.")
 
         while True: # Read lines from controller
             line = bg_ser.read_line()

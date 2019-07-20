@@ -35,15 +35,16 @@ import sys
 from sys import path, stderr, stdout, platform
 import os
 import serial
-import autoSerial
-import BrewPiProcess
 import psutil
-from psutil import process_iter as ps
-from time import sleep, strftime
-import BrewPiSocket
 import stat
 import pwd
 import grp
+from psutil import process_iter as ps
+from time import sleep, strftime
+import BrewPiSocket
+import autoSerial
+import BrewPiProcess
+
 
 try:
     import configobj

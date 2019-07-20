@@ -35,17 +35,17 @@ import subprocess as sub
 import time
 import simplejson as json
 import os
-import brewpiVersion
-import expandLogMessage
-from MigrateSettings import MigrateSettings
 from sys import stderr
-import BrewPiUtil as util
 import subprocess
 import platform
 import sys
 import stat
 import pwd
 import grp
+import BrewPiUtil as util
+import brewpiVersion
+import expandLogMessage
+from MigrateSettings import MigrateSettings
 
 
 msg_map = {"a": "Arduino"}

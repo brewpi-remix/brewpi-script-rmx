@@ -187,9 +187,11 @@ function updateRepo() {
 
 getrepos() {
     # Get app locations based on local config
-    echo -e "\nDEBUG: In getrepos"
+    echo -e "\nDEBUG: In getrepos, GITROOT = "$GITROOT""
     wwwPath="$(getVal wwwPath "$GITROOT")"
+    echo -e "\nDEBUG: In getrepos, wwwPath = "$wwwPath""
     toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx/")")"
+    echo -e "\nDEBUG: In getrepos, toolPath = "$toolPath""
     if [ ! -d "$toolPath" ] || [ -z "$toolPath" ]; then
         toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
         if [ ! -d "$toolPath" ]; then
@@ -197,7 +199,7 @@ getrepos() {
             repoArray=("$GITROOT" "$wwwPath" )
         fi
     else
-        repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
+        repoArray=("$toolPath" "$GITROOT" "$wwwPath")
     fi
 }
 
@@ -241,7 +243,7 @@ doRepoUrl() {
 ############
 
 process() {
-    echo -e "\nDEBUG: In process"
+    echo -e "\nDEBUG in process() repoAray = \n"$repoArray""
     local doRepo didUpdate arg
     arg="$1"
     if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
@@ -297,13 +299,9 @@ main() {
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
-        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
-        echo -e "\nDEBUG: about to run getrepos with "$@""
         getrepos "$@" # Get list of repositories to update
-        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
-        echo -e "\nDEBUG: about to run process with "$@""
+        echo -e "\nDEBUG in main() repoAray = \n"$repoArray""
         process "$@" # Check and process updates
-        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         flash # Offer to flash controller
     else
         help "$@" # Process help and version requests

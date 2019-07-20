@@ -296,9 +296,9 @@ main() {
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
         getrepos "$@" # Get list of repositories to update
-        ( -d "$toolPath" ) && process "$toolPath" # Check and process updates
-        ( -d "$SCRIPTPATH" ) && process "$SCRIPTPATH" # Check and process updates
-        ( -d "$wwwPath" ) && process "$wwwPath" # Check and process updates
+        if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
+        if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
+        if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
         cleanup # Update dependencies if we did a git update
         flash # Offer to flash controller
     else

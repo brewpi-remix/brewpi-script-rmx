@@ -122,7 +122,7 @@ perms() {
 protectGit() {
     local configPath configText
     configPath="/etc/apache2/apache2.conf"
-    configText="# BrewPi-WWW-RMX #19"
+    configText="# BrewPi-Script-RMX #45"
     if ! grep -Fxq "$configText" "$configPath"; then
         echo -e "\nAdding Apache config to protect .git."
         echo '' >> "$configPath"
@@ -137,6 +137,7 @@ protectGit() {
         echo '    Deny from all' >> "$configPath"
         echo '</DirectoryMatch>' >> "$configPath"
         echo 'IndexIgnore "^/.*/\.git/"' >> "$configPath"
+        systemctl restart apache2
     fi
 }
 

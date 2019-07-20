@@ -294,7 +294,11 @@ main() {
     const "$@" # Get script constants
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
+        echo -e "\nDEBUG: About to delete "$SCRIPTPATH/tmpUpdate.sh""
+        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         rm "$SCRIPTPATH/tmpUpdate.sh"
+        echo -e "\nDEBUG: Deleted "$SCRIPTPATH/tmpUpdate.sh""
+        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         getrepos "$@" # Get list of repositories to update
         process "$@" # Check and process updates
         flash # Offer to flash controller

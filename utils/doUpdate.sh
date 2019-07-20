@@ -150,7 +150,8 @@ function updateRepo() {
                 return 0
             else
                 echo -e "\n$thisRepo is not up to date, updating from GitHub:"
-                git pull
+                git fetch --all
+                git pull --all
                 retval=$?
                 if [ $retval -ne 0 ]; then
                     # Not able to make a pull, probably because of changed local files

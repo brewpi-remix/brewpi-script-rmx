@@ -31,7 +31,8 @@
 # license and credits.
 
 # Declare this script's constants/variables
-declare SCRIPTPATH GITROOT repoArray
+declare SCRIPTPATH GITROOT
+declare -a repoArray
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants

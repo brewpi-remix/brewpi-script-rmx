@@ -268,10 +268,13 @@ cleanup() {
         "$GITROOT/utils/doCleanup.sh"
         chamber="$(getVal "chamber" $SCRIPTPATH)"
         if [ -z "$chamber" ]; then
+            echo -e "\nRestarting BrewPi."
             systemctl restart brewpi
         else
+            echo -e "\nRestarting BrewPi chamber $chamber."
             systemctl restart "$chamber"
         fi
+        echo -e "\nRestarting Apache2."
         systemctl restart apache2
     fi
 }

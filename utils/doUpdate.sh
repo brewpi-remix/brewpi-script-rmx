@@ -194,6 +194,7 @@ getrepos() {
     echo -e "\nDEBUG: In getrepos, toolPath = "$toolPath""
     if [ ! -d "$toolPath" ] || [ -z "$toolPath" ]; then
         toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
+        echo -e "\nDEBUG: In getrepos, toolPath = "$toolPath""
         if [ ! -d "$toolPath" ]; then
             echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
             repoArray=("$GITROOT" "$wwwPath" )

@@ -255,8 +255,8 @@ process() {
 
 cleanup() {
     # If we did a pull:
-    #    - run apt to check packages
-    #    - run doCleanup.sh to clean things up
+    #    - Run apt to check packages
+    #    - Run doCleanup.sh to clean things up
     #    - Restart apache2 and chamber
     local chamber
     if [ "$didUpdate" -ge 1 ]; then

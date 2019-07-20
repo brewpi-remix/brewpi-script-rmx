@@ -254,7 +254,11 @@ process() {
 ############
 
 cleanup() {
-    # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
+    # If we did a pull:
+    #    - run apt to check packages
+    #    - run doCleanup.sh to clean things up
+    #    - Restart apache2 and chamber
+    local chamber
     if [ "$didUpdate" -ge 1 ]; then
         if [ ! "$quick" == "true" ]; then
             # Install/update all dependencies and clean local apt cache
@@ -262,6 +266,13 @@ cleanup() {
         fi
         # Cleanup *.pyc files and empty dirs, update daemons, do perms
         "$GITROOT/utils/doCleanup.sh"
+        chamber="$(getVal "chamber" $SCRIPTPATH)"
+        if [ -z "$chamber" ]; then
+            systemctl restart brewpi
+        else
+            systemctl restart "$chamber"
+        fi
+        systemctl restart apache2
     fi
 }
 

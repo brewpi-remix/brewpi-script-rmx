@@ -113,7 +113,7 @@ cc = dict(tempFormat="C", tempSetMin=1.0, tempSetMax=30.0, pidMax=10.0,
           fridgeSlopeFilt="3", beerFastFilt="3", beerSlowFilt="5",
           beerSlopeFilt="4", lah=0, hs=0)
 
-# Control variables Dictionary
+# Control Variables Dictionary
 cv = dict(beerDiff=0.000, diffIntegral=0.000, beerSlope=0.000, p=0.000,
           i=0.000, d=0.000, estPeak=0.000, negPeakEst=0.000,
           posPeakEst=0.000, negPeak=0.000, posPeak=0.000)
@@ -661,6 +661,7 @@ while run:
     # When nothing is received, socket.timeout will be raised after
     # serialCheckInterval seconds. Serial receive will be done then.
     # When messages are expected on serial, the timeout is raised 'manually'
+
     try: # Process socket messages
         conn, addr = s.accept()
         conn.setblocking(1)
@@ -727,14 +728,12 @@ while run:
                 logMessage("Beer temperature setting {0} is outside of allowed".format(str(newTemp)))
                 logMessage("range {0} - {1}. These limits can be changed in".format(str(cc['tempSetMin']), str(cc['tempSetMax'])))
                 logMessage("advanced settings.")
-
         elif messageType == "setFridge":  # New constant fridge temperature received
             try:
                 newTemp = float(value)
             except ValueError:
                 logMessage("Cannot convert temperature '{0}' to float.".format(value))
                 continue
-
             if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
                 cs['mode'] = 'f'
                 cs['fridgeSet'] = round(newTemp, 2)
@@ -785,7 +784,6 @@ while run:
             # it with another instance.
             continue
         elif messageType == "eraseLogs": # Erase stderr and stdout
-            # Erase the log files for stderr and stdout
             open(util.scriptPath() + '/logs/stderr.txt', 'wb').close()
             open(util.scriptPath() + '/logs/stdout.txt', 'wb').close()
             logMessage("Log files erased.")
@@ -853,7 +851,7 @@ while run:
                     bg_ser.write("j{mode:p}")
                     logMessage("Profile mode enabled.")
                     raise socket.timeout  # Go to serial communication to update controller
-        elif messageType == "programController" or messageType == "programArduino":
+        elif messageType == "programController" or messageType == "programArduino": # Reprogram controller
             if bg_ser is not None:
                 bg_ser.stop()
             if ser is not None:
@@ -1080,7 +1078,7 @@ while run:
                                 csvFile.write(lineToWrite)
                                 csvFile.close()
 
-                            except IOError, e:
+                            except IOError as e:
                                 logMessage(
                                     "Unknown error: %s" % str(e))
 
@@ -1118,7 +1116,7 @@ while run:
 
                             lineToWrite += '\r\n'
                             csvFile.write(lineToWrite)
-                        except KeyError, e:
+                        except KeyError as e:
                             logMessage(
                                 "KeyError in line from controller: %s" % str(e))
 
@@ -1164,23 +1162,21 @@ while run:
                         logMessage(
                             "Cannot process line from controller: " + line)
                     # End of processing a line
-                except json.decoder.JSONDecodeError, e: # Bad message received
+                except json.decoder.JSONDecodeError as e:
                     logMessage("JSON decode error: %s" % str(e))
                     logMessage("Line received was: " + line)
 
             if message is not None: # Other (debug?) message received
                 try:
-                    # Not sure we need this
-                    pass
-                    #expandedMessage = expandLogMessage.expandLogMessage(message)
-                    #logMessage("Controller debug message: " + expandedMessage)
-                except Exception, e:
+                    pass # I don't think we need to log this
+                    # expandedMessage = expandLogMessage.expandLogMessage(message)
+                    # logMessage("Controller debug message: " + expandedMessage)
+                except Exception as e:
                     # Catch all exceptions, because out of date file could
                     # cause errors
                     logMessage(
                         "Error while expanding log message: '" + message + "'" + str(e))
 
-        # Check for update from temperature profile
         if cs['mode'] == 'p': # Check for update from temperature profile
             newTemp = temperatureProfile.getNewTemp(util.scriptPath())
             if newTemp != cs['beerSet']:

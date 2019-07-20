@@ -126,7 +126,7 @@ protectGit() {
     if ! grep -Fxq "$configText" "$configPath"; then
         echo -e "\nAdding Apache config to protect .git."
         echo '' >> "$configPath"
-        echo '# BrewPi-Script-RMX #45' >> "$configPath"
+        echo "$configText" >> "$configPath"
         echo '# Protect .git from being browsed' >> "$configPath"
         echo '<FilesMatch "^\.">' >> "$configPath"
         echo '    Order allow,deny' >> "$configPath"

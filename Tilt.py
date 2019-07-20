@@ -324,7 +324,7 @@ class Tilt:
         except IOError:
             print('Tilt ({0}): {1}: No calibration data ({2})'.format(
                 self.color, which.capitalize(), filename))
-        except Exception, e:
+        except Exception as e:
             print('ERROR: Tilt ({0}): Unable to initialise {1} calibration data ({2}) - {3}'.format(
                 self.color, which.capitalize(), filename, e.message))
             # Attempt to close the file
@@ -390,7 +390,7 @@ class TiltManager:
         try:
             sock = bluez.hci_open_dev(self.dev_id)
 
-        except Exception, e:
+        except Exception as e:
             print(
                 'ERROR: Unable to access bluetooth device: {0}'.format(e.message))
             sys.exit(1)
@@ -467,7 +467,7 @@ class TiltManager:
             except:
                 pass
 
-        except Exception, e:
+        except Exception as e:
             print('WARN: Config file does not exist or cannot be read: ({0}): {1}'.format(filename, e.message))
 
 

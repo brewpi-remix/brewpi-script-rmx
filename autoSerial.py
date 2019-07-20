@@ -98,11 +98,11 @@ def detect_port(bootLoader = False, my_port = None):
     ports = find_compatible_serial_ports(bootLoader=bootLoader, my_port=my_port)
 
     try:
-        port = ports.next()
+        port = next(ports)
     except StopIteration:
         return port
     try:
-        another_port = ports.next()
+        another_port = next(ports)
         BrewPiUtil.logMessage("Warning: Multiple compatible ports.")
     except StopIteration:
         pass

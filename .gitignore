@@ -15,6 +15,7 @@ requirements.txt
 utils/downloads/
 
 # Compiled Python files
+=======
 *.py[co]
 
 # Packages
@@ -35,6 +36,7 @@ pip-log.txt
 
 # Unit test / coverage reports
 .coverage
+htmlcov/
 .tox
 
 #Translations

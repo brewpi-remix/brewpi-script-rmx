@@ -199,7 +199,7 @@ def programController(config, boardType, hexFile, restoreWhat):
 def json_decode_response(line):
     try:
         return json.loads(line[2:])
-    except json.decoder.JSONDecodeError, e:
+    except json.decoder.JSONDecodeError as e:
         printStdErr("\nJSON decode error: {0}".format(str(e)))
         printStdErr("\nLine received was: {0}".format(line))
 
@@ -435,7 +435,7 @@ class SerialProgrammer:
         try:  # debug message received
             expandedMessage = expandLogMessage.expandLogMessage(line[2:])
             printStdErr(expandedMessage)
-        except Exception, e:  # catch all exceptions, because out of date file could cause errors
+        except Exception as e:  # catch all exceptions, because out of date file could cause errors
             printStdErr("\nError while expanding log message: {0}".format(str(e)))
             printStdErr(("%(a)s debug message: " % msg_map) + line[2:])
 

@@ -39,6 +39,9 @@ from sys import stderr
 import subprocess
 import platform
 import sys
+import stat
+import pwd
+import grp
 import BrewPiUtil as util
 import brewpiVersion
 import expandLogMessage

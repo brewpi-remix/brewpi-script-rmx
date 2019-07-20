@@ -2,7 +2,12 @@
 .bash_logout
 .bashrc
 .profile
+.bash_history
+.cache/
+.python_history
+brewpi-env/
 
+# Compiled Python files
 *.py[co]
 
 # Packages

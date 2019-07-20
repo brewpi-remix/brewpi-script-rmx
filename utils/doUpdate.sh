@@ -150,7 +150,8 @@ function updateRepo() {
                 return 0
             else
                 echo -e "\n$thisRepo is not up to date, updating from GitHub:"
-                git pull
+                git fetch --all
+                git pull --all
                 retval=$?
                 if [ $retval -ne 0 ]; then
                     # Not able to make a pull, probably because of changed local files
@@ -268,7 +269,7 @@ cleanup() {
         "$GITROOT/utils/doCleanup.sh"
         chamber="$(getVal "chamber" $SCRIPTPATH)"
         chamber=$(echo "$chamber" | tr -d \")
-        if [ -z "$chamber" ] || [ "$chamber" == "__UNDEFINED__" ]; then
+        if [ -z "$chamber" ]; then
             echo -e "\nRestarting BrewPi."
             systemctl restart brewpi
         else

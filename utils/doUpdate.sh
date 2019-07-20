@@ -267,6 +267,7 @@ cleanup() {
         # Cleanup *.pyc files and empty dirs, update daemons, do perms
         "$GITROOT/utils/doCleanup.sh"
         chamber="$(getVal "chamber" $SCRIPTPATH)"
+        chamber=$(echo "$chamber" | tr -d \")
         if [ -z "$chamber" ]; then
             echo -e "\nRestarting BrewPi."
             systemctl restart brewpi

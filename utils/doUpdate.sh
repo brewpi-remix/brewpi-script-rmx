@@ -31,7 +31,8 @@
 # license and credits.
 
 # Declare this script's constants/variables
-declare SCRIPTPATH GITROOT repoArray
+declare SCRIPTPATH GITROOT wwwPath toolPath didUpdate quick
+didUpdate=0
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
@@ -192,11 +193,8 @@ getrepos() {
     if [ ! -d "$toolPath" ] || [ -z "$toolPath" ]; then
         toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
         if [ ! -d "$toolPath" ]; then
-            echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository."
-            repoArray=("$GITROOT" "$wwwPath" )
+            echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository." > /dev/tty
         fi
-    else
-        repoArray=("$toolPath" "$GITROOT" "$wwwPath" )
     fi
 }
 
@@ -210,11 +208,11 @@ updateme() {
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
     echo -e "\nDownloading current version of this script." > /dev/tty 
-    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; }
-    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh"
-    chmod 770 "$SCRIPTPATH/tmpUpdate.sh"
+    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; } > /dev/tty 
+    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty 
+    chmod 770 "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty 
     echo -e "\nExecuting current version of script." > /dev/tty 
-    eval "sudo bash $SCRIPTPATH/tmpUpdate.sh $*"
+    eval "bash $SCRIPTPATH/tmpUpdate.sh $*" > /dev/tty 
 }
 
 ############
@@ -240,20 +238,27 @@ doRepoUrl() {
 ############
 
 process() {
-    local doRepo didUpdate arg
-    arg="$1"
-    if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
-    didUpdate=0 # Hold a counter for having to do git pulls
+    local doRepo arg
+    doRepo="$1"
     pushd . &> /dev/null || die # Store current directory
     cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is
-    # Loop through repos and update as necessary
-    for doRepo in "${repoArray[@]}"
-    do
-        echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
-        doRepoUrl "$doRepo" || warn
-        updateRepo "$doRepo" || warn
-    done
-    # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
+    # Update repo as necessary
+    echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
+    doRepoUrl "$doRepo" || warn
+    updateRepo "$doRepo" || warn
+    popd &> /dev/null || die # Move back to where we started
+}
+
+############
+### Do cleanup
+############
+
+cleanup() {
+    # If we did a pull:
+    #    - Run apt to check packages
+    #    - Run doCleanup.sh to clean things up
+    #    - Restart apache2 and chamber
+    local chamber
     if [ "$didUpdate" -ge 1 ]; then
         if [ ! "$quick" == "true" ]; then
             # Install/update all dependencies and clean local apt cache
@@ -261,8 +266,18 @@ process() {
         fi
         # Cleanup *.pyc files and empty dirs, update daemons, do perms
         "$GITROOT/utils/doCleanup.sh"
+        chamber="$(getVal "chamber" $SCRIPTPATH)"
+        chamber=$(echo "$chamber" | tr -d \")
+        if [ -z "$chamber" ]; then
+            echo -e "\nRestarting BrewPi."
+            systemctl restart brewpi
+        else
+            echo -e "\nRestarting BrewPi chamber $chamber."
+            systemctl restart "$chamber"
+        fi
+        echo -e "\nRestarting Apache2."
+        systemctl restart apache2
     fi
-    popd &> /dev/null || die # Move back to where we started
 }
 
 ############
@@ -296,11 +311,17 @@ main() {
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
         getrepos "$@" # Get list of repositories to update
-        process "$@" # Check and process updates
+        if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
+        if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
+        if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
+        cleanup # Update dependencies if we did a git update
         flash # Offer to flash controller
     else
+        arg="$1"
+        if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
         help "$@" # Process help and version requests
         asroot # Make sure we are running with root privs
+        THISSCRIPT="doUpdate.sh"
         banner "starting"
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"

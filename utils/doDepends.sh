@@ -78,7 +78,7 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
     
     # Packages to be installed/checked via apt
-    APTPACKAGES="git arduino-core git-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin"
+    APTPACKAGES="git arduino-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin"
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be installed/check via pip
@@ -178,16 +178,24 @@ rem_nginx() {
 
 do_packages() {
     # Now install any necessary packages if they are not installed
+    local didInstall
+    didInstall=0
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in ${APTPACKAGES,,}; do
         pkgOk=$(dpkg-query -W --showformat='${Status}\n' ${pkg,,} | \
         grep "install ok installed")
         if [ -z "$pkgOk" ]; then
+            ((didInstall++))
             echo -e "\nInstalling '$pkg'.\n"
             apt-get install ${pkg,,} -y -q=2||die
             echo
         fi
     done
+    if [[ "$didInstall" -gt 0 ]]; then
+        echo -e "All required apt packages have been installed."
+    else
+        echo -e "\nNo apt packages were missing."
+    fi
     
     # Get list of installed packages with upgrade available
     upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
@@ -239,7 +247,7 @@ main() {
     apt_check # Check on apt packages
     rem_php5 # Remove php5 packages
     rem_nginx # Remove nginx packages
-    do_packages # Check on pip packahes
+    do_packages # Check on pip packages
     banner "complete"
 }
 

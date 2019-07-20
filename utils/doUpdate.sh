@@ -268,7 +268,7 @@ cleanup() {
         "$GITROOT/utils/doCleanup.sh"
         chamber="$(getVal "chamber" $SCRIPTPATH)"
         chamber=$(echo "$chamber" | tr -d \")
-        if [ -z "$chamber" ]; then
+        if [ -z "$chamber" ] || [[ "$chamber" -eq "__UNDEFINED__" ]]; then
             echo -e "\nRestarting BrewPi."
             systemctl restart brewpi
         else

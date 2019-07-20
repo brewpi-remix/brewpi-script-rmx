@@ -187,6 +187,7 @@ function updateRepo() {
 
 getrepos() {
     # Get app locations based on local config
+    echo -e "\nDEBUG: In getrepos"
     wwwPath="$(getVal wwwPath "$GITROOT")"
     toolPath="$(whatRepo "$(eval echo "/home/$(logname 2> /dev/null)/brewpi-tools-rmx/")")"
     if [ ! -d "$toolPath" ] || [ -z "$toolPath" ]; then
@@ -240,6 +241,7 @@ doRepoUrl() {
 ############
 
 process() {
+    echo -e "\nDEBUG: In process"
     local doRepo didUpdate arg
     arg="$1"
     if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
@@ -294,13 +296,14 @@ main() {
     const "$@" # Get script constants
     if [ "$THISSCRIPT" == "tmpUpdate.sh" ]; then
         # Delete the temp script before we do an update
-        echo -e "\nDEBUG: About to delete "$SCRIPTPATH/tmpUpdate.sh""
-        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         rm "$SCRIPTPATH/tmpUpdate.sh"
-        echo -e "\nDEBUG: Deleted "$SCRIPTPATH/tmpUpdate.sh""
         read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
+        echo -e "\nDEBUG: about to run getrepos with "$@""
         getrepos "$@" # Get list of repositories to update
+        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
+        echo -e "\nDEBUG: about to run process with "0$@""
         process "$@" # Check and process updates
+        read -n1 -rp "DEBUG: Press any key: " any  < /dev/tty
         flash # Offer to flash controller
     else
         help "$@" # Process help and version requests

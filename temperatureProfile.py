@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -36,42 +36,36 @@ import csv
 import sys
 import BrewPiUtil as util
 
-# # also defined in brewpi.py. TODO: move to shared import
-# def logMessage(message):
-#     print >> sys.stderr, time.strftime("%Y-%m-%d %H:%M:%S   ") + message # This is format: "2019-01-08 16:50:15"
-#     #print >> sys.stderr, time.strftime("%b %d %Y %H:%M:%S   ") + message # This is format: "Jan 08 2019 16:31:56"
 
 def getNewTemp(scriptPath):
     with open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rU') as csvfile:
         dialect = csv.Sniffer().sniff(csvfile.readline())
         csvfile.seek(0)
         temperatureReader = csv.reader(csvfile, dialect)
-        # temperatureReader = csv.reader(     open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rb'),
-        #                                 delimiter=',', quoting=csv.QUOTE_ALL)
-        next(temperatureReader)  # discard the first row, which is the table header
+        temperatureReader.next() # Discard the first row, which is the table header
         prevTemp = None
         nextTemp = None
         interpolatedTemp = -99
         prevDate = None
         nextDate = None
 
-        now = time.mktime(time.localtime())  # get current time in seconds since epoch
+        now = time.mktime(time.localtime()) # Get current time in seconds since epoch
 
-    for row in temperatureReader:
-        dateString = row[0]
-        try:
-            date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
-        except ValueError:
-            continue  # Skip dates that cannot be parsed
+        for row in temperatureReader:
+            dateString = row[0]
+            try:
+                date = time.mktime(time.strptime(dateString, "%Y-%m-%dT%H:%M:%S"))
+            except ValueError:
+                continue  # Skip dates that cannot be parsed
 
             try:
                 temperature = float(row[1])
             except ValueError:
                 if row[1].strip() == '':
-                    # cell is left empty, this is allowed to disable temperature control in part of the profile
+                    # Cell is left empty, this is allowed to disable temperature control in part of the profile
                     temperature = None
                 else:
-                    # invalid number string, skip this row
+                    # Invalid number string, skip this row
                     continue
 
             prevTemp = nextTemp
@@ -81,7 +75,7 @@ def getNewTemp(scriptPath):
             timeDiff = now - nextDate
             if timeDiff < 0:
                 if prevDate is None:
-                    interpolatedTemp = nextTemp  # first set point is in the future
+                    interpolatedTemp = nextTemp  # First set point is in the future
                     break
                 else:
                     if prevTemp is None or nextTemp is None:
@@ -93,7 +87,16 @@ def getNewTemp(scriptPath):
                         interpolatedTemp = round(interpolatedTemp, 2)
                     break
 
-        if interpolatedTemp == -99:  # all set points in the past
+        if interpolatedTemp == -99:  # All set points in the past
             interpolatedTemp = nextTemp
 
         return interpolatedTemp
+
+
+def main(scriptPath):
+    newTemp = getNewTemp(scriptPath)
+    print(newTemp)
+
+
+if __name__ == "__main__":
+    main('/home/brewpi')

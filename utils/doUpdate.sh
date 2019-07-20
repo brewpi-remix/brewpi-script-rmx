@@ -31,8 +31,8 @@
 # license and credits.
 
 # Declare this script's constants/variables
-declare SCRIPTPATH GITROOT
-declare -a repoArray
+declare SCRIPTPATH GITROOT wwwPath toolPath didUpdate quick
+didUpdate=0
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
@@ -194,12 +194,7 @@ getrepos() {
         toolPath="$(whatRepo "/home/pi/brewpi-tools-rmx/")"
         if [ ! -d "$toolPath" ]; then
             echo -e "\nWARN: Unable to find a local BrewPi-Tools-RMX repository." > /dev/tty
-            repoArray=("$GITROOT" "$wwwPath" )
-            echo -e "\nDEBUG: In getrepos, repoArray = "$repoArray"" > /dev/tty
         fi
-    else
-        repoArray=("$toolPath" "$GITROOT" "$wwwPath")
-        echo -e "\nDEBUG: In getrepos, repoArray = "$repoArray"" > /dev/tty
     fi
 }
 
@@ -243,20 +238,22 @@ doRepoUrl() {
 ############
 
 process() {
-    echo -e "\nDEBUG in process() repoAray = \n"$repoArray""
-    local doRepo didUpdate arg
-    arg="$1"
-    if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
-    didUpdate=0 # Hold a counter for having to do git pulls
+    local doRepo arg
+    doRepo="$1"
     pushd . &> /dev/null || die # Store current directory
     cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is
-    # Loop through repos and update as necessary
-    for doRepo in "${repoArray[@]}"
-    do
-        echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
-        doRepoUrl "$doRepo" || warn
-        updateRepo "$doRepo" || warn
-    done
+    # Update repo as necessary
+    echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
+    doRepoUrl "$doRepo" || warn
+    updateRepo "$doRepo" || warn
+    popd &> /dev/null || die # Move back to where we started
+}
+
+############
+### Do cleanup
+############
+
+cleanup() {
     # If we did a pull, run apt to check packages and doCleanup.sh to clean things up
     if [ "$didUpdate" -ge 1 ]; then
         if [ ! "$quick" == "true" ]; then
@@ -266,7 +263,6 @@ process() {
         # Cleanup *.pyc files and empty dirs, update daemons, do perms
         "$GITROOT/utils/doCleanup.sh"
     fi
-    popd &> /dev/null || die # Move back to where we started
 }
 
 ############
@@ -300,12 +296,17 @@ main() {
         # Delete the temp script before we do an update
         rm "$SCRIPTPATH/tmpUpdate.sh"
         getrepos "$@" # Get list of repositories to update
-        echo -e "\nDEBUG in main() repoAray = \n"$repoArray""
-        process "$@" # Check and process updates
+        ( -d "$toolPath" ) && process "$toolPath" # Check and process updates
+        ( -d "$SCRIPTPATH" ) && process "$SCRIPTPATH" # Check and process updates
+        ( -d "$wwwPath" ) && process "$wwwPath" # Check and process updates
+        cleanup # Update dependencies if we did a git update
         flash # Offer to flash controller
     else
+        arg="$1"
+        if [[ "${arg//-}" == "q"* ]]; then quick=true; else quick=false; fi
         help "$@" # Process help and version requests
         asroot # Make sure we are running with root privs
+        THISSCRIPT="doUpdate.sh"
         banner "starting"
         # Get the latest doUpdate.sh script and run it instead
         updateme "$@"

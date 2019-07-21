@@ -231,9 +231,9 @@ do_packages() {
         if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nInstalling '$pkg'."
             pip install $pkg -q||die
-        else
-            echo -e "\nChecking for update to '$pkg'."
-            pip install $pkg --upgrade -q||die
+        # else
+        #     echo -e "\nChecking for update to '$pkg'."
+        #     pip install $pkg --upgrade -q||die
         fi
     done
 }

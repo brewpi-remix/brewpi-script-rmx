@@ -82,7 +82,8 @@ init() {
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be installed/check via pip
-    PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+    #PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+    PIPPACKAGES="pyserial psutil simplejson configobj gitdb"
 }
 
 ############
@@ -238,6 +239,23 @@ do_packages() {
     done
 }
 
+############
+### Install GitPython
+### Workaround for #62 
+############
+
+do_gitpython() {
+    local cwd
+    echo -e "\nManually downloading and installing GitPython.\n"
+    cwd=$pwd
+    git clone https://github.com/gitpython-developers/GitPython "$HOMEPATH/git-python"
+    cd "$HOMEPATH/git-python"
+    eval "python setup.py install"
+    cd $cwd
+    rm -fr "$HOMEPATH/git-python"
+    echo -e "\nGitPython install complete."
+}
+
 main() {
     init "$@" # Init and call supporting libs
     const "$@" # Get script constants
@@ -247,7 +265,8 @@ main() {
     apt_check # Check on apt packages
     rem_php5 # Remove php5 packages
     rem_nginx # Remove nginx packages
-    do_packages # Check on pip packages
+    do_packages # Check on required packages
+    do_gitpython # Work-around to install GitPython
     banner "complete"
 }
 

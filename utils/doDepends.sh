@@ -232,9 +232,9 @@ do_packages() {
         if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nInstalling '$pkg'."
             pip install $pkg -q||die
-        # else
-        #     echo -e "\nChecking for update to '$pkg'."
-        #     pip install $pkg --upgrade -q||die
+        else
+            echo -e "\nChecking for update to '$pkg'."
+            pip install $pkg --upgrade -q||die
         fi
     done
 }
@@ -245,15 +245,16 @@ do_packages() {
 ############
 
 do_gitpython() {
-    local cwd
-    echo -e "\nManually downloading and installing GitPython.\n"
-    cwd=$pwd
-    git clone https://github.com/gitpython-developers/GitPython "$HOMEPATH/git-python"
-    cd "$HOMEPATH/git-python"
+    local cwd repo
+    repo="https://github.com/lbussy/GitPython.git"
+    echo -e "\nDownloading and installing GitPython for Python 2.7.\n"
+    cwd=$(pwd)
+    git clone "$repo" "$HOME/git-python"
+    cd "$HOME/git-python" || exit
     eval "python setup.py install"
-    cd $cwd
-    rm -fr "$HOMEPATH/git-python"
-    echo -e "\nGitPython install complete."
+    cd "$cwd" || exit
+    rm -fr "$HOME/git-python"
+    echo -e "\nGitPython for Python 2.7 install complete."
 }
 
 main() {

@@ -34,13 +34,16 @@ from __future__ import print_function
 import urllib2
 import simplejson as json
 import os
+import pwd
+import grp
+import stat
 from distutils.version import LooseVersion
 
 repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 class gitHubReleases:
     def __init__(self, url):
-        """ 
+        """
         Gets all available releases using the GitHub API
             :param url:     URL to a BrewPi firmware repository on GitHub
         """
@@ -71,8 +74,8 @@ class gitHubReleases:
             group = 'brewpi'
             uid = pwd.getpwnam(owner).pw_uid
             gid = grp.getgrnam(group).gr_gid
-            os.chown(file, uid, gid) # chown file
-            os.chmod(file, fileMode) # chmod file
+            os.chown(fileName, uid, gid) # chown file
+            os.chmod(fileName, fileMode) # chmod file
             return os.path.abspath(fileName)
 
         #handle errors

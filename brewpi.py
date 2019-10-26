@@ -667,11 +667,13 @@ while run:
         conn.setblocking(1)
         # Blocking receive, times out in serialCheckInterval
         message = conn.recv(4096)
+
         if "=" in message: # Split to message/value if message has an '='
             messageType, value = message.split("=", 1)
         else:
             messageType = message
             value = ""
+
         if messageType == "ack": # Acknowledge request
             conn.send('ack')
         elif messageType == "lcd": # LCD contents requested
@@ -926,6 +928,23 @@ while run:
         elif messageType == "resetController": # Erase EEPROM
             logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
+        elif messageType == "api": # External API Received
+            # Receive an API message in JSON key:value pairs
+            # conn.send("Ok")
+            try:
+                api = json.loads(value)
+                apiKey = api['api_key']
+                if apiKey == "Brew Bubbles": # received JSON from Brew Bubbles
+                    logMessage("NOTICE: Received Brew Bubbles JSON:")
+                    logMessage(value)
+                    pass
+                else:
+                    logMessage("WARNING: Unknown API key received in JSON:")
+                    logMessage(value)
+            except json.JSONDecodeError:
+                logMessage("ERROR: Invalid JSON received from API. String received:")
+                logMessage(value)
+
         else: # Invalid message received
             logMessage("ERROR. Received invalid message on socket: " + message)
 

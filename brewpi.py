@@ -138,6 +138,7 @@ checkDontRunFile = False
 checkStartupOnly = False
 logToFiles = False
 
+
 for o, a in opts:
     # Print help message for command line options
     if o in ('-h', '--help'):
@@ -458,47 +459,7 @@ threads = []
 tilt = False
 
 
-# Initialize Tilt and start monitoring
-if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
-    import Tilt
-    tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
-    tilt.loadSettings()
-    tilt.start()
-    # Create prevTempJson for Tilt
-    prevTempJson = {
-        'BeerTemp': 0,
-        'FridgeTemp': 0,
-        'BeerAnn': None,
-        'FridgeAnn': None,
-        'RoomTemp': None,
-        'State': None,
-        'BeerSet': 0,
-        'FridgeSet': 0,
-        config['tiltColor'] + 'Temp': 0,
-        config['tiltColor'] + 'SG': 0}
-
-
-# Initialise iSpindel and start monitoring
-ispindel = False
-if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
-    import PollForSG
-    ispindel = True
-    # Create prevTempJson for iSpindel
-    prevTempJson = {
-        'BeerTemp': 0,
-        'FridgeTemp': 0,
-        'BeerAnn': None,
-        'FridgeAnn': None,
-        'RoomTemp': None,
-        'State': None,
-        'BeerSet': 0,
-        'FridgeSet': 0,
-        'SpinSG': 0,
-        'SpinBatt': 0,
-        'SpinTemp': 0}
-
-
-# Create prevTempJson if it does not already exist
+# Initialize prevTempJson with base values:
 if not prevTempJson:
     prevTempJson = {
         'BeerTemp': 0,
@@ -509,6 +470,30 @@ if not prevTempJson:
         'State': None,
         'BeerSet': 0,
         'FridgeSet': 0}
+
+# Initialize Tilt and start monitoring
+if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
+    import Tilt
+    tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
+    tilt.loadSettings()
+    tilt.start()
+    # Create prevTempJson for Tilt
+    prevTempJson.update({
+        config['tiltColor'] + 'Temp': 0,
+        config['tiltColor'] + 'SG': 0
+    })
+
+# Initialise iSpindel and start monitoring
+ispindel = False
+if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
+    import PollForSG
+    ispindel = True
+    # Create prevTempJson for iSpindel
+    prevTempJson.update({
+        'SpinSG': 0,
+        'SpinBatt': 0,
+        'SpinTemp': 0
+    })
 
 
 # Start the logs
@@ -610,6 +595,9 @@ prevDataTime = 0  # Keep track of time between new data requests
 prevTimeOut = time.time()
 prevLcdUpdate = time.time()
 prevSettingsUpdate = time.time()
+
+# Timestamps to expire values
+lastBbApi = 0
 
 # Allow script loop to run
 run = 1
@@ -934,10 +922,34 @@ while run:
             try:
                 api = json.loads(value)
                 apiKey = api['api_key']
+
+                # BEGIN:  Process a Brew Bubbles API POST
                 if apiKey == "Brew Bubbles": # received JSON from Brew Bubbles
-                    logMessage("NOTICE: Received Brew Bubbles JSON:")
-                    logMessage(value)
-                    pass
+                    # Log received line if true, false is short message, none = mute
+                    if outputJson == True:
+                        logMessage("API BB JSON Recvd: " + json.dumps(api))
+                    elif outputJson == False:
+                        logMessage("API Brew Bubbles JSON received.")
+                    else:
+                        pass  # Don't log JSON messages
+                    
+                    # Set time of last update
+                    lastBbApi = timestamp = time.time()
+
+                    # Update prevTempJson if keys exist
+                    if checkKey(prevTempJson, 'bbbpm'):
+                        prevTempJson['bbbpm'] = api['bpm']
+                        prevTempJson['bbamb'] = api['ambient']
+                        prevTempJson['bbves'] = api['temp']
+                    # Else, append values to prevTempJson
+                    else:
+                        prevTempJson.update({
+                            'bbbpm': api['bpm'],
+                            'bbamb': api['ambient'],
+                            'bbves': api['temp']
+                        })
+                # END:  Process a Brew Bubbles API POST
+                    
                 else:
                     logMessage("WARNING: Unknown API key received in JSON:")
                     logMessage(value)
@@ -1035,10 +1047,22 @@ while run:
                                 prevTempJson['spinBatt'] = None
                                 prevTempJson['spinSG'] = None
 
+                        # Expire old keypairs
+                        if (time.time() - lastBbApi) > 300:
+                            # Remove BB Api
+                            if checkKey(prevTempJson, 'bbbpm'):
+                                del prevTempJson['bbbpm']
+                            if checkKey(prevTempJson, 'bbamb'):
+                                del prevTempJson['bbamb']
+                            if checkKey(prevTempJson, 'bbves'):
+                                del prevTempJson['bbves']
+                        
+                        # Get newRow
                         newRow = prevTempJson
+
                         # Log received line if true, false is short message, none = mute
                         if outputJson == True:
-                            logMessage(newRow)
+                            logMessage("Update: " + json.dumps(newRow))
                         elif outputJson == False:
                             logMessage('New JSON received.')
                         else:

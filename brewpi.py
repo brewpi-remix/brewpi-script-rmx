@@ -956,13 +956,17 @@ while run:
                             'bbves': api['temp']
                         })
                 # END:  Process a Brew Bubbles API POST
-                    
+
                 else:
                     logMessage("WARNING: Unknown API key received in JSON:")
                     logMessage(value)
             except json.JSONDecodeError:
                 logMessage("ERROR: Invalid JSON received from API. String received:")
                 logMessage(value)
+
+        elif messageType == "status": # Status contents requested
+            # conn.send(json.dumps(lcdText)) // TODO:  Add capability to retrieve status points
+            pass
 
         else: # Invalid message received
             logMessage("ERROR. Received invalid message on socket: " + message)

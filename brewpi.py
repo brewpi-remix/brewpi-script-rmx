@@ -1117,8 +1117,10 @@ while run:
                         if not os.path.exists(localCsvFileName):
                             csvFile = open(localCsvFileName, "a")
                             delim = ','
+                            sepSemaphore = "SEP=" + delim + '\r\n'
+                            lineToWrite = sepSemaphore # Has to be first line
                             try:
-                                lineToWrite = ('Timestamp' + delim +
+                                lineToWrite += ('Timestamp' + delim +
                                                'Beer Temp' + delim +
                                                'Beer Set' + delim +
                                                'Beer Annot' + delim +
@@ -1143,6 +1145,7 @@ while run:
                                     lineToWrite += (delim + 'iSpindel SG')
 
                                 lineToWrite += '\r\n'
+                                csvFile.write
                                 csvFile.write(lineToWrite)
                                 csvFile.close()
 

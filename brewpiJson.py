@@ -112,12 +112,6 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
             if color == tiltColor:
                 jsonFile.write(",")
 
-                # Log tilt Temp
-                if row.get(color + 'Temp', None) is None:
-                    jsonFile.write("null,")
-                else:
-                    jsonFile.write("{\"v\":" + str(row[color + 'Temp']) + "},")
-
                 # Log Tilt SG
                 if row.get(color + 'SG', None) is None:
                     jsonFile.write("null")
@@ -128,21 +122,10 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
     elif iSpindel:
         jsonFile.write(",")
 
-        # Log tilt Temp
-        if row['spinSG'] is None:
-            jsonFile.write("null,")
-        else:
-            jsonFile.write("{\"v\":" + str(row['spinSG']) + "},")
-
         if row['spinTemp'] is None:
             jsonFile.write("null,")
         else:
             jsonFile.write("{\"v\":" + str(row['spinTemp']) + "},")
-
-        if row['spinBatt'] is None:
-            jsonFile.write("null")
-        else:
-            jsonFile.write("{\"v\":" + str(row['spinBatt']) + "}")
 
     # rewrite end of json file
     jsonFile.write("]}]}")
@@ -164,15 +147,12 @@ def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
 
     # Now get Tilt data if we are using it
     if tiltColor:
-        tiltCols = (',{"type":"number","id":"' + tiltColor + 'Temp","label":"' + tiltColor + ' Tilt Temp."},' +
-                '{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}')
+        tiltCols = (',{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}')
         jsonCols = ('{' + standardCols + tiltCols + '],"rows":[]}')
 
     # Or get iSpindel data if we are using that
     elif iSpindel:
-        iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"},' +
-			    '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
-			    '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
+        iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"}')
         jsonCols = ('{' + standardCols + iSpindelCols + '],"rows":[]}')
 
     # No Tilt or iSpindel

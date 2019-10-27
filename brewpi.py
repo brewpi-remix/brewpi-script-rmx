@@ -228,6 +228,8 @@ if checkStartupOnly:
     sys.exit(1)
 
 localJsonFileName = ""
+bbJsonFileName = ""
+wwwBbJsonFileName = ""
 localCsvFileName = ""
 wwwJsonFileName = ""
 wwwCsvFileName = ""
@@ -310,6 +312,8 @@ def changeWwwSetting(settingName, value):
 def setFiles():
     global config
     global localJsonFileName
+    global bbJsonFileName
+    global wwwBbJsonFileName
     global localCsvFileName
     global wwwJsonFileName
     global wwwCsvFileName
@@ -368,6 +372,7 @@ def setFiles():
     lastDay = day
     # Define a JSON file to store the data
     jsonFileName = '{0}-{1}'.format(beerFileName, day)
+    jsonBbFileName = 'BB-{0}'.format(beerFileName)
 
     # If a file for today already existed, add suffix
     if os.path.isfile('{0}{1}.json'.format(dataPath, jsonFileName)):
@@ -377,6 +382,7 @@ def setFiles():
         jsonFileName = '{0}-{1}'.format(jsonFileName, str(i))
 
     localJsonFileName = '{0}{1}.json'.format(dataPath, jsonFileName)
+    bbJsonFileName = '{0}{1}.txt'.format(dataPath, jsonBbFileName)
 
     # Handle if we are runing Tilt or iSpindel
     if checkKey(config, 'tiltColor'):
@@ -388,6 +394,7 @@ def setFiles():
 
     # Define a location on the web server to copy the file to after it is written
     wwwJsonFileName = wwwDataPath + jsonFileName + '.json'
+    wwwBbJsonFileName = wwwDataPath + jsonBbFileName + '.txt'
 
     # Define a CSV file to store the data as CSV (might be useful one day)
     localCsvFileName = (dataPath + beerFileName + '.csv')
@@ -1061,12 +1068,12 @@ while run:
                         newRow = prevTempJson
 
                         # Log received line if true, false is short message, none = mute
-                        if outputJson == True:
+                        if outputJson == True:      # Log full JSON
                             logMessage("Update: " + json.dumps(newRow))
-                        elif outputJson == False:
+                        elif outputJson == False:   # Log only a notice
                             logMessage('New JSON received.')
-                        else:
-                            pass  # Don't log JSON messages
+                        else:                       # Don't log JSON messages
+                            pass
 
                         # Add to JSON file
                         # Handle if we are runing Tilt or iSpindel
@@ -1079,6 +1086,23 @@ while run:
                         else:
                             brewpiJson.addRow(
                                 localJsonFileName, newRow, None, None)
+
+                        # Begin: Write out Brew Bubbles API file
+                        bbline = "{}"
+                        # If there is BB data in newRow
+                        if checkKey(newRow, 'bbbpm'):
+                            bbjson = {
+                                'bpm': newRow['bbbpm'],
+                                'temp': newRow['bbves'],
+                                'ambient': newRow['bbamb'],
+                            }
+                            bbline = json.dumps(bbjson)
+                        # Overwrite file
+                        with open(bbJsonFileName, 'w') as file:
+                            file.write(str(bbline))
+                        # Copy BB file to WWW data dir
+                        shutil.copyfile(bbJsonFileName, wwwBbJsonFileName)
+                        # End: Write out Brew Bubbles API file
 
                         # Copy to www dir. Do not write directly to www dir to
                         # prevent blocking www file.

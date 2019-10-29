@@ -517,6 +517,8 @@ commit = os.popen('git -C . log --oneline -n1').read().strip()
 logMessage('{0} ({1}) [{2}]'.format(version, branch, commit))
 
 lcdText = ['Script starting up.', ' ', ' ', ' ']
+statusType = ['N/A', 'N/A', 'N/A', 'N/A']
+statusValue = ['N/A', 'N/A', 'N/A', 'N/A']
 
 if config['beerName'] == 'None':
     logMessage("Logging is stopped.")
@@ -977,9 +979,60 @@ while run:
                     "ERROR: Invalid JSON received from API. String received:")
                 logMessage(value)
 
-        elif messageType == "status":  # Status contents requested
-            # conn.send(json.dumps(lcdText)) // TODO:  Add capability to retrieve status points
-            pass
+        elif messageType == "statusType":  # Status contents requested
+            statusIndex = 0
+
+            # Get any items pending for the status box (max 4)
+            # Listed here in preferential order
+            if (checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Bubbles\Min:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbbpm'], 1))
+                statusIndex = statusIndex + 1
+            if (checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Ambient Temp:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbamb'], 1))
+                statusIndex = statusIndex + 1
+            if (checkKey(prevTempJson, 'bbves') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Vessel Temp:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbves'], 1))
+                statusIndex = statusIndex + 1
+
+            # Fill the remaining dict entries with "--"
+            for x in range(statusIndex, 4):
+                statusType[x] = "--"
+
+            conn.send(json.dumps(statusType)) # TODO:  Add capability to retrieve status points
+
+        elif messageType == "statusValue":  # Status contents requested
+            statusIndex = 0
+
+            # Get any items pending for the status box (max 4)
+            # Listed here in preferential order
+            if (checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Bubbles\Min:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbbpm'], 1))
+                statusIndex = statusIndex + 1
+            if (checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Ambient Temp:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbamb'], 1))
+                statusIndex = statusIndex + 1
+            if (checkKey(prevTempJson, 'bbves') and (statusIndex <= 3)):
+                statusType[statusIndex] = "Vessel Temp:"
+                statusValue[statusIndex] = str(round(prevTempJson['bbves'], 1))
+                statusIndex = statusIndex + 1
+
+            # Fill the remaining dict entries with "--"
+            for x in range(statusIndex, 4):
+                statusValue[x] = "--"
+
+            conn.send(json.dumps(statusValue)) # TODO:  Add capability to retrieve status points
+            # def statusJson
+
+            # if checkKey(prevTempJson, 'asd'):
+            #     pass
+            # prevTempJson.update({
+            #     config['tiltColor'] + 'Temp': 0,
+            #     config['tiltColor'] + 'SG': 0,
 
         else:  # Invalid message received
             logMessage("ERROR. Received invalid message on socket: " + message)

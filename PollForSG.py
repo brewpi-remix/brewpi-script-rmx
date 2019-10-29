@@ -44,5 +44,5 @@ import ConfigParser
 def getValue():
         """Returns the latest temperature, battery level & gravity values of the Hydrometer""" 
 
-	ispindelreading = genfromtxt("/var/www/html/data/iSpindel/SpinData.csv", delimiter = ',')
-	return ispindelreading
+        ispindelreading = genfromtxt("/var/www/html/data/iSpindel/SpinData.csv", delimiter = ',')
+        return ispindelreading

@@ -171,8 +171,8 @@ def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
     # Or get iSpindel data if we are using that
     elif iSpindel:
         iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"},' +
-			    '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
-			    '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
+                            '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
+                            '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
         jsonCols = ('{' + standardCols + iSpindelCols + '],"rows":[]}')
 
     # No Tilt or iSpindel

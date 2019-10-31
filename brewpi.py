@@ -46,7 +46,9 @@ import sys
 import stat
 import pwd
 import grp
+import sentry_sdk
 
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 if sys.version_info < (2, 7): # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)

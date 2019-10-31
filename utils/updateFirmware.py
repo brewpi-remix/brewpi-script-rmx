@@ -41,6 +41,9 @@ from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, re
 from gitHubReleases import gitHubReleases
 import brewpiVersion
 import programController as programmer
+import sentry_sdk
+
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 
 # Globals

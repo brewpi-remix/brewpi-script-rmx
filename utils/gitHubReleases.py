@@ -126,7 +126,7 @@ class gitHubReleases:
 
     def getBin(self, tag, wordsInFileName, path=None):
         """
-        Writes .bin file in release to target directory. Defaults to 
+        Writes .bin file in release to target directory. Defaults to
         ~/downloads/tag_name/ as download location
 
             :param tag:             Tag name of the release

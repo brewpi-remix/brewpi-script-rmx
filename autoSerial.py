@@ -93,7 +93,7 @@ def detect_port(bootLoader = False, my_port = None):
     """
     if my_port == "auto":
         my_port = None
-        
+
     port = (None, None)
     ports = find_compatible_serial_ports(bootLoader=bootLoader, my_port=my_port)
 

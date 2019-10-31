@@ -183,7 +183,7 @@ class Tilt:
 
     def getValues(self):
         """
-        Returns the temperature & gravity values of the Tilt. 
+        Returns the temperature & gravity values of the Tilt.
 
         This will be the latest read value unless averaging / median has
         been enabled
@@ -295,7 +295,7 @@ class Tilt:
         path = os.path.dirname(os.path.abspath(__file__))
         configDir = '{0}/settings/'.format(path)
         filename = '{0}{1}.{2}'.format(configDir, which.upper(), self.color.lower())
-        
+
         lastChecked = self.calibrationDataTime.get(which + "_checked", 0)
         if ((int(time.time()) - lastChecked) < DATA_REFRESH_WINDOW):
             # Only check every DATA_REFRESH_WINDOW seconds

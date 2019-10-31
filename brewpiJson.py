@@ -150,7 +150,7 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
 
 
 def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
-    # Munge together standard column headers    
+    # Munge together standard column headers
     standardCols = ('"cols":[' +
                 '{"type":"datetime","id":"Time","label":"Time"},' +
                 '{"type":"number","id":"BeerTemp","label":"Beer Temp."},' +

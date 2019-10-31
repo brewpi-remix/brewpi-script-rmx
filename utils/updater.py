@@ -458,7 +458,7 @@ def main():
     print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
 
 if __name__ == '__main__':
-    print('This script is currently broken. Please use the doUpdate.sh script while I', 
+    print('This script is currently broken. Please use the doUpdate.sh script while I',
             '\nfigure out whether to keep this one going.')
     #result = main()
     #exit(result)

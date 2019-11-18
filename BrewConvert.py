@@ -31,9 +31,9 @@ class BrewConvert():
 
         Parameters:
             value (float):      Value to be converted
-            original (string):  Type of measurement being passed (e.g. sg, 
+            original (string):  Type of measurement being passed (e.g. sg,
                                 plato, brix, f or c)
-            target (string):    Type of measurement to return (e.g. sg, 
+            target (string):    Type of measurement to return (e.g. sg,
                                 plato, brix, f or c)
 
         Returns:

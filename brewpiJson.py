@@ -150,7 +150,7 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
 
 
 def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
-    # Munge together standard column headers    
+    # Munge together standard column headers
     standardCols = ('"cols":[' +
                 '{"type":"datetime","id":"Time","label":"Time"},' +
                 '{"type":"number","id":"BeerTemp","label":"Beer Temp."},' +
@@ -171,8 +171,8 @@ def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
     # Or get iSpindel data if we are using that
     elif iSpindel:
         iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"},' +
-			    '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
-			    '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
+                            '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
+                            '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
         jsonCols = ('{' + standardCols + iSpindelCols + '],"rows":[]}')
 
     # No Tilt or iSpindel

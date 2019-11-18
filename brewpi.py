@@ -46,7 +46,9 @@ import sys
 import stat
 import pwd
 import grp
+import sentry_sdk
 
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 if sys.version_info < (2, 7): # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
@@ -333,8 +335,8 @@ def setFiles():
         os.makedirs(dataPath) # Create path if it does not exist
     os.chown(dataPath, uid, gid) # chown root directory
     os.chmod(dataPath, dirMode) # chmod root directory
-    for root, dirs, files in os.walk(dataPath):  
-        for dir in dirs:  
+    for root, dirs, files in os.walk(dataPath):
+        for dir in dirs:
             os.chown(os.path.join(root, dir), uid, gid) # chown directories
             os.chmod(dir, dirMode) # chmod directories
         for file in files:
@@ -353,8 +355,8 @@ def setFiles():
         os.makedirs(wwwDataPath) # Create path if it does not exist
     os.chown(wwwDataPath, uid, gid) # chown root directory
     os.chmod(wwwDataPath, dirMode) # chmod root directory
-    for root, dirs, files in os.walk(wwwDataPath):  
-        for dir in dirs:  
+    for root, dirs, files in os.walk(wwwDataPath):
+        for dir in dirs:
             os.chown(os.path.join(root, dir), uid, gid) # chown directories
             os.chmod(dir, dirMode) # chmod directories
         for file in files:
@@ -391,7 +393,7 @@ def setFiles():
     # Define a CSV file to store the data as CSV (might be useful one day)
     localCsvFileName = (dataPath + beerFileName + '.csv')
     wwwCsvFileName = (wwwDataPath + beerFileName + '.csv')
-    
+
 
 def startBeer(beerName):
     if config['dataLogging'] == 'active':

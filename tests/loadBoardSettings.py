@@ -24,7 +24,7 @@ class  LoadBoardSettingsTestCase(unittest.TestCase):
         arduinohome = self.config.get('arduinoHome', '/usr/share/arduino/')  # location of Arduino sdk
         self.boardsFile = programController.loadBoardsFile(arduinohome);
     #
-    
+
     def test_loadBoardSettings_Leonardo(self):
         boardType = 'leonardo'
         self.assertBoardSettings(boardType, 28672);
@@ -40,4 +40,3 @@ class  LoadBoardSettingsTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

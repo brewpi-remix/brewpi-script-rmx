@@ -41,6 +41,9 @@ import sys
 import os
 import urllib2
 import getopt
+import sentry_sdk
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+
 
 ### Quits all running instances of BrewPi
 def quitBrewPi(webPath):
@@ -455,7 +458,7 @@ def main():
     print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
 
 if __name__ == '__main__':
-    print('This script is currently broken. Please use the doUpdate.sh script while I', 
+    print('This script is currently broken. Please use the doUpdate.sh script while I',
             '\nfigure out whether to keep this one going.')
     #result = main()
     #exit(result)

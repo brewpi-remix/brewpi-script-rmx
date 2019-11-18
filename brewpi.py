@@ -46,7 +46,9 @@ import sys
 import stat
 import pwd
 import grp
+import sentry_sdk
 
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 if sys.version_info < (2, 7):  # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
@@ -334,13 +336,13 @@ def setFiles():
     fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH  # 664
     dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH  # 775
     if not os.path.exists(dataPath):
-        os.makedirs(dataPath)  # Create path if it does not exist
-    os.chown(dataPath, uid, gid)  # chown root directory
-    os.chmod(dataPath, dirMode)  # chmod root directory
+        os.makedirs(dataPath) # Create path if it does not exist
+    os.chown(dataPath, uid, gid) # chown root directory
+    os.chmod(dataPath, dirMode) # chmod root directory
     for root, dirs, files in os.walk(dataPath):
         for dir in dirs:
-            os.chown(os.path.join(root, dir), uid, gid)  # chown directories
-            os.chmod(dir, dirMode)  # chmod directories
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
         for file in files:
             if os.path.isfile(file):
                 os.chown(os.path.join(root, file), uid, gid)  # chown files
@@ -354,13 +356,13 @@ def setFiles():
     fileMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH  # 664
     dirMode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH  # 775
     if not os.path.exists(wwwDataPath):
-        os.makedirs(wwwDataPath)  # Create path if it does not exist
-    os.chown(wwwDataPath, uid, gid)  # chown root directory
-    os.chmod(wwwDataPath, dirMode)  # chmod root directory
+        os.makedirs(wwwDataPath) # Create path if it does not exist
+    os.chown(wwwDataPath, uid, gid) # chown root directory
+    os.chmod(wwwDataPath, dirMode) # chmod root directory
     for root, dirs, files in os.walk(wwwDataPath):
         for dir in dirs:
-            os.chown(os.path.join(root, dir), uid, gid)  # chown directories
-            os.chmod(dir, dirMode)  # chmod directories
+            os.chown(os.path.join(root, dir), uid, gid) # chown directories
+            os.chmod(dir, dirMode) # chmod directories
         for file in files:
             if os.path.isfile(file):
                 os.chown(os.path.join(root, file), uid, gid)  # chown files

@@ -170,7 +170,7 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
     if not os.path.isfile(path):
         try:
             with open(path, 'w'):
-                    os.utime(path, None)
+                os.utime(path, None)
             # Set owner and permissions for file
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
             owner = 'brewpi'
@@ -270,7 +270,7 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
     dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
 
     printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
-    
+
     # Create do not run file
     dontRunCreated = False
     try:

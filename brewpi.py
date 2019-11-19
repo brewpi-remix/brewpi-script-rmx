@@ -529,11 +529,7 @@ if config['beerName'] == 'None':
     logMessage("Logging is stopped.")
 else:
     logMessage("Starting '" +
-<<<<<<< HEAD
-            urllib.parse.unquote(config['beerName']) + ".'")
-=======
-               urllib.unquote(config['beerName']) + ".'")
->>>>>>> 6dc712c88ae93aa0f440766792d0fab067eea0c5
+        urllib.parse.unquote(config['beerName']) + ".'")
 
 logMessage("Waiting 10 seconds for board to restart.")
 # Wait for 10 seconds to allow an Uno to reboot

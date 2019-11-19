@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -31,7 +31,6 @@
 # license and credits. */
 
 # Standard Imports
-from __future__ import print_function
 import _thread
 from distutils.version import LooseVersion
 import urllib.request, urllib.parse, urllib.error
@@ -46,13 +45,13 @@ import sys
 import stat
 import pwd
 import grp
-# import sentry_sdk
 
-# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
-if sys.version_info < (2, 7):  # Check needed software dependencies
-    print("\nSorry, requires Python 2.7.", file=sys.stderr)
+if sys.version_info < (3, 7):  # Check needed software dependencies
+    print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
+
+import sentry_sdk
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 try:  # Load non standard packages, exit if they are not installed
     import serial

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import subprocess as sub
 import time
 import simplejson as json

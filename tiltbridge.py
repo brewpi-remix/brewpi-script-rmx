@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import print_function
+
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 class Server(BaseHTTPRequestHandler):

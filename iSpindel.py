@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
+# Copyright (C) 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -25,7 +25,7 @@
 # with me for now.
 # Stephan Schreiber <stephan@sschreiber.de>, 2017-03-15
 
-from __future__ import print_function
+
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from datetime import datetime
 import thread

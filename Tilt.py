@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # prior work by the BrewPi team.  Both @sibowler and @supercow have agreed
 # to this licensing approach.
 
-from __future__ import print_function
+
 import blescan
 import sys
 import datetime

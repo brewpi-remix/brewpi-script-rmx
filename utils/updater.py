@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -34,7 +34,7 @@
 ### Init
 ############
 
-from __future__ import print_function
+
 import subprocess
 from time import localtime, strftime
 import sys
@@ -458,8 +458,8 @@ def main():
     print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
 
 if __name__ == '__main__':
-    print('This script is currently broken. Please use the doUpdate.sh script while I',
-            '\nfigure out whether to keep this one going.')
+    print('This script is currently not used. Please use the doUpdate.sh script while I',
+            '\nfigure out whether to update this or stick with the shell script.')
     #result = main()
     #exit(result)
     sys.exit()

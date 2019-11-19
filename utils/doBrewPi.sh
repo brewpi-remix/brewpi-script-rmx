@@ -61,8 +61,8 @@ loop() {
 
     while :
     do
-        if ! python "$script" --checkstartuponly --dontrunfile
-            then python -u "$script" --log
+        if ! python3 "$script" --checkstartuponly --dontrunfile
+            then python3 -u "$script" --log
         else
             sleep 1
         fi

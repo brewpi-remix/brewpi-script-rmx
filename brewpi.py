@@ -86,6 +86,7 @@ except ImportError:
 import temperatureProfile
 import programController as programmer
 import brewpiJson
+from BrewPiUtil import Unbuffered
 from BrewPiUtil import logMessage
 from BrewPiUtil import logError
 import BrewPiUtil as util
@@ -247,9 +248,11 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
+    #sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
     # Overwrite stdout, unbuffered
-    sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
+    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
+    #sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
 
 
 # Get www json setting with default

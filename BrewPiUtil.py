@@ -354,8 +354,14 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
         return None
 
 
-def asciiToUnicode(s):
+# def asciiToUnicode(s):
     # Remove extended ascii characters from string, because they can raise
     # UnicodeDecodeError later
-    s = s.replace(chr(0xB0), '&deg')
-    return unicode(s, 'ascii', 'ignore')
+    # s = s.decode().replace(chr(0xB0), '&deg')
+    # return s
+def asciiToUnicode(s):
+    try:
+        s_u = unicode(s, 'cp437', 'ignore')
+        return s_u.replace(chr(0xB0), '&deg')
+    except:
+        return s

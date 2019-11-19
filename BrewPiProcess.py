@@ -166,9 +166,7 @@ class BrewPiProcesses():
             cfg = cfg[0]  # add full path to config file
         else:
             # Get path from arguments and use that to build default path to config
-            cfg = os.path.dirname(str(bps).translate(None, r"[]'")) + '/settings/config.cfg'
-            # The following will be needed in Python 3:
-            # cfg = os.path.dirname(str(bps)).translate(str.maketrans('', '', r"[]'")) + '/settings/config.cfg'
+            cfg = os.path.dirname(str(bps)).translate(str.maketrans('', '', r"[]'")) + '/settings/config.cfg'
         bp.cfg = util.readCfgWithDefaults(cfg)
         bp.port = bp.cfg['port']
         bp.sock = BrewPiSocket.BrewPiSocket(bp.cfg)

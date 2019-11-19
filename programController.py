@@ -361,7 +361,7 @@ class SerialProgrammer:
         while expected_responses:
             line = ser.readline()
             if line:
-                line = util.asciiToUnicode(line)
+                line = util.asciiToUnicode(str(line))
                 if line[0] == 'C':
                     expected_responses -= 1
                     self.oldSettings['controlConstants'] = json_decode_response(

@@ -38,13 +38,13 @@ import time
 import os
 import bluetooth._bluetooth as bluez
 import threading
-import thread
+import _thread
 import numpy
 from scipy.interpolate import interp1d
 from scipy import arange, array, exp
 import csv
 import functools
-import ConfigParser
+import configparser
 
 TILT_COLORS = ['Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink']
 
@@ -434,7 +434,7 @@ class TiltManager:
     def start(self):
         '''Start the scanning thread.'''
         self.scanning = True
-        self.tiltthread = thread.start_new_thread(self.scan, ())
+        self.tiltthread = _thread.start_new_thread(self.scan, ())
 
     def loadSettings(self):
         '''
@@ -446,7 +446,7 @@ class TiltManager:
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.read(filename)
 
             # BT Device ID
@@ -494,7 +494,7 @@ def main():
 
     for thread in threads:
         time.sleep(2)
-        thread.join()
+        _thread.join()
 
 
 if __name__ == "__main__":

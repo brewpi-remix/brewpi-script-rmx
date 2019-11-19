@@ -32,9 +32,9 @@
 
 # Standard Imports
 from __future__ import print_function
-import thread
+import _thread
 from distutils.version import LooseVersion
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import traceback
 import shutil
 from pprint import pprint
@@ -46,9 +46,9 @@ import sys
 import stat
 import pwd
 import grp
-import sentry_sdk
+# import sentry_sdk
 
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 if sys.version_info < (2, 7): # Check needed software dependencies
     print("\nSorry, requires Python 2.7.", file=sys.stderr)
@@ -97,6 +97,9 @@ from backgroundserial import BackGroundSerial
 import BrewConvert
 
 compatibleHwVersion = "0.2.4"
+
+# Change ciretory to where the script is
+os.chdir(os.path.dirname(sys.argv[0]))
 
 # Settings will be read from controller, initialize with same defaults as
 # controller. This is mainly to show what's expected. Will all be overwritten
@@ -276,7 +279,7 @@ def getWwwSetting(settingName):
 
 # Check to see if a key exists in a dictionary
 def checkKey(dict, key):
-    if key in dict.keys():
+    if key in list(dict.keys()):
         return True
     else:
         return False
@@ -303,7 +306,7 @@ def changeWwwSetting(settingName, value):
 
     wwwSettings[settingName] = str(value)
     wwwSettingsFile.seek(0)
-    wwwSettingsFile.write(json.dumps(wwwSettings))
+    wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
     wwwSettingsFile.truncate()
     wwwSettingsFile.close()
 
@@ -408,11 +411,11 @@ def startNewBrew(newName):
         config = util.configSet(configFile, 'dataLogging', 'active')
         startBeer(newName)
         logMessage("Restarted logging for beer '%s'." % newName)
-        return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.unquote(newName) +
+        return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.parse.unquote(newName) +
                                               "Please reload the page."}
     else:
         return {'status': 1, 'statusMessage': "Invalid new brew name '%s', please enter\n" +
-                                              "a name with at least 2 characters" % urllib.unquote(newName)}
+                                              "a name with at least 2 characters" % urllib.parse.unquote(newName)}
 
 
 def stopLogging():
@@ -534,7 +537,7 @@ if config['beerName'] == 'None':
     logMessage("Logging is stopped.")
 else:
     logMessage("Starting '" +
-            urllib.unquote(config['beerName']) + ".'")
+            urllib.parse.unquote(config['beerName']) + ".'")
 
 logMessage("Waiting 10 seconds for board to restart.")
 # Wait for 10 seconds to allow an Uno to reboot
@@ -668,24 +671,24 @@ while run:
         conn, addr = s.accept()
         conn.setblocking(1)
         # Blocking receive, times out in serialCheckInterval
-        message = conn.recv(4096)
+        message = conn.recv(4096).decode(encoding="cp437")
         if "=" in message: # Split to message/value if message has an '='
             messageType, value = message.split("=", 1)
         else:
             messageType = message
             value = ""
         if messageType == "ack": # Acknowledge request
-            conn.send('ack')
+            conn.send('ack'.encode(encoding="cp437"))
         elif messageType == "lcd": # LCD contents requested
-            conn.send(json.dumps(lcdText))
+            conn.send(json.dumps(lcdText).encode(encoding="cp437"))
         elif messageType == "getMode": # Echo mode setting
-            conn.send(cs['mode'])
+            conn.send(cs['mode'].encode(encoding="cp437"))
         elif messageType == "getFridge": # Echo fridge temperature setting
-            conn.send(json.dumps(cs['fridgeSet']))
+            conn.send(json.dumps(cs['fridgeSet']).encode(encoding="cp437"))
         elif messageType == "getBeer": # Echo beer temperature setting
-            conn.send(json.dumps(cs['beerSet']))
+            conn.send(json.dumps(cs['beerSet']).encode(encoding="cp437"))
         elif messageType == "getControlConstants": # Echo control constants
-            conn.send(json.dumps(cc))
+            conn.send(json.dumps(cc).encode(encoding="cp437"))
         elif messageType == "getControlSettings": # Echo control settings
             if cs['mode'] == "p":
                 profileFile = util.addSlash(
@@ -693,9 +696,9 @@ while run:
                 with file(profileFile, 'r') as prof:
                     cs['profile'] = prof.readline().split(",")[-1].rstrip("\n")
             cs['dataLogging'] = config['dataLogging']
-            conn.send(json.dumps(cs))
+            conn.send(json.dumps(cs).encode(encoding="cp437"))
         elif messageType == "getControlVariables": # Echo control variables
-            conn.send(json.dumps(cv))
+            conn.send(json.dumps(cv).encode(encoding="cp437"))
         elif messageType == "refreshControlConstants": # Request control constants from controller
             bg_ser.write("c")
             raise socket.timeout
@@ -1198,7 +1201,7 @@ if tilt: # If we are running a Tilt, stop it
 
 if thread: # Allow any spawned threads to quit
     for thread in threads:
-        thread.join()
+        _thread.join()
 
 if ser: # If we opened a serial port, close it
     if ser.isOpen():

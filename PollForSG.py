@@ -38,7 +38,7 @@ import numpy
 from numpy import genfromtxt
 import csv
 import functools
-import ConfigParser
+import configparser
 
 
 def getValue():

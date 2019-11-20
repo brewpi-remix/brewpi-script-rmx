@@ -38,14 +38,9 @@ import fcntl
 import select
 import subprocess
 import simplejson as json
-import sentry_sdk
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
-
-import BrewPiUtil
-
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 # Append parent directory to be able to import files
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
@@ -104,7 +99,7 @@ try:
             ser.write(userInput.encode(encoding="cp437"))
 
         line = ser.readline()
-        line = BrewPiUtil.asciiToUnicode(line)
+        line = util.asciiToUnicode(line)
         line = line.decode(encoding="cp437")
         if line:
             if(line[0]=='D'):

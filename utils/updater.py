@@ -34,15 +34,15 @@
 ### Init
 ############
 
-
 import subprocess
 from time import localtime, strftime
 import sys
 import os
 import urllib2
 import getopt
-import sentry_sdk
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 
 ### Quits all running instances of BrewPi

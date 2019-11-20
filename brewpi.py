@@ -50,8 +50,8 @@ if sys.version_info < (3, 7):  # Check needed software dependencies
     print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
 
-import sentry_sdk
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 try:  # Load non standard packages, exit if they are not installed
     import serial
@@ -677,17 +677,17 @@ while run:
             messageType = message
             value = ""
         if messageType == "ack": # Acknowledge request
-            conn.send('ack'.encode(encoding="cp437"))
+            conn.send('ack')
         elif messageType == "lcd": # LCD contents requested
             conn.send(json.dumps(lcdText).encode(encoding="cp437"))
         elif messageType == "getMode": # Echo mode setting
-            conn.send(cs['mode'].encode(encoding="cp437"))
+            conn.send(cs['mode'])
         elif messageType == "getFridge": # Echo fridge temperature setting
-            conn.send(json.dumps(cs['fridgeSet']).encode(encoding="cp437"))
+            conn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
         elif messageType == "getBeer": # Echo beer temperature setting
-            conn.send(json.dumps(cs['beerSet']).encode(encoding="cp437"))
+            conn.send(json.dumps(cs['beerSet']).encode('utf-8'))
         elif messageType == "getControlConstants": # Echo control constants
-            conn.send(json.dumps(cc).encode(encoding="cp437"))
+            conn.send(json.dumps(cc).encode('utf-8'))
         elif messageType == "getControlSettings": # Echo control settings
             if cs['mode'] == "p":
                 profileFile = util.addSlash(
@@ -695,9 +695,9 @@ while run:
                 with file(profileFile, 'r') as prof:
                     cs['profile'] = prof.readline().split(",")[-1].rstrip("\n")
             cs['dataLogging'] = config['dataLogging']
-            conn.send(json.dumps(cs).encode(encoding="cp437"))
+            conn.send(json.dumps(cs).encode('utf-8'))
         elif messageType == "getControlVariables": # Echo control variables
-            conn.send(json.dumps(cv).encode(encoding="cp437"))
+            conn.send(json.dumps(cv).encode('utf-8'))
         elif messageType == "refreshControlConstants": # Request control constants from controller
             bg_ser.write("c")
             raise socket.timeout
@@ -815,16 +815,16 @@ while run:
         elif messageType == "startNewBrew":  # New beer name
             newName = value
             result = startNewBrew(newName)
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "pauseLogging":  # Pause logging
             result = pauseLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "stopLogging":  # Stop logging
             result = stopLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "resumeLogging":  # Resume logging
             result = resumeLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "dateTimeFormatDisplay":  # Change date time format
             config = util.configSet(configFile, 'dateTimeFormatDisplay', value)
             changeWwwSetting('dateTimeFormatDisplay', value)
@@ -907,7 +907,7 @@ while run:
                                 shield=hwVersion.shield,
                                 deviceList=deviceList,
                                 pinList=pinList.getPinList(hwVersion.board, hwVersion.shield))
-                conn.send(json.dumps(response))
+                conn.send(json.dumps(response).encode('utf-8'))
             else:
                 conn.send("device-list-not-up-to-date")
         elif messageType == "applyDevice":  # Change device settings
@@ -937,8 +937,7 @@ while run:
                 response['version'] = hwVersion.toString()
             else:
                 response = {}
-            response_str = json.dumps(response)
-            conn.send(response_str)
+            conn.send(json.dumps(response).encode('utf-8'))
         elif messageType == "resetController":  # Erase EEPROM
             logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
@@ -1006,7 +1005,7 @@ while run:
             for x in range(statusIndex, 4):
                 statusType[x] = "--"
 
-            conn.send(json.dumps(statusType)) # TODO:  Add capability to retrieve status points
+            conn.send(json.dumps(statusType).encode('utf-8')) # TODO:  Add capability to retrieve status points
 
         elif messageType == "statusValue":  # Status contents requested
             statusIndex = 0
@@ -1030,7 +1029,7 @@ while run:
             for x in range(statusIndex, 4):
                 statusValue[x] = "--"
 
-            conn.send(json.dumps(statusValue)) # TODO:  Add capability to retrieve status points
+            conn.send(json.dumps(statusValue).encode('utf-8')) # TODO:  Add capability to retrieve status points
             # def statusJson
 
             # if checkKey(prevTempJson, 'asd'):
@@ -1281,7 +1280,7 @@ while run:
                         oldListState = deviceList['listState']
                         deviceList['listState'] = oldListState.strip('d') + "d"
                         logMessage("Installed devices received: " +
-                                   json.dumps(deviceList['installed']).encode('utf-8'))
+                                   json.dumps(deviceList['installed']))
                     elif line[0] == 'U':  # Device update received
                         logMessage("Device updated to: " + line[2:])
                     else:  # Unknown message received

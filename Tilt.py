@@ -1,15 +1,15 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 # Copyright (C) 2019 Lee C. Bussy (@LBussy)
 
-# This file is part of LBussy's BrewPi Tilt Remix (BrewPi-Tilt-RMX).
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
-# BrewPi Tilt RMX is free software: you can redistribute it and/or
+# BrewPi Script RMX is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
 #
-# BrewPi Tilt RMX is distributed in the hope that it will be useful,
+# BrewPi Script RMX is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
@@ -17,26 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Tilt RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-brewometer, which provided
-# support in BrewPi for the Tilt Electronic Hydrometer (formerly Brewometer.)
-
-# Credit for the original brewpi-brewometer goes to @sibowler. @supercow
-# then forked that work and released a more "Legacy"-capable version for
-# the BrewPi Legacy users. This was an obvious jumping-off point for
-# brewpi-tilt-rmx.
-
-# As a derivative work of BrewPi, a project released under the GNU General
-# Public License v3.0, this license is attached here giving precedence for
-# prior work by the BrewPi team.  Both @sibowler and @supercow have agreed
-# to this licensing approach.
-
-
-import blescan
+from __future__ import print_function
+#import blescan
 import sys
 import datetime
 import time
 import os
-import bluetooth._bluetooth as bluez
+#import bluetooth._bluetooth as bluez
 import threading
 import _thread
 import numpy
@@ -54,25 +41,29 @@ DATA_REFRESH_WINDOW = 60
 
 
 def extrap1d(interpolator):
-    '''
-    Extrapolation of configuration points.
+    """
+    Extrapolation of configuration points
 
     This function is required as the interp1d function doesn't support
     extrapolation in the version of scipy that is currently available on
     the pi.
-    '''
 
-    # extrap1d Sourced from sastanin @ StackOverflow:
-    # http://stackoverflow.com/questions/2745329/
+    extrap1d Sourced from sastanin @ StackOverflow:
+    http://stackoverflow.com/questions/2745329/
+
+    :param interpolator:    Variable containing interp1d(originalValues,
+                            actualValues, bounds_error, fill_value)
+    :return: x/y dict containing calibrated values
+    """
 
     xs = interpolator.x
     ys = interpolator.y
 
     def pointwise(x):
         if x < xs[0]:
-            return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+            return ys[0] + (x - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
         elif x > xs[-1]:
-            return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+            return ys[-1] + (x - xs[-1]) * (ys[-1] - ys[-2]) / (xs[-1] - xs[-2])
         else:
             return interpolator(x)
 
@@ -83,29 +74,59 @@ def extrap1d(interpolator):
 
 
 def offsetCalibration(offset, value):
-    '''Simple offset calibration if only one point available.'''
+    """
+    Simple offset calibration if only one point is available
+
+    :param offset: Signed offset value
+    :param value: Current value to be offset
+    :return: Calibrated value
+    """
+
     return value + offset
 
 
 def extrapolationCalibration(extrapolationFunction, value):
-    '''Interpolation calibration if >1 calibration point available.'''
+    """
+    Interpolation calibration if >1 calibration point available
+    Handles dispatch to appropriate extrapolation function
+
+    :param extrapolationFunction: Function to be applied
+    :param value: Current value to be offset
+    :return: Calibrated value
+    """
+
     inputValue = [value]
     returnValue = extrapolationFunction(inputValue)
     return returnValue[0]
 
 
 def noCalibration(value):
-    '''Return unconverted argument if no calibration points available.'''
+    """
+    Return unconverted argument if no calibration points available
+
+    :param value: Current value to be offset
+    :return: Calibrated value
+    """
+
     return value
 
 
 def median(values):
-    '''Returns median of supplied values.'''
+    """
+    Returns median of supplied values
+
+    :param values: Values to be calculated
+    :return: Median of supplied values
+    """
+
     return numpy.median(numpy.array(values))
 
 
 class TiltValue:
-    '''Holds a Tilt reading.'''
+    """
+    Holds all category values of an individual Tilt reading
+    """
+
     temperature = 0
     gravity = 0
     timestamp = 0
@@ -120,11 +141,11 @@ class TiltValue:
 
 
 class Tilt:
-    '''
-    Manages Tilt values.
+    """
+    Manages Tilt values
 
-    Looks after calibration, storing of values and smoothing of read values.
-    '''
+    Handles calibration, storing of values and smoothing of read values.
+    """
 
     color = ''
     values = None
@@ -176,10 +197,10 @@ class Tilt:
         with self.lock:
             self.cleanValues()
             self.calibrate()
-            calTemp = self.tempCal(temp) # TODO: Fix this not working!
-            calGrav = self.gravCal(grav) # TODO: Fix this not working!
-            #self.values.append(TiltValue(temp, grav))
-            self.values.append(TiltValue(calTemp, calGrav)) # TODO: Fix this not working!
+            calTemp = self.tempCal(temp)  # TODO: Fix this not working!
+            calGrav = self.gravCal(grav)  # TODO: Fix this not working!
+            # self.values.append(TiltValue(temp, grav))
+            self.values.append(TiltValue(calTemp, calGrav))  # TODO: Fix this not working!
 
     def getValues(self):
         """
@@ -200,7 +221,12 @@ class Tilt:
         return returnValue
 
     def averageValues(self):
-        """Average all the stored values."""
+        """
+        Average all the stored values in the Tilt class
+
+        :return:  Averaged values
+        """
+
         returnValue = None
         if (len(self.values) > 0):
             returnValue = TiltValue(0, 0)
@@ -219,13 +245,17 @@ class Tilt:
 
     def medianValues(self, window=3):
         """
-        Use a median method across the stored values to reduce noise.
+        Use a median method across the stored values to reduce noise
 
-        window: Smoothing window to apply across the data. If the window
-                is less than the dataset size, the window will be moved
-                across the dataset taking a median value for each window,
-                with the resultant set averaged
+
+        :param window:  Smoothing window to apply across the data. If the
+                        window is less than the dataset size, the window
+                        will be moved across the dataset taking a median
+                        value for each window, with the resultant set
+                        averaged
+        :return: Median value
         """
+
         returnValue = None
         # Ensure there are enough values to do a median filter, if not shrink
         # window temporarily
@@ -237,10 +267,10 @@ class Tilt:
         # sidebars = (window - 1) / 2
         medianValueCount = 0
 
-        for i in range(len(self.values)-(window-1)):
+        for i in range(len(self.values) - (window - 1)):
             # Work out range of values to do median. At start and end of
             # assessment, need to pad with start and end values.
-            medianValues = self.values[i:i+window]
+            medianValues = self.values[i:i + window]
             medianValuesTemp = []
             medianValuesGravity = []
 
@@ -268,8 +298,11 @@ class Tilt:
 
     def cleanValues(self):
         """
-        Clean out stale values that are beyond the desired window.
+        Clean out stale values that are beyond the desired window
+
+        :return: None, operates on values in class
         """
+
         nowTime = datetime.datetime.now()
 
         for value in self.values:
@@ -281,11 +314,12 @@ class Tilt:
                 break
 
     def tiltCal(self, which):
-        '''
-        Load the calibration settings.
+        """
+        Loads settings from file and create the calibration functions
 
-        Loads settings from file and create the calibration functions.
-        '''
+        :param which: Which value (gravity or temperature) is to be processed
+        :return: The calibration function to be called
+        """
 
         returnFunction = noCalibration
 
@@ -341,12 +375,16 @@ class Tilt:
         elif (len(actualValues) == 1):
             offset = actualValues[0] - originalValues[0]
             returnFunction = functools.partial(offsetCalibration, offset)
-            print('Tilt ({0}): Initialized {1} Calibration: Offset ({2})'.format(self.color, which.capitalize(), str(offset)))
-        return returnFunction
+            print('Tilt ({0}): Initialized {1} Calibration: Offset ({2})'.format(self.color, which.capitalize(),
+                                                                                 str(offset)))
+        return returnFunction # By default, noCalibration
 
 
 class TiltManager:
-    '''Manages the monitoring of all Tilts and storing the read values.'''
+    """
+    Manages the monitoring of all Tilts and storing the read values
+    """
+
     color = ''
     dev_id = 0
     averagingPeriod = 0
@@ -355,7 +393,15 @@ class TiltManager:
     scanning = True
     tiltthread = None
 
-    def __init__(self, color, averagingPeriod=0, medianWindow=0, dev_id=0):
+    def __init__(self, color, averagingPeriod = 0, medianWindow = 0, dev_id = 0):
+        """
+        Initializes TiltManager class with default values
+
+        :param color: Tilt color to be managed
+        :param averagingPeriod: Time period in seconds for noise smoothing
+        :param medianWindow: Median filter setting in number of  entries
+        :param dev_id: Device ID of the local Bluetooth device to use
+        """
         self.color = color
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
@@ -363,7 +409,13 @@ class TiltManager:
         self.tilt = Tilt(color, self.averagingPeriod, self.medianWindow)
 
     def tiltName(self, uuid):
-        '''Return color given UUID.'''
+        """
+        Return Tilt color given UUID
+
+        :param uuid: UUID from BLEacon
+        :return: Tilt color
+        """
+
         return {
             'a495bb10c5b14b44b5121370f02d74de': 'Red',
             'a495bb20c5b14b44b5121370f02d74de': 'Green',
@@ -376,23 +428,40 @@ class TiltManager:
         }.get(uuid)
 
     def storeValue(self, temperature, gravity):
-        '''Store Tilt values.'''
+        """
+        Store Tilt values
+
+        :param temperature: Temperature value to be stored
+        :param gravity: Gravity value to be stored
+        :return: None
+        """
+
         self.tilt.setValues(temperature, gravity)
 
     def getValue(self):
-        '''Retrieve Tilt value.'''
+        """
+        Retrieve Tilt value
+
+        :return: Tilt value
+        """
+
         returnValue = None
         returnValue = self.tilt.getValues()
         return returnValue
 
     def scan(self):
-        '''Scan for BLE messages, stores Tilt values.'''
+        """
+        Scan for BLE messages, store as Tilt values
+
+        :return: None
+        """
+
         try:
             sock = bluez.hci_open_dev(self.dev_id)
 
         except Exception as e:
             print(
-                'ERROR: Unable to access bluetooth device: {0}'.format(e.message))
+                'ERROR: Unable to access Bluetooth device: {0}'.format(e.message))
             sys.exit(1)
 
         blescan.hci_le_set_scan_parameters(sock)
@@ -408,7 +477,6 @@ class TiltManager:
 
                 # If the event is for our Tilt, process the data
                 if self.tiltName(beaconParts[2]) == self.color:
-
                     # color = self.color
                     # ts = beaconParts[0]
                     # mac = beaconParts[1]
@@ -428,25 +496,37 @@ class TiltManager:
                     self.storeValue(temperature, gravity)
 
     def stop(self):
-        '''Stop scanning function.'''
+        """
+        Stop the BLE scanning thread
+        :return:
+        """
+
         self.scanning = False
 
     def start(self):
-        '''Start the scanning thread.'''
+        """
+        Starts the BLE scanning thread
+
+        :return: None
+        """
+
         self.scanning = True
-        self.tiltthread = _thread.start_new_thread(self.scan, ())
+        self.tiltthread = thread.start_new_thread(self.scan, ())
 
     def loadSettings(self):
-        '''
-        Load Settings from config file.
+        """
+        Load Settings from config file
 
         Overrides values given at creation. This needs to be called before
         the start function is called.
-        '''
+
+        :return: None
+        """
+
         myDir = os.path.dirname(os.path.abspath(__file__))
         filename = '{0}/settings/tiltsettings.ini'.format(myDir)
         try:
-            config = configparser.ConfigParser()
+            config = ConfigParser.ConfigParser()
             config.read(filename)
 
             # BT Device ID
@@ -472,6 +552,11 @@ class TiltManager:
 
 
 def main():
+    """
+    Test function executed when this file is run as a discrete script
+
+    :return: None
+    """
     '''Test run for stand-alone run.'''
     threads = []
     tiltList = []
@@ -494,9 +579,12 @@ def main():
 
     for thread in threads:
         time.sleep(2)
-        _thread.join()
+        thread.join()
 
 
 if __name__ == "__main__":
+    """
+    Calls main() when this file is run as a discrete script
+    """
     main()
     exit(0)

@@ -248,7 +248,7 @@ do_aioblescan() {
     # Install aioblescan
     local blerepo device fast safe file
     echo -e "\nInstalling BLEacon support via aioblescan."
-    blerepo="https://github.com/baronbrew/aioblescan.git"
+    blerepo="https://github.com/brewpi-remix/aioblescan.git"
     file="/usr/bin/btuart"
     fast="\$HCIATTACH \/dev\/serial1 bcm43xx 921600 noflow - \$BDADDR"
     safe="\$HCIATTACH \/dev\/serial1 bcm43xx 460800 noflow - \$BDADDR"

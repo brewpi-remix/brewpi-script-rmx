@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import sys
 from sys import path, stderr, stdout, platform
 import os
@@ -354,8 +354,27 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
         return None
 
 
-def asciiToUnicode(s):
+# def asciiToUnicode(s):
     # Remove extended ascii characters from string, because they can raise
     # UnicodeDecodeError later
-    s = s.replace(chr(0xB0), '&deg')
-    return unicode(s, 'ascii', 'ignore')
+    # s = s.decode().replace(chr(0xB0), '&deg')
+    # return s
+def asciiToUnicode(s):
+    try:
+        s_u = unicode(s, 'cp437', 'ignore')
+        return s_u.replace(chr(0xB0), '&deg')
+    except:
+        return s
+
+
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,18 +30,18 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import sys
 import socket
 import os
 import stat
 import pwd
 import grp
-import BrewPiUtil as util
 import stat
 import pwd
 import grp
 
+import BrewPiUtil as util
 
 
 class BrewPiSocket:

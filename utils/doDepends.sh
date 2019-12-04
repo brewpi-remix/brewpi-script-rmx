@@ -78,11 +78,11 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
     
     # Packages to be installed/checked via apt
-    APTPACKAGES="git arduino-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin"
+    APTPACKAGES="python3 git arduino-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin libbluetooth-dev libatlas-base-dev"
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be installed/check via pip
-    PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+    PIPPACKAGES="pyserial psutil simplejson configobj gitpython scipy configparser pybluez"
 }
 
 ############
@@ -205,7 +205,7 @@ do_packages() {
     # Loop through only the required packages and see if they need an upgrade
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
-            echo -e "\nUpgrading '$pkg'.\n"
+            echo -e "\nUpgrading '$pkg'."
             apt-get install ${pkg,,} -y -q=2||die
             doCleanup=1
         fi
@@ -223,17 +223,17 @@ do_packages() {
     
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip."
-    pipcmd='pipInstalled=$(pip list --format=columns)'
+    pipcmd='pipInstalled=$(pip3 list --format=columns)'
     eval "$pipcmd"
     pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
     eval "$pipcmd"
     for pkg in ${PIPPACKAGES,,}; do
         if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nInstalling '$pkg'."
-            pip install $pkg -q||die
+            pip3 install $pkg -q||die
         else
             echo -e "\nChecking for update to '$pkg'."
-            pip install $pkg --upgrade -q||die
+            pip3 install $pkg --upgrade -q||die
         fi
     done
 }

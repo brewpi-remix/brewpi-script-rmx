@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -31,10 +31,9 @@
 # license and credits. */
 
 # Standard Imports
-from __future__ import print_function
-import thread
+import _thread
 from distutils.version import LooseVersion
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import traceback
 import shutil
 from pprint import pprint
@@ -46,13 +45,13 @@ import sys
 import stat
 import pwd
 import grp
-import sentry_sdk
 
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
-if sys.version_info < (2, 7):  # Check needed software dependencies
-    print("\nSorry, requires Python 2.7.", file=sys.stderr)
+if sys.version_info < (3, 7):  # Check needed software dependencies
+    print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
+
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 try:  # Load non standard packages, exit if they are not installed
     import serial
@@ -87,6 +86,7 @@ except ImportError:
 import temperatureProfile
 import programController as programmer
 import brewpiJson
+from BrewPiUtil import Unbuffered
 from BrewPiUtil import logMessage
 from BrewPiUtil import logError
 import BrewPiUtil as util
@@ -99,6 +99,9 @@ import BrewConvert
 
 
 compatibleHwVersion = "0.2.4"
+
+# Change ciretory to where the script is
+os.chdir(os.path.dirname(sys.argv[0]))
 
 # Settings will be read from controller, initialize with same defaults as
 # controller. This is mainly to show what's expected. Will all be overwritten
@@ -245,9 +248,11 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
+    #sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
     # Overwrite stdout, unbuffered
-    sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
+    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
+    #sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
 
 
 # Get www json setting with default
@@ -280,7 +285,7 @@ def getWwwSetting(settingName):
 
 # Check to see if a key exists in a dictionary
 def checkKey(dict, key):
-    if key in dict.keys():
+    if key in list(dict.keys()):
         return True
     else:
         return False
@@ -307,7 +312,7 @@ def changeWwwSetting(settingName, value):
 
     wwwSettings[settingName] = str(value)
     wwwSettingsFile.seek(0)
-    wwwSettingsFile.write(json.dumps(wwwSettings))
+    wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
     wwwSettingsFile.truncate()
     wwwSettingsFile.close()
 
@@ -412,11 +417,11 @@ def startNewBrew(newName):
         config = util.configSet(configFile, 'dataLogging', 'active')
         startBeer(newName)
         logMessage("Restarted logging for beer '%s'." % newName)
-        return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.unquote(newName) +
+        return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.parse.unquote(newName) +
                                               "Please reload the page."}
     else:
         return {'status': 1, 'statusMessage': "Invalid new brew name '%s', please enter\n" +
-                                              "a name with at least 2 characters" % urllib.unquote(newName)}
+                                              "a name with at least 2 characters" % urllib.parse.unquote(newName)}
 
 
 def stopLogging():
@@ -526,7 +531,7 @@ if config['beerName'] == 'None':
     logMessage("Logging is stopped.")
 else:
     logMessage("Starting '" +
-               urllib.unquote(config['beerName']) + ".'")
+        urllib.parse.unquote(config['beerName']) + ".'")
 
 logMessage("Waiting 10 seconds for board to restart.")
 # Wait for 10 seconds to allow an Uno to reboot
@@ -665,37 +670,35 @@ while run:
         conn, addr = s.accept()
         conn.setblocking(1)
         # Blocking receive, times out in serialCheckInterval
-        message = conn.recv(4096)
-
-        if "=" in message:  # Split to message/value if message has an '='
+        message = conn.recv(4096).decode(encoding="cp437")
+        if "=" in message: # Split to message/value if message has an '='
             messageType, value = message.split("=", 1)
         else:
             messageType = message
             value = ""
-
-        if messageType == "ack":  # Acknowledge request
+        if messageType == "ack": # Acknowledge request
             conn.send('ack')
-        elif messageType == "lcd":  # LCD contents requested
-            conn.send(json.dumps(lcdText))
-        elif messageType == "getMode":  # Echo mode setting
+        elif messageType == "lcd": # LCD contents requested
+            conn.send(json.dumps(lcdText).encode(encoding="cp437"))
+        elif messageType == "getMode": # Echo mode setting
             conn.send(cs['mode'])
-        elif messageType == "getFridge":  # Echo fridge temperature setting
-            conn.send(json.dumps(cs['fridgeSet']))
-        elif messageType == "getBeer":  # Echo beer temperature setting
-            conn.send(json.dumps(cs['beerSet']))
-        elif messageType == "getControlConstants":  # Echo control constants
-            conn.send(json.dumps(cc))
-        elif messageType == "getControlSettings":  # Echo control settings
+        elif messageType == "getFridge": # Echo fridge temperature setting
+            conn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
+        elif messageType == "getBeer": # Echo beer temperature setting
+            conn.send(json.dumps(cs['beerSet']).encode('utf-8'))
+        elif messageType == "getControlConstants": # Echo control constants
+            conn.send(json.dumps(cc).encode('utf-8'))
+        elif messageType == "getControlSettings": # Echo control settings
             if cs['mode'] == "p":
                 profileFile = util.addSlash(
                     util.scriptPath()) + 'settings/tempProfile.csv'
                 with file(profileFile, 'r') as prof:
                     cs['profile'] = prof.readline().split(",")[-1].rstrip("\n")
             cs['dataLogging'] = config['dataLogging']
-            conn.send(json.dumps(cs))
-        elif messageType == "getControlVariables":  # Echo control variables
-            conn.send(json.dumps(cv))
-        elif messageType == "refreshControlConstants":  # Request control constants from controller
+            conn.send(json.dumps(cs).encode('utf-8'))
+        elif messageType == "getControlVariables": # Echo control variables
+            conn.send(json.dumps(cv).encode('utf-8'))
+        elif messageType == "refreshControlConstants": # Request control constants from controller
             bg_ser.write("c")
             raise socket.timeout
         elif messageType == "refreshControlSettings":  # Request control settings from controller
@@ -812,16 +815,16 @@ while run:
         elif messageType == "startNewBrew":  # New beer name
             newName = value
             result = startNewBrew(newName)
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "pauseLogging":  # Pause logging
             result = pauseLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "stopLogging":  # Stop logging
             result = stopLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "resumeLogging":  # Resume logging
             result = resumeLogging()
-            conn.send(json.dumps(result))
+            conn.send(json.dumps(result).encode('utf-8'))
         elif messageType == "dateTimeFormatDisplay":  # Change date time format
             config = util.configSet(configFile, 'dateTimeFormatDisplay', value)
             changeWwwSetting('dateTimeFormatDisplay', value)
@@ -904,7 +907,7 @@ while run:
                                 shield=hwVersion.shield,
                                 deviceList=deviceList,
                                 pinList=pinList.getPinList(hwVersion.board, hwVersion.shield))
-                conn.send(json.dumps(response))
+                conn.send(json.dumps(response).encode('utf-8'))
             else:
                 conn.send("device-list-not-up-to-date")
         elif messageType == "applyDevice":  # Change device settings
@@ -934,8 +937,7 @@ while run:
                 response['version'] = hwVersion.toString()
             else:
                 response = {}
-            response_str = json.dumps(response)
-            conn.send(response_str)
+            conn.send(json.dumps(response).encode('utf-8'))
         elif messageType == "resetController":  # Erase EEPROM
             logMessage("Resetting controller to factory defaults.")
             bg_ser.write("E")
@@ -1003,7 +1005,7 @@ while run:
             for x in range(statusIndex, 4):
                 statusType[x] = "--"
 
-            conn.send(json.dumps(statusType)) # TODO:  Add capability to retrieve status points
+            conn.send(json.dumps(statusType).encode('utf-8')) # TODO:  Add capability to retrieve status points
 
         elif messageType == "statusValue":  # Status contents requested
             statusIndex = 0
@@ -1027,7 +1029,7 @@ while run:
             for x in range(statusIndex, 4):
                 statusValue[x] = "--"
 
-            conn.send(json.dumps(statusValue)) # TODO:  Add capability to retrieve status points
+            conn.send(json.dumps(statusValue).encode('utf-8')) # TODO:  Add capability to retrieve status points
             # def statusJson
 
             # if checkKey(prevTempJson, 'asd'):
@@ -1278,7 +1280,7 @@ while run:
                         oldListState = deviceList['listState']
                         deviceList['listState'] = oldListState.strip('d') + "d"
                         logMessage("Installed devices received: " +
-                                   json.dumps(deviceList['installed']).encode('utf-8'))
+                                   json.dumps(deviceList['installed']))
                     elif line[0] == 'U':  # Device update received
                         logMessage("Device updated to: " + line[2:])
                     else:  # Unknown message received
@@ -1319,7 +1321,7 @@ if tilt:  # If we are running a Tilt, stop it
 
 if thread:  # Allow any spawned threads to quit
     for thread in threads:
-        thread.join()
+        _thread.join()
 
 if ser:  # If we opened a serial port, close it
     if ser.isOpen():

@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import simplejson as json
 import sys
 import time
@@ -47,14 +47,16 @@ def getVersionFromSerial(ser):
         print("\nCannot get version from serial port that is not open.")
 
     ser.timeout = 1
-    ser.write('n')  # request version info
+    ser.write('n'.encode(encoding="cp437"))  # Request version info
     while retries < 10:
         retry = True
-        while 1: # read all lines from serial
+        while 1: # Read all lines from serial
             loopTime = time.time()
             line = None
             try:
                 line = ser.readline()
+                if hasattr(line, 'decode'):
+                    line = line.decode(encoding="cp437")
             except SerialException as e:
                 pass
             if line:
@@ -66,20 +68,19 @@ def getVersionFromSerial(ser):
                         retry = False
                         break
             if time.time() - loopTime >= ser.timeout:
-                # have read entire buffer, now just reading data as it comes in. Break to prevent an endless loop.
+                # Have read entire buffer, now just reading data as it comes in. Break to prevent an endless loop
                 break
             if time.time() - startTime >= 10:
-                # try max 10 seconds
+                # Try max 10 seconds
                 retry = False
                 break
 
         if retry:
-            ser.write('n')  # request version info
-            # time.sleep(1) delay not needed because of blocking (timeout) readline
+            ser.write('n'.encode(encoding="cp437"))  # request version info
             retries += 1
         else:
             break
-    ser.timeout = oldTimeOut # restore previous serial timeout value
+    ser.timeout = oldTimeOut # Restore previous serial timeout value
     return version
 
 class AvrInfo:

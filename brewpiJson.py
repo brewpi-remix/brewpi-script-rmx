@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -47,7 +47,9 @@ def fixJson(j):
 
 def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
     jsonFile = open(jsonFileName, "r+")
-    jsonFile.seek(-3, 2)  # Go insert point to add the last row
+    # jsonFile.seek(-3, 2)  # Go insert point to add the last row
+    jsonFile.seek(0, os.SEEK_END)
+    jsonFile.seek(jsonFile.tell() - 3, os.SEEK_SET)
     ch = jsonFile.read(1)
     jsonFile.seek(0, os.SEEK_CUR)
     # When alternating between reads and writes, the file contents should be flushed, see

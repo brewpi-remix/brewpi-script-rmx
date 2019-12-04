@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -38,7 +38,7 @@ import numpy
 from numpy import genfromtxt
 import csv
 import functools
-import ConfigParser
+import configparser
 
 
 def getValue():

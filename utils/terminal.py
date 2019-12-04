@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import sys
 import os
 import termios
@@ -38,10 +38,9 @@ import fcntl
 import select
 import subprocess
 import simplejson as json
-import sentry_sdk
 
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 # Append parent directory to be able to import files
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
@@ -95,11 +94,13 @@ try:
         elif received == 's':
             termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
             fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
-            userInput = raw_input("Type the string you want to send to the controller: ")
+            userInput = input("Type the string you want to send to the controller: ")
             print("Sending: " + userInput)
-            ser.write(userInput)
+            ser.write(userInput.encode(encoding="cp437"))
 
         line = ser.readline()
+        line = util.asciiToUnicode(line)
+        line = line.decode(encoding="cp437")
         if line:
             if(line[0]=='D'):
                 try:
@@ -111,6 +112,7 @@ try:
 
             else:
                 print(line)
+
 
 finally:
     # Reset the terminal:

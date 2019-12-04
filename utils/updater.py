@@ -443,9 +443,9 @@ def main():
         # start as a separate python process, or it will not use the updated modules
         updateScript = os.path.join(scriptPath, 'utils', 'updateFirmware.py')
         if userInput:
-            p = subprocess.Popen("python {0} --beta".format(updateScript), shell=True)
+            p = subprocess.Popen("python3 {0} --beta".format(updateScript), shell=True)
         else:
-            p = subprocess.Popen("python {0} --silent".format(updateScript), shell=True)
+            p = subprocess.Popen("python3 {0} --silent".format(updateScript), shell=True)
         p.wait()
         result = p.returncode
         if(result == 0):

@@ -60,25 +60,25 @@ try:  # Load non standard packages, exit if they are not installed
               "\nPlease upgrade pyserial via pip, by running:\n",
               "  sudo pip install pyserial --upgrade\n",
               "\nIf you do not have pip installed, install it with:\n",
-              "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+              "  sudo apt install python3-pip", file=sys.stderr)
         sys.exit(1)
 except ImportError:
     print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n",
-          "  sudo pip install pyserial --upgrade\n",
+          "  sudo pip3 install pyserial --upgrade\n",
           "\nIf you do not have pip installed, install it by running:\n",
-          "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+          "  sudo apt install python3-pip", file=sys.stderr)
     sys.exit(1)
 try:
     import simplejson as json
 except ImportError:
     print("\nBrewPi requires simplejson to run, please install it by running\n",
-          "  sudo apt-get install python-simplejson", file=sys.stderr)
+          "  sudo pip3 install simplejson", file=sys.stderr)
     sys.exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it by running\n",
-          "  sudo apt-get install python-configobj", file=sys.stderr)
+          "  sudo pip3 install configobj", file=sys.stderr)
     sys.exit(1)
 
 
@@ -889,8 +889,8 @@ while run:
             # Restart the script when done. This replaces this process with
             # the new one
             time.sleep(5)  # Give the controller time to reboot
-            python = sys.executable
-            os.execl(python, python, *sys.argv)
+            python3 = sys.executable
+            os.execl(python3, python3, *sys.argv)
         elif messageType == "refreshDeviceList":  # Request devices from controller
             deviceList['listState'] = ""  # Invalidate local copy
             if value.find("readValues") != -1:

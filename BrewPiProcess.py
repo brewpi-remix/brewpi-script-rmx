@@ -43,13 +43,13 @@ try:
         print("Your version of pstuil is %s \n" \
         "BrewPi requires psutil 2.0 or higher, please upgrade your version of psutil.\n" \
         "This can best be done via pip, please run:\n" \
-        "  sudo apt-get install build-essential python-dev python-pip\n" \
-        "  sudo pip install psutil --upgrade\n" % psutil.__version__, file=sys.stderr)
+        "  sudo apt install python3-pip\n" \
+        "  sudo pip3 install psutil --upgrade\n" % psutil.__version__, file=sys.stderr)
         sys.exit(1)
 
 except ImportError:
     print("BrewPi requires psutil to run, please install it via pip:")
-    print("  sudo pip install psutil --upgrade")
+    print("  sudo pip3 install psutil --upgrade")
     sys.exit(1)
 
 import BrewPiSocket

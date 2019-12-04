@@ -50,7 +50,7 @@ try:
     import configobj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it with \n"
-          "'sudo apt-get install python-configobj")
+          "'sudo pip3 install configobj")
     exit(1)
 
 

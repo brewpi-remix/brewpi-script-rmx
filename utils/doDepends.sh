@@ -182,8 +182,8 @@ do_packages() {
     # Now install any necessary packages if they are not installed
     local didInstall
     didInstall=0
-    echo -e "\nFixing any proken installations before proceeding."
-    sudo apt-get --fix-broken install -y
+    echo -e "\nFixing any broken installations before proceeding."
+    sudo apt-get --fix-broken install -y||die
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in ${APTPACKAGES,,}; do
         pkgOk=$(dpkg-query -W --showformat='${Status}\n' ${pkg,,} | \

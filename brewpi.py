@@ -1078,8 +1078,6 @@ while run:
         while True:  # Read lines from controller
             line = bg_ser.read_line()
             message = bg_ser.read_message()
-            if message:
-                message = message.decode(encoding="cp437")
             if line is None and message is None:
                 break
             if line is not None:
@@ -1113,12 +1111,12 @@ while run:
                                                      'Temp'] = round(_temp, 2)
                                         prevTempJson[color +
                                                      'SG'] = round(tiltValue.gravity, 3)
-                                        # prevTempJson[color +                              # TODO: Add Batt value
-                                        #              'Batt'] = round(tiltValue.batt, 3)   # TODO: Add Batt value
+                                        prevTempJson[color +
+                                                      'Batt'] = round(tiltValue.battery, 3)
                                     else:
                                         prevTempJson[color + 'Temp'] = None
                                         prevTempJson[color + 'SG'] = None
-                                        # prevTempJson[color + 'Batt'] = None               # TODO: Add Batt value
+                                        prevTempJson[color + 'Batt'] = None
 
                         # If we are running iSpindel, get current values
                         if ispindel:

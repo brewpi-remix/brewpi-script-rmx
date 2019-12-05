@@ -282,7 +282,7 @@ main() {
     rem_php5 # Remove php5 packages
     rem_nginx # Remove nginx packages
     do_packages # Check on required packages
-
+    do_aioblescan
     banner "complete"
 }
 

@@ -1255,6 +1255,9 @@ while run:
                     elif line[0] == 'L':  # LCD content received
                         prevLcdUpdate = time.time()
                         lcdText = json.loads(line[2:])
+                        deg_symbol = bytes([0xB0]).decode(encoding="cp437").strip()
+                        sanitized_text = [n.replace(deg_symbol, "&deg;") for n in lcdText]
+                        lcdText = sanitized_text
                     elif line[0] == 'C':  # Control constants received
                         cc = json.loads(line[2:])
                         # Update the json with the right temp format for the web page

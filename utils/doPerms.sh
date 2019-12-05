@@ -111,7 +111,7 @@ perms() {
     find "$GITROOT/logs" -type f -iname "*.txt" -exec chmod 777 {} \; || warn
     find "$GITROOT/settings" -type f -exec chmod 664 {} \; || warn
     echo -e "\nAllowing BrewPi python access to Bluetooth interfaces."
-    setcap cap_net_raw+eip $(eval readlink -f `which python`)
+    setcap cap_net_raw+eip $(eval readlink -f `which python3`)
 }
 
 ############

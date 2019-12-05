@@ -106,7 +106,7 @@ apt_check() {
     if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
-        apt-get update -q||die
+        apt-get update -yq||die
         echo
     fi
 }

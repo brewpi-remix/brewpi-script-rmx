@@ -508,13 +508,12 @@ if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
 
 
 # Start the logs
+logError('Starting BrewPi.')  # Timestamp stderr
 if logToFiles:
     # Make sure we send a message to daemon
     print('Starting BrewPi.', file=sys.__stdout__)
 else:
     logMessage('Starting BrewPi.')
-
-logError('Starting BrewPi.')  # Timestamp stderr
 
 # Output the current script version
 version = os.popen(
@@ -1079,6 +1078,8 @@ while run:
         while True:  # Read lines from controller
             line = bg_ser.read_line()
             message = bg_ser.read_message()
+            if message:
+                message = message.decode(encoding="cp437")
             if line is None and message is None:
                 break
             if line is not None:
@@ -1254,10 +1255,7 @@ while run:
                         logMessage("Line received was: {0}".format(line))
                     elif line[0] == 'L':  # LCD content received
                         prevLcdUpdate = time.time()
-                        lcdText = json.loads(line[2:])
-                        deg_symbol = bytes([0xB0]).decode(encoding="cp437").strip()
-                        sanitized_text = [n.replace(deg_symbol, "&deg;") for n in lcdText]
-                        lcdText = sanitized_text
+                        lcdText = [n.replace(chr(9600), "&deg;") for n in json.loads(line[2:])]
                     elif line[0] == 'C':  # Control constants received
                         cc = json.loads(line[2:])
                         # Update the json with the right temp format for the web page

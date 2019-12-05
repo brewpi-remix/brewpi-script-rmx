@@ -60,25 +60,25 @@ try:  # Load non standard packages, exit if they are not installed
               "\nPlease upgrade pyserial via pip, by running:\n",
               "  sudo pip install pyserial --upgrade\n",
               "\nIf you do not have pip installed, install it with:\n",
-              "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+              "  sudo apt install python3-pip", file=sys.stderr)
         sys.exit(1)
 except ImportError:
     print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n",
-          "  sudo pip install pyserial --upgrade\n",
+          "  sudo pip3 install pyserial --upgrade\n",
           "\nIf you do not have pip installed, install it by running:\n",
-          "  sudo apt-get install build-essential python-dev python-pip", file=sys.stderr)
+          "  sudo apt install python3-pip", file=sys.stderr)
     sys.exit(1)
 try:
     import simplejson as json
 except ImportError:
     print("\nBrewPi requires simplejson to run, please install it by running\n",
-          "  sudo apt-get install python-simplejson", file=sys.stderr)
+          "  sudo pip3 install simplejson", file=sys.stderr)
     sys.exit(1)
 try:
     from configobj import ConfigObj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it by running\n",
-          "  sudo apt-get install python-configobj", file=sys.stderr)
+          "  sudo pip3 install configobj", file=sys.stderr)
     sys.exit(1)
 
 
@@ -508,13 +508,12 @@ if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
 
 
 # Start the logs
+logError('Starting BrewPi.')  # Timestamp stderr
 if logToFiles:
     # Make sure we send a message to daemon
     print('Starting BrewPi.', file=sys.__stdout__)
 else:
     logMessage('Starting BrewPi.')
-
-logError('Starting BrewPi.')  # Timestamp stderr
 
 # Output the current script version
 version = os.popen(
@@ -889,8 +888,8 @@ while run:
             # Restart the script when done. This replaces this process with
             # the new one
             time.sleep(5)  # Give the controller time to reboot
-            python = sys.executable
-            os.execl(python, python, *sys.argv)
+            python3 = sys.executable
+            os.execl(python3, python3, *sys.argv)
         elif messageType == "refreshDeviceList":  # Request devices from controller
             deviceList['listState'] = ""  # Invalidate local copy
             if value.find("readValues") != -1:
@@ -1079,6 +1078,8 @@ while run:
         while True:  # Read lines from controller
             line = bg_ser.read_line()
             message = bg_ser.read_message()
+            if message:
+                message = message.decode(encoding="cp437")
             if line is None and message is None:
                 break
             if line is not None:
@@ -1254,7 +1255,7 @@ while run:
                         logMessage("Line received was: {0}".format(line))
                     elif line[0] == 'L':  # LCD content received
                         prevLcdUpdate = time.time()
-                        lcdText = json.loads(line[2:])
+                        lcdText = [n.replace(chr(9600), "&deg;") for n in json.loads(line[2:])]
                     elif line[0] == 'C':  # Control constants received
                         cc = json.loads(line[2:])
                         # Update the json with the right temp format for the web page

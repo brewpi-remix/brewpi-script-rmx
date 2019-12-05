@@ -360,7 +360,6 @@ class TiltManager:
             try:
                 config = ConfigParser()
                 config.read(filename)
-                print(filename)
 
                 # BT Device ID
                 try:
@@ -528,7 +527,7 @@ def main():
     tilt.start()
 
     try:
-        print("Reporting Tilt values every 5 seconds. Ctrl-C to stop.")
+        print("\nReporting Tilt values every 5 seconds. Ctrl-C to stop.")
         while 1:
             # If we are running Tilt, get current values
             if tilt:

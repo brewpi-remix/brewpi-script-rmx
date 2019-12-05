@@ -50,7 +50,7 @@ try:
     import configobj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it with \n"
-          "'sudo apt-get install python-configobj")
+          "'sudo pip3 install configobj")
     exit(1)
 
 
@@ -357,16 +357,14 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
 # def asciiToUnicode(s):
     # Remove extended ascii characters from string, because they can raise
     # UnicodeDecodeError later
-    # s = s.decode().replace(chr(0xB0), '&deg')
-    # return s
 def asciiToUnicode(s):
-    try:
-        s_u = unicode(s, 'cp437', 'ignore')
-        return s_u.replace(chr(0xB0), '&deg')
-    except:
-        return s
+    #deg_symbol = bytes([0xB0]).decode(encoding="utf-8").strip()
+    #s = s.replace(deg_symbol, '&deg')
+    # This does nothing anymore
+    return s
 
 
+# Add unbuffered capabilities back for Python3
 class Unbuffered(object):
    def __init__(self, stream):
        self.stream = stream

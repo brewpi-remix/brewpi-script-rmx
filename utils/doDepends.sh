@@ -100,13 +100,15 @@ banner() {
 ############
 
 apt_check() {
+    echo -e "\nFixing any broken installations before proceeding."
+    sudo apt-get --fix-broken install -y||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
     if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
-        apt-get update -q||die
+        apt-get update -yq||die
         echo
     fi
 }

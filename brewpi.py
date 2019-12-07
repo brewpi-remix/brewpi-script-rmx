@@ -947,7 +947,7 @@ while run:
                 api = json.loads(value)
                 apiKey = api['api_key']
 
-                # BEGIN:  Process a Brew Bubbles API POST
+                # BEGIN: Process a Brew Bubbles API POST
                 if apiKey == "Brew Bubbles":  # received JSON from Brew Bubbles
                     # Log received line if true, false is short message, none = mute
                     if outputJson == True:
@@ -972,7 +972,7 @@ while run:
                             'bbamb': api['ambient'],
                             'bbves': api['temp']
                         })
-                # END:  Process a Brew Bubbles API POST
+                # END: Process a Brew Bubbles API POST
 
                 else:
                     logMessage("WARNING: Unknown API key received in JSON:")
@@ -982,60 +982,58 @@ while run:
                     "ERROR: Invalid JSON received from API. String received:")
                 logMessage(value)
 
-        elif messageType == "statusType":  # Status contents requested
+        elif messageType == "statusText":  # Status contents requested
+            status = {}
             statusIndex = 0
 
             # Get any items pending for the status box (max 4)
             # Listed here in preferential order
-            if (checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Bubbles\Min:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbbpm'], 1))
+
+            if cc['tempFormat'] == 'C':
+                tempSuffix = "&#x2103;"
+            else:
+                tempSuffix = "&#x2109;"
+
+            if checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3):
+                status[statusIndex] = {}
+                statusType = "Bubbles: "
+                statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
+                status[statusIndex].update({statusType: statusValue})
                 statusIndex = statusIndex + 1
-            if (checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Ambient Temp:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbamb'], 1))
+            if checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3):
+                status[statusIndex] = {}
+                statusType= "Ambient Temp: "
+                statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
+                status[statusIndex].update({statusType: statusValue})
                 statusIndex = statusIndex + 1
-            if (checkKey(prevTempJson, 'bbves') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Vessel Temp:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbves'], 1))
+            if checkKey(prevTempJson, 'bbves') and (statusIndex <= 3):
+                status[statusIndex] = {}
+                statusType = "Vessel Temp: "
+                statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
+                status[statusIndex].update({statusType: statusValue})
+                statusIndex = statusIndex + 1
+            if checkKey(prevTempJson, config['tiltColor'] + 'Batt') and (statusIndex <= 3):
+                status[statusIndex] = {}
+                statusType = "Tilt Batt Age: "
+                statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'], 1)) + " wks."
+                status[statusIndex].update({statusType: statusValue})
+                statusIndex = statusIndex + 1
+            if checkKey(prevTempJson, config['tiltColor'] + 'Temp') and (statusIndex <= 3):
+                status[statusIndex] = {}
+                statusType = "Tilt Temp: "
+                statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
+                status[statusIndex].update({statusType: statusValue})
                 statusIndex = statusIndex + 1
 
             # Fill the remaining dict entries with "--"
             for x in range(statusIndex, 4):
-                statusType[x] = "--"
+                statusIndex = x
+                status[statusIndex] = {}
+                status[statusIndex].update({"--": "--"})
 
-            conn.send(json.dumps(statusType).encode('utf-8')) # TODO:  Add capability to retrieve status points
+            # logMessage("DEBUG: ", json.dumps(status).encode('utf-8'))
 
-        elif messageType == "statusValue":  # Status contents requested
-            statusIndex = 0
-
-            # Get any items pending for the status box (max 4)
-            # Listed here in preferential order
-            if (checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Bubbles\Min:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbbpm'], 1))
-                statusIndex = statusIndex + 1
-            if (checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Ambient Temp:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbamb'], 1))
-                statusIndex = statusIndex + 1
-            if (checkKey(prevTempJson, 'bbves') and (statusIndex <= 3)):
-                statusType[statusIndex] = "Vessel Temp:"
-                statusValue[statusIndex] = str(round(prevTempJson['bbves'], 1))
-                statusIndex = statusIndex + 1
-
-            # Fill the remaining dict entries with "--"
-            for x in range(statusIndex, 4):
-                statusValue[x] = "--"
-
-            conn.send(json.dumps(statusValue).encode('utf-8')) # TODO:  Add capability to retrieve status points
-            # def statusJson
-
-            # if checkKey(prevTempJson, 'asd'):
-            #     pass
-            # prevTempJson.update({
-            #     config['tiltColor'] + 'Temp': 0,
-            #     config['tiltColor'] + 'SG': 0,
+            conn.send(json.dumps(status).encode('utf-8')) # TODO:  Add capability to retrieve individual points?
 
         else:  # Invalid message received
             logMessage("ERROR. Received invalid message on socket: " + message)

@@ -1006,32 +1006,34 @@ try:
                 else:
                     tempSuffix = "&#x2109;"
 
-                if checkKey(prevTempJson, 'bbbpm') and (statusIndex <= 3):
+                if checkKey(prevTempJson, 'bbbpm'): # and (statusIndex <= 3):
                     status[statusIndex] = {}
                     statusType = "Airlock: "
                     statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
                     status[statusIndex].update({statusType: statusValue})
                     statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, 'bbamb') and (statusIndex <= 3):
-                    status[statusIndex] = {}
-                    statusType= "Ambient Temp: "
-                    statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
-                    status[statusIndex].update({statusType: statusValue})
-                    statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, 'bbves') and (statusIndex <= 3):
-                    status[statusIndex] = {}
-                    statusType = "Vessel Temp: "
-                    statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
-                    status[statusIndex].update({statusType: statusValue})
-                    statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, config['tiltColor'] + 'Batt') and (statusIndex <= 3):
+                if checkKey(prevTempJson, 'bbamb'): # and (statusIndex <= 3):
+                    if not int(prevTempJson['bbamb']) == -100:
+                        status[statusIndex] = {}
+                        statusType= "Ambient Temp: "
+                        statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
+                        status[statusIndex].update({statusType: statusValue})
+                        statusIndex = statusIndex + 1
+                if checkKey(prevTempJson, 'bbves'): # and (statusIndex <= 3):
+                    if not int(prevTempJson['bbves']) == -100:
+                        status[statusIndex] = {}
+                        statusType = "Vessel Temp: "
+                        statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
+                        status[statusIndex].update({statusType: statusValue})
+                        statusIndex = statusIndex + 1
+                if checkKey(prevTempJson, config['tiltColor'] + 'Batt'): # and (statusIndex <= 3):
                     if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
                         status[statusIndex] = {}
                         statusType = "Tilt Batt Age: "
                         statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'], 1)) + " wks."
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, config['tiltColor'] + 'Temp') and (statusIndex <= 3):
+                if checkKey(prevTempJson, config['tiltColor'] + 'Temp'): # and (statusIndex <= 3):
                     if prevTempJson[config['tiltColor'] + 'Temp'] is not None:
                         status[statusIndex] = {}
                         statusType = "Tilt Temp: "

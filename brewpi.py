@@ -432,9 +432,7 @@ def startNewBrew(newName):
 
 def stopLogging():
     global config
-    logMessage("Stopped data logging as requested in web interface.")
-    logMessage("BrewPi will continue to control temperatures, but will")
-    logMessage("not log any data.")
+    logMessage("Stopped data logging temp control continues.")
     config = util.configSet(configFile, 'beerName', None)
     config = util.configSet(configFile, 'dataLogging', 'stopped')
     changeWwwSetting('beerName', None)
@@ -503,7 +501,6 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
 # Initialise iSpindel and start monitoring
 ispindel = False
 if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
-    import PollForSG
     ispindel = True
     # Create prevTempJson for iSpindel
     prevTempJson.update({
@@ -1060,52 +1057,76 @@ try:
                 status = {}
                 statusIndex = 0
 
-                # Get any items pending for the status box (max 4)
-                # Listed here in preferential order
+                # Get any items pending for the status box
+                # Javascript will determine what/how to display
 
                 if cc['tempFormat'] == 'C':
                     tempSuffix = "&#x2103;"
                 else:
                     tempSuffix = "&#x2109;"
 
-                if checkKey(prevTempJson, 'bbbpm'): # and (statusIndex <= 3):
+                # Begin: Brew Bubbles Items
+                if checkKey(prevTempJson, 'bbbpm'):
                     status[statusIndex] = {}
                     statusType = "Airlock: "
                     statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
                     status[statusIndex].update({statusType: statusValue})
                     statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, 'bbamb'): # and (statusIndex <= 3):
-                    if not int(prevTempJson['bbamb']) == -100:
+                if checkKey(prevTempJson, 'bbamb'):
+                    if not int(prevTempJson['bbamb']) == -100: # filter out disconnected sensors
                         status[statusIndex] = {}
                         statusType= "Ambient Temp: "
                         statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, 'bbves'): # and (statusIndex <= 3):
-                    if not int(prevTempJson['bbves']) == -100:
+                if checkKey(prevTempJson, 'bbves'):
+                    if not int(prevTempJson['bbves']) == -100: # filter out disconnected sensors
                         status[statusIndex] = {}
                         statusType = "Vessel Temp: "
                         statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, config['tiltColor'] + 'Batt'): # and (statusIndex <= 3):
-                    if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
-                        status[statusIndex] = {}
-                        statusType = "Tilt Batt Age: "
-                        statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'], 1)) + " wks."
-                        status[statusIndex].update({statusType: statusValue})
-                        statusIndex = statusIndex + 1
-                if checkKey(prevTempJson, config['tiltColor'] + 'Temp'): # and (statusIndex <= 3):
-                    if prevTempJson[config['tiltColor'] + 'Temp'] is not None:
-                        status[statusIndex] = {}
-                        statusType = "Tilt Temp: "
-                        statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
-                        status[statusIndex].update({statusType: statusValue})
-                        statusIndex = statusIndex + 1
+                # End: Brew Bubbles Items
 
-                # logMessage("DEBUG: ", json.dumps(status).encode('utf-8'))
+                # Begin: Tilt Items
+                if tilt:
+                    if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
+                        if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
+                            if not prevTempJson[config['tiltColor'] + 'Batt'] == 0:
+                                status[statusIndex] = {}
+                                statusType = "Tilt Batt Age: "
+                                statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'], 1)) + " wks"
+                                status[statusIndex].update({statusType: statusValue})
+                                statusIndex = statusIndex + 1
+                    if checkKey(prevTempJson, config['tiltColor'] + 'Temp'): # and (statusIndex <= 3):
+                        if prevTempJson[config['tiltColor'] + 'Temp'] is not None:
+                            if not prevTempJson[config['tiltColor'] + 'Temp'] == 0:
+                                status[statusIndex] = {}
+                                statusType = "Tilt Temp: "
+                                statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
+                                status[statusIndex].update({statusType: statusValue})
+                                statusIndex = statusIndex + 1
+                # End: Tilt Items
 
-                conn.send(json.dumps(status).encode('utf-8')) # TODO:  Add capability to retrieve individual points?
+                # Begin: iSpindel Items
+                if ispindel:
+                    if checkKey(prevTempJson, config['SpinBatt']):
+                        if prevTempJson[config['SpinBatt']] is not None:
+                            status[statusIndex] = {}
+                            statusType = "iSpindel Batt: "
+                            statusValue = str(round(prevTempJson[config['SpinBatt']], 1)) + "VDC"
+                            status[statusIndex].update({statusType: statusValue})
+                            statusIndex = statusIndex + 1
+                    if checkKey(prevTempJson, config['SpinTemp']): # and (statusIndex <= 3):
+                        if prevTempJson[config['SpinTemp']] is not None:
+                            status[statusIndex] = {}
+                            statusType = "iSpindel Temp: "
+                            statusValue = str(round(prevTempJson[config['SpinTemp']], 1)) + tempSuffix
+                            status[statusIndex].update({statusType: statusValue})
+                            statusIndex = statusIndex + 1
+                # End: iSpindel Items
+
+                conn.send(json.dumps(status).encode('utf-8'))
 
             else:  # Invalid message received
                 logMessage("ERROR. Received invalid message on socket: " + message)
@@ -1384,11 +1405,19 @@ except Exception as e:
     logMessage("Caught an unhandled exception, exiting.")
     run = 0 # This should let the loop exit gracefully
 
+# Process a graceful shutdown:
+
 try: bg_ser
 except NameError: bg_ser = None
 if bg_ser is not None:  # If we are running background serial, stop it
     logMessage("Stopping background serial processing.")
     bg_ser.stop()
+
+#==> /home/brewpi/logs/stderr.txt <==
+#Traceback (most recent call last):
+#  File "/home/brewpi/brewpi.py", line 1420, in <module>
+#    tilt.stop()
+#AttributeError: 'bool' object has no attribute 'stop'
 
 try: tilt
 except NameError: tilt = None

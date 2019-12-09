@@ -620,6 +620,7 @@ prevSettingsUpdate = time.time()
 
 # Timestamps to expire values
 lastBbApi = 0
+lastiSpindel = 0
 
 startBeer(config['beerName'])  # Set up files and prep for run
 
@@ -680,13 +681,16 @@ try:
         try:  # Process socket messages
             conn, addr = s.accept()
             conn.setblocking(1)
+
             # Blocking receive, times out in serialCheckInterval
             message = conn.recv(4096).decode(encoding="cp437")
+
             if "=" in message: # Split to message/value if message has an '='
                 messageType, value = message.split("=", 1)
             else:
                 messageType = message
                 value = ""
+
             if messageType == "ack": # Acknowledge request
                 conn.send('ack')
             elif messageType == "lcd": # LCD contents requested
@@ -953,46 +957,104 @@ try:
                 logMessage("Resetting controller to factory defaults.")
                 bg_ser.write("E")
             elif messageType == "api":  # External API Received
+
                 # Receive an API message in JSON key:value pairs
                 # conn.send("Ok")
+
                 try:
                     api = json.loads(value)
-                    apiKey = api['api_key']
 
-                    # BEGIN: Process a Brew Bubbles API POST
-                    if apiKey == "Brew Bubbles":  # received JSON from Brew Bubbles
-                        # Log received line if true, false is short message, none = mute
-                        if outputJson == True:
-                            logMessage("API BB JSON Recvd: " + json.dumps(api))
-                        elif outputJson == False:
-                            logMessage("API Brew Bubbles JSON received.")
+                    if checkKey(api, 'api_key'):
+                        apiKey = api['api_key']
+
+                        # BEGIN: Process a Brew Bubbles API POST
+                        if apiKey == "Brew Bubbles":  # received JSON from Brew Bubbles
+                            # Log received line if true, false is short message, none = mute
+                            if outputJson == True:
+                                logMessage("API BB JSON Recvd: " + json.dumps(api))
+                            elif outputJson == False:
+                                logMessage("API Brew Bubbles JSON received.")
+                            else:
+                                pass  # Don't log JSON messages
+
+                            # Set time of last update
+                            lastBbApi = timestamp = time.time()
+
+                            # Update prevTempJson if keys exist
+                            if checkKey(prevTempJson, 'bbbpm'):
+                                prevTempJson['bbbpm'] = api['bpm']
+                                prevTempJson['bbamb'] = api['ambient']
+                                prevTempJson['bbves'] = api['temp']
+                            # Else, append values to prevTempJson
+                            else:
+                                prevTempJson.update({
+                                    'bbbpm': api['bpm'],
+                                    'bbamb': api['ambient'],
+                                    'bbves': api['temp']
+                                })
+                        # END: Process a Brew Bubbles API POST
+
                         else:
-                            pass  # Don't log JSON messages
+                            logMessage("WARNING: Unknown API key received in JSON:")
+                            logMessage(value)
 
-                        # Set time of last update
-                        lastBbApi = timestamp = time.time()
+                    elif checkKey(api, 'name') and checkKey(api, 'ID') and checkKey(api, 'gravity'): # iSpindel
+                        # {"name":"iSpindel-Yellow","ID":2027057,"angle":76.08078,"temperature":76.8875,"temp_units":"F","battery":4.108446,"gravity":-0.344142,"interval":10,"RSSI":-47}
 
-                        # Update prevTempJson if keys exist
-                        if checkKey(prevTempJson, 'bbbpm'):
-                            prevTempJson['bbbpm'] = api['bpm']
-                            prevTempJson['bbamb'] = api['ambient']
-                            prevTempJson['bbves'] = api['temp']
-                        # Else, append values to prevTempJson
+                        if ispindel and config['iSpindel'] == api['name']:
+
+                            # Log received line if true, false is short message, none = mute
+                            if outputJson:
+                                logMessage("API iSpindel JSON Recvd: " + json.dumps(api))
+                            elif not outputJson:
+                                logMessage("API iSPindel JSON received.")
+                            else:
+                                pass  # Don't log JSON messages
+
+                            # Set time of last update
+                            lastiSpindel = timestamp = time.time()
+
+                            # Convert to proper temp unit
+                            _temp = 0
+                            if cc['tempFormat'] == api['temp_units']:
+                                _temp = api['temperature']
+                            elif cc['tempFormat'] == 'F':
+                                _temp = bc.convert(api['temperature'], 'C', 'F')
+                            else:
+                                _temp = bc.convert(api['temperature'], 'F', 'C')
+
+                            # Update prevTempJson if keys exist
+                            if checkKey(prevTempJson, 'battery'):
+                                prevTempJson['SpinBatt'] = api['battery']
+                                prevTempJson['SpinSG'] = api['gravity']
+                                prevTempJson['SpinTemp'] = _temp
+
+                            # Else, append values to prevTempJson
+                            else:
+                                prevTempJson.update({
+                                    'SpinBatt': api['battery'],
+                                    'SpinSG': api['gravity'],
+                                    'SpinTemp': _temp
+                                })
+
+                        elif not ispindel:
+                            logError('iSpindel packet received but no iSpindel configuration exists in {0}settings/config.cfg'.format(
+                                util.addSlash(sys.path[0])))
+
                         else:
-                            prevTempJson.update({
-                                'bbbpm': api['bpm'],
-                                'bbamb': api['ambient'],
-                                'bbves': api['temp']
-                            })
-                    # END: Process a Brew Bubbles API POST
+                            logError('Received iSpindel packet not matching config in {0}settings/config.cfg'.format(
+                                util.addSlash(sys.path[0])))
 
                     else:
-                        logMessage("WARNING: Unknown API key received in JSON:")
-                        logMessage(value)
+                        logError("Received API message, however no matching configuration exists.")
+
                 except json.JSONDecodeError:
-                    logMessage(
-                        "ERROR: Invalid JSON received from API. String received:")
-                    logMessage(value)
+                    logError(
+                        "Invalid JSON received from API. String received:")
+                    logError(value)
+                except Exception as e:
+                    logError("Unknown error processing API. String received:")
+                    logError(value)
 
             elif messageType == "statusText":  # Status contents requested
                 status = {}
@@ -1126,29 +1188,23 @@ try:
                                             prevTempJson[color + 'SG'] = None
                                             prevTempJson[color + 'Batt'] = None
 
-                            # If we are running iSpindel, get current values
-                            if ispindel:
-                                ispindelreading = PollForSG.getValue()
-                                if ispindelreading is not None:
-                                    prevTempJson['spinTemp'] = round(
-                                        ispindelreading[3], 2)
-                                    prevTempJson['spinBatt'] = round(
-                                        ispindelreading[2], 2)
-                                    prevTempJson['spinSG'] = ispindelreading[1]
-                                else:
-                                    prevTempJson['spinTemp'] = None
-                                    prevTempJson['spinBatt'] = None
-                                    prevTempJson['spinSG'] = None
-
-                            # Expire old keypairs
+                            # Expire old BB keypairs
                             if (time.time() - lastBbApi) > 300:
-                                # Remove BB Api
                                 if checkKey(prevTempJson, 'bbbpm'):
                                     del prevTempJson['bbbpm']
                                 if checkKey(prevTempJson, 'bbamb'):
                                     del prevTempJson['bbamb']
                                 if checkKey(prevTempJson, 'bbves'):
                                     del prevTempJson['bbves']
+
+                            # Expire old iSpindel keypairs
+                            if (time.time() - lastiSpindel) > 300:
+                                if checkKey(prevTempJson, 'SpinSG'):
+                                    prevTempJson['SpinSG'] = None
+                                if checkKey(prevTempJson, 'SpinBatt'):
+                                    prevTempJson['SpinBatt'] = None
+                                if checkKey(prevTempJson, 'SpinTemp'):
+                                    prevTempJson['SpinTemp'] = None
 
                             # Get newRow
                             newRow = prevTempJson

@@ -35,6 +35,9 @@ import time
 import os
 import re
 import Tilt
+from BrewPiUtil import Unbuffered
+from BrewPiUtil import logMessage
+from BrewPiUtil import logError
 
 
 def fixJson(j):
@@ -46,6 +49,7 @@ def fixJson(j):
 
 
 def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
+    logMessage("DEBUG:  brewpiJson.addRow() - ", row)
     jsonFile = open(jsonFileName, "r+")
     # jsonFile.seek(-3, 2)  # Go insert point to add the last row
     jsonFile.seek(0, os.SEEK_END)
@@ -122,12 +126,10 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
 
     # Write iSpindel values
     elif iSpindel:
-        jsonFile.write(",")
-
-        if row['SpinTemp'] is None:
-            jsonFile.write("null,")
+        if row['spinSG'] is None:
+            jsonFile.write(",null,")
         else:
-            jsonFile.write("{\"v\":" + str(row['SpinTemp']) + "},")
+            jsonFile.write(",{\"v\":" + str(row['spinSG']) + "}")
 
     # rewrite end of json file
     jsonFile.write("]}]}")

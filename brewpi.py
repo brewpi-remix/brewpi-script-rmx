@@ -471,9 +471,9 @@ if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
     ispindel = True
     # Create prevTempJson for iSpindel
     prevTempJson.update({
-        'SpinSG': 0,
-        'SpinBatt': 0,
-        'SpinTemp': 0
+        'spinSG': 0,
+        'spinBatt': 0,
+        'spinTemp': 0
     })
 
 
@@ -612,9 +612,9 @@ def renameTempKey(key):
         'tg': 'TiltSG',
         'tt': 'TiltTemp',
         'tb': 'TiltBatt',
-        'sg': 'SpinSG',
-        'st': 'SpinTemp',
-        'sb': 'SpinBatt'}
+        'sg': 'spinSG',
+        'st': 'spinTemp',
+        'sb': 'spinBatt'}
     return rename.get(key, key)
 
 
@@ -988,16 +988,16 @@ try:
 
                             # Update prevTempJson if keys exist
                             if checkKey(prevTempJson, 'battery'):
-                                prevTempJson['SpinBatt'] = api['battery']
-                                prevTempJson['SpinSG'] = api['gravity']
-                                prevTempJson['SpinTemp'] = _temp
+                                prevTempJson['spinBatt'] = api['battery']
+                                prevTempJson['spinSG'] = api['gravity']
+                                prevTempJson['spinTemp'] = _temp
 
                             # Else, append values to prevTempJson
                             else:
                                 prevTempJson.update({
-                                    'SpinBatt': api['battery'],
-                                    'SpinSG': api['gravity'],
-                                    'SpinTemp': _temp
+                                    'spinBatt': api['battery'],
+                                    'spinSG': api['gravity'],
+                                    'spinTemp': _temp
                                 })
 
                         elif not ispindel:
@@ -1076,18 +1076,18 @@ try:
 
                 # Begin: iSpindel Items
                 if ispindel is not None:
-                    if checkKey(prevTempJson, 'SpinBatt'):
-                        if prevTempJson['SpinBatt'] is not None:
+                    if checkKey(prevTempJson, 'spinBatt'):
+                        if prevTempJson['spinBatt'] is not None:
                             status[statusIndex] = {}
                             statusType = "iSpindel Batt: "
-                            statusValue = str(round(prevTempJson['SpinBatt'], 1)) + "VDC"
+                            statusValue = str(round(prevTempJson['spinBatt'], 1)) + "VDC"
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
-                    if checkKey(prevTempJson, 'SpinTemp'):
-                        if prevTempJson['SpinTemp'] is not None:
+                    if checkKey(prevTempJson, 'spinTemp'):
+                        if prevTempJson['spinTemp'] is not None:
                             status[statusIndex] = {}
                             statusType = "iSpindel Temp: "
-                            statusValue = str(round(prevTempJson['SpinTemp'], 1)) + tempSuffix
+                            statusValue = str(round(prevTempJson['spinTemp'], 1)) + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                 # End: iSpindel Items
@@ -1186,12 +1186,12 @@ try:
 
                             # Expire old iSpindel keypairs
                             if (time.time() - lastiSpindel) > 300:
-                                if checkKey(prevTempJson, 'SpinSG'):
-                                    prevTempJson['SpinSG'] = None
-                                if checkKey(prevTempJson, 'SpinBatt'):
-                                    prevTempJson['SpinBatt'] = None
-                                if checkKey(prevTempJson, 'SpinTemp'):
-                                    prevTempJson['SpinTemp'] = None
+                                if checkKey(prevTempJson, 'spinSG'):
+                                    prevTempJson['spinSG'] = None
+                                if checkKey(prevTempJson, 'spinBatt'):
+                                    prevTempJson['spinBatt'] = None
+                                if checkKey(prevTempJson, 'spinTemp'):
+                                    prevTempJson['spinTemp'] = None
 
                             # Get newRow
                             newRow = prevTempJson
@@ -1200,7 +1200,7 @@ try:
                             if outputJson == True:      # Log full JSON
                                 logMessage("Update: " + json.dumps(newRow))
                             elif outputJson == False:   # Log only a notice
-                                logMessage('New JSON received.')
+                                logMessage('New JSON received from controller.')
                             else:                       # Don't log JSON messages
                                 pass
 
@@ -1287,7 +1287,7 @@ try:
                                 # If we are configured to run an iSpindel
                                 if ispindel:
                                     lineToWrite += (delim +
-                                                    json.dumps(newRow['SpinSG']))
+                                                    json.dumps(newRow['spinSG']))
 
                                 lineToWrite += '\r\n'
                                 csvFile.write(lineToWrite)

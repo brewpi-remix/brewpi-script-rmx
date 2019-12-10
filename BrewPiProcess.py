@@ -80,7 +80,7 @@ class BrewPiProcess:
         if self.sock is not None:
             conn = self.sock.connect()
             if conn:
-                conn.send('quit')
+                conn.send('quit'.encode(encoding="cp437"))
                 conn.close()  # Do not shutdown the socket, other processes are still connected to it.
                 print("Quit message sent to BrewPi instance with pid %s." % self.pid)
                 return True
@@ -106,14 +106,14 @@ class BrewPiProcess:
         if self.pid == otherProcess.pid:
             return 0  # This is me! I don't have a conflict with myself
         if otherProcess.cfg == self.cfg:
-            print("Conflict: same config file as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same config file is already running.")
             return 1
         if otherProcess.port == self.port:
-            print("Conflict: same serial port as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same serial port is already running.")
             return 1
         if [otherProcess.sock.type, otherProcess.sock.file, otherProcess.sock.host, otherProcess.sock.port] == \
                 [self.sock.type, self.sock.file, self.sock.host, self.sock.port]:
-            print("Conflict: same socket as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same BEERSOCKET is already running.")
             return 1
         return 0
 
@@ -168,7 +168,8 @@ class BrewPiProcesses():
             # Get path from arguments and use that to build default path to config
             cfg = os.path.dirname(str(bps)).translate(str.maketrans('', '', r"[]'")) + '/settings/config.cfg'
         bp.cfg = util.readCfgWithDefaults(cfg)
-        bp.port = bp.cfg['port']
+        if bp.cfg['port'] is not None:
+            bp.port = bp.cfg['port']
         bp.sock = BrewPiSocket.BrewPiSocket(bp.cfg)
         return bp
 

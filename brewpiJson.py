@@ -124,10 +124,10 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
     elif iSpindel:
         jsonFile.write(",")
 
-        if row['spinTemp'] is None:
+        if row['SpinTemp'] is None:
             jsonFile.write("null,")
         else:
-            jsonFile.write("{\"v\":" + str(row['spinTemp']) + "},")
+            jsonFile.write("{\"v\":" + str(row['SpinTemp']) + "},")
 
     # rewrite end of json file
     jsonFile.write("]}]}")

@@ -45,44 +45,9 @@ import sys
 import stat
 import pwd
 import grp
-
-if sys.version_info < (3, 7):  # Check needed software dependencies
-    print("\nSorry, requires Python 3.7+.", file=sys.stderr)
-    sys.exit(1)
-
-# import sentry_sdk
-# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
-try:  # Load non standard packages, exit if they are not installed
-    import serial
-    if LooseVersion(serial.VERSION) < LooseVersion("3.0"):
-        print("\nBrewPi requires pyserial 3.0, you have version {0} installed.\n".format(serial.VERSION),
-              "\nPlease upgrade pyserial via pip, by running:\n",
-              "  sudo pip install pyserial --upgrade\n",
-              "\nIf you do not have pip installed, install it with:\n",
-              "  sudo apt install python3-pip", file=sys.stderr)
-        sys.exit(1)
-except ImportError:
-    print("\nBrewPi requires PySerial to run, please install it via pip, by running:\n",
-          "  sudo pip3 install pyserial --upgrade\n",
-          "\nIf you do not have pip installed, install it by running:\n",
-          "  sudo apt install python3-pip", file=sys.stderr)
-    sys.exit(1)
-try:
-    import simplejson as json
-except ImportError:
-    print("\nBrewPi requires simplejson to run, please install it by running\n",
-          "  sudo pip3 install simplejson", file=sys.stderr)
-    sys.exit(1)
-try:
-    from configobj import ConfigObj
-except ImportError:
-    print("\nBrewPi requires ConfigObj to run, please install it by running\n",
-          "  sudo pip3 install configobj", file=sys.stderr)
-    sys.exit(1)
-
-
-# Local Imports
+import serial
+import simplejson as json
+from configobj import ConfigObj
 import temperatureProfile
 import programController as programmer
 import brewpiJson
@@ -97,6 +62,12 @@ import BrewPiProcess
 from backgroundserial import BackGroundSerial
 import BrewConvert
 
+if sys.version_info < (3, 7):  # Check needed software dependencies
+    print("\nSorry, requires Python 3.7+.", file=sys.stderr)
+    sys.exit(1)
+
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 compatibleHwVersion = "0.2.4"
 
@@ -255,10 +226,8 @@ if logToFiles:
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
     sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
-    #sys.stderr = open(logPath + 'stderr.txt', 'a', 0)
     # Overwrite stdout, unbuffered
     sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
-    #sys.stdout = open(logPath + 'stdout.txt', 'w', 0)
 
 
 # Get www json setting with default
@@ -418,7 +387,7 @@ def startBeer(beerName):
 
 def startNewBrew(newName):
     global config
-    if len(newName) > 1:     # Shorter names are probably invalid
+    if len(newName) > 1:
         config = util.configSet(configFile, 'beerName', newName)
         config = util.configSet(configFile, 'dataLogging', 'active')
         startBeer(newName)
@@ -441,9 +410,7 @@ def stopLogging():
 
 def pauseLogging():
     global config
-    logMessage("Paused logging data, as requested in web interface.")
-    logMessage("BrewPi will continue to control temperatures, but will")
-    logMessage("not log any data until resumed.")
+    logMessage("Paused logging data, temp control continues.")
     if config['dataLogging'] == 'active':
         config = util.configSet(configFile, 'dataLogging', 'paused')
         return {'status': 0, 'statusMessage': "Successfully paused logging."}
@@ -453,7 +420,7 @@ def pauseLogging():
 
 def resumeLogging():
     global config
-    logMessage("Continued logging data, as requested in web interface.")
+    logMessage("Continued logging data.")
     if config['dataLogging'] == 'paused':
         config = util.configSet(configFile, 'dataLogging', 'active')
         return {'status': 0, 'statusMessage': "Successfully continued logging."}
@@ -470,7 +437,7 @@ if not ser:
 prevTempJson = {}
 thread = False
 threads = []
-tilt = False
+tilt = None
 
 
 # Initialize prevTempJson with base values:
@@ -499,7 +466,7 @@ if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
     })
 
 # Initialise iSpindel and start monitoring
-ispindel = False
+ispindel = None
 if checkKey(config, 'iSpindel') and config['iSpindel'] != "":
     ispindel = True
     # Create prevTempJson for iSpindel
@@ -996,15 +963,14 @@ try:
                             logMessage(value)
 
                     elif checkKey(api, 'name') and checkKey(api, 'ID') and checkKey(api, 'gravity'): # iSpindel
-                        # {"name":"iSpindel-Yellow","ID":2027057,"angle":76.08078,"temperature":76.8875,"temp_units":"F","battery":4.108446,"gravity":-0.344142,"interval":10,"RSSI":-47}
 
-                        if ispindel and config['iSpindel'] == api['name']:
+                        if ispindel is not None and config['iSpindel'] == api['name']:
 
                             # Log received line if true, false is short message, none = mute
                             if outputJson:
                                 logMessage("API iSpindel JSON Recvd: " + json.dumps(api))
                             elif not outputJson:
-                                logMessage("API iSPindel JSON received.")
+                                logMessage("API iSpindel JSON received.")
                             else:
                                 pass  # Don't log JSON messages
 
@@ -1109,19 +1075,19 @@ try:
                 # End: Tilt Items
 
                 # Begin: iSpindel Items
-                if ispindel:
-                    if checkKey(prevTempJson, config['SpinBatt']):
-                        if prevTempJson[config['SpinBatt']] is not None:
+                if ispindel is not None:
+                    if checkKey(prevTempJson, 'SpinBatt'):
+                        if prevTempJson['SpinBatt'] is not None:
                             status[statusIndex] = {}
                             statusType = "iSpindel Batt: "
-                            statusValue = str(round(prevTempJson[config['SpinBatt']], 1)) + "VDC"
+                            statusValue = str(round(prevTempJson['SpinBatt'], 1)) + "VDC"
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
-                    if checkKey(prevTempJson, config['SpinTemp']): # and (statusIndex <= 3):
-                        if prevTempJson[config['SpinTemp']] is not None:
+                    if checkKey(prevTempJson, 'SpinTemp'):
+                        if prevTempJson['SpinTemp'] is not None:
                             status[statusIndex] = {}
                             statusType = "iSpindel Temp: "
-                            statusValue = str(round(prevTempJson[config['SpinTemp']], 1)) + tempSuffix
+                            statusValue = str(round(prevTempJson['SpinTemp'], 1)) + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                 # End: iSpindel Items
@@ -1187,7 +1153,7 @@ try:
                                 prevTempJson[renameTempKey(key)] = newData[key]
 
                             # If we are running Tilt, get current values
-                            if tilt:
+                            if tilt is not None:
                                 # Check each of the Tilt colors
                                 for color in Tilt.TILT_COLORS:
                                     # Only log the Tilt if the color matches the config
@@ -1239,7 +1205,7 @@ try:
                                 pass
 
                             # Add row to JSON file
-                            # Handle if we are runing Tilt or iSpindel
+                            # Handle if we are running Tilt or iSpindel
                             if checkKey(config, 'tiltColor'):
                                 brewpiJson.addRow(
                                     localJsonFileName, newRow, config['tiltColor'], None)
@@ -1401,9 +1367,9 @@ except KeyboardInterrupt:
     logMessage("Detected keyboard interrupt, exiting.")
     run = 0 # This should let the loop exit gracefully
 
-except Exception as e:
-    logMessage("Caught an unhandled exception, exiting.")
-    run = 0 # This should let the loop exit gracefully
+#except Exception as e:
+#    logMessage("Caught an unhandled exception, exiting.")
+#    run = 0 # This should let the loop exit gracefully
 
 # Process a graceful shutdown:
 

@@ -111,7 +111,6 @@ class Tilt:
         These values will be calibrated before storing if calibration is
         enabled
         """
-        #print("DEBUG:  Tilt name: {}, temp = {}, grav = {}, batt = {}.".format(color, temperature, gravity, battery))
         self.cleanValues()
         self.calibrate()
         calTemp = self.tempCal(temperature)
@@ -171,10 +170,6 @@ class Tilt:
         for i in range(len(self.values)):
             values = self.values[i]
             batteryValues.append(values.battery)
-
-        #from pprint import pprint as pp
-        #print('DEBUG:  Battery Values:')
-        #pp(batteryValues)
         return max(batteryValues)
 
     def medianValues(self, window=3):
@@ -458,7 +453,6 @@ class TiltManager:
         packet.decode(data)
         response = self.decode(packet)
         if response:
-            #print("{}".format(response)) # TODO DEBUG
             tiltdata = json.loads(response.decode('utf-8', 'ignore'))
             color = self.tiltName(tiltdata['uuid'])
             gravity = int(tiltdata['minor']) / 1000  # Specific gravity

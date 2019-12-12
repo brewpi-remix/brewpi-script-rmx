@@ -66,8 +66,8 @@ if sys.version_info < (3, 7):  # Check needed software dependencies
     print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
 
-# import sentry_sdk
-# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+import sentry_sdk
+sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 compatibleHwVersion = "0.2.4"
 
@@ -187,6 +187,7 @@ config = util.readCfgWithDefaults(configFile)
 
 dontRunFilePath = '{0}do_not_run_brewpi'.format(
     util.addSlash(config['wwwPath']))
+
 # Check dont run file when it exists and exit it it does
 if checkDontRunFile:
     if os.path.exists(dontRunFilePath):
@@ -438,6 +439,7 @@ prevTempJson = {}
 thread = False
 threads = []
 tilt = None
+tiltbridge = False
 
 
 # Initialize prevTempJson with base values:
@@ -585,6 +587,7 @@ prevSettingsUpdate = time.time()
 # Timestamps to expire values
 lastBbApi = 0
 lastiSpindel = 0
+lastTiltbridge = 0
 
 startBeer(config['beerName'])  # Set up files and prep for run
 
@@ -932,7 +935,7 @@ try:
                         apiKey = api['api_key']
 
                         # BEGIN: Process a Brew Bubbles API POST
-                        if apiKey == "Brew Bubbles":  # received JSON from Brew Bubbles
+                        if apiKey == "Brew Bubbles":  # Received JSON from Brew Bubbles
                             # Log received line if true, false is short message, none = mute
                             if outputJson == True:
                                 logMessage("API BB JSON Recvd: " + json.dumps(api))
@@ -962,6 +965,7 @@ try:
                             logMessage("WARNING: Unknown API key received in JSON:")
                             logMessage(value)
 
+                    # Begin: iSpindel Processing
                     elif checkKey(api, 'name') and checkKey(api, 'ID') and checkKey(api, 'gravity'): # iSpindel
 
                         if ispindel is not None and config['iSpindel'] == api['name']:
@@ -1007,6 +1011,48 @@ try:
                         else:
                             logError('Received iSpindel packet not matching config in {0}settings/config.cfg'.format(
                                 util.addSlash(sys.path[0])))
+                    # End: iSpindel Processing
+
+                    # Begin: Tiltbridge Processing
+                    elif checkKey(api, 'mdns_id') and checkKey(api, 'tilts'):
+                        # Received JSON from Tiltbridge
+                        # Log received line if true, false is short message, none = mute
+                        if outputJson == True:
+                            logMessage("API TB JSON Recvd: " + json.dumps(api))
+                        elif outputJson == False:
+                            logMessage("API Tiltbridge JSON received.")
+                        else:
+                            pass  # Don't log JSON messages
+
+                        # Loop through (value) and match config["tiltColor"]
+                        for t in api:
+                            if t == "tilts":
+                                for c in api['tilts']:
+                                    if c == config["tiltColor"]:
+                                        # Found, turn off regular Tilt
+                                        if tiltbridge == False:
+                                            logMessage("Turned on Tiltbridge.")
+                                            tiltbridge = True
+                                            try:
+                                               tilt
+                                            except NameError:
+                                               tilt = None
+                                            if tilt is not None:  # If we are running a Tilt, stop it
+                                               logMessage("Stopping Tilt.")
+                                               tilt.stop()
+                                               tilt = None
+
+                                        # Set time of last update
+                                        lastTiltbridge = timestamp = time.time()
+                                        _temp = api['tilts'][config['tiltColor']]['temp']
+                                        if cc['tempFormat'] == 'C':
+                                            _temp = round(bc.convert(_temp, 'F', 'C'), 1)
+                                        prevTempJson[config["tiltColor"] + 'Temp'] = round(_temp, 1)
+                                        prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity'])
+                                        #  TODO:  prevTempJson[config["tiltColor"] + 'Batt'] = api['tilts'][config['tiltColor']]['batt']
+                                        prevTempJson[config["tiltColor"] + 'Batt'] = None
+
+                    # END:  Tiltbridge Processing
 
                     else:
                         logError("Received API message, however no matching configuration exists.")
@@ -1055,7 +1101,16 @@ try:
                 # End: Brew Bubbles Items
 
                 # Begin: Tilt Items
-                if tilt:
+                if tilt or tiltbridge:
+                    if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                        if not prevTempJson[config['tiltColor'] + 'Temp'] == 0: # Use as a check to see if it's online
+                            if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                                if prevTempJson[config['tiltColor'] + 'SG'] is not None:
+                                    status[statusIndex] = {}
+                                    statusType = "Tilt SG: "
+                                    statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
+                                    status[statusIndex].update({statusType: statusValue})
+                                    statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
                         if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
                             if not prevTempJson[config['tiltColor'] + 'Batt'] == 0:
@@ -1076,6 +1131,14 @@ try:
 
                 # Begin: iSpindel Items
                 if ispindel is not None:
+                    if config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                        if checkKey(prevTempJson, 'spinSG'):
+                            if prevTempJson['spinSG'] is not None:
+                                status[statusIndex] = {}
+                                statusType = "iSpindel SG: "
+                                statusValue = str(prevTempJson['spinSG'])
+                                status[statusIndex].update({statusType: statusValue})
+                                statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'spinBatt'):
                         if prevTempJson['spinBatt'] is not None:
                             status[statusIndex] = {}
@@ -1153,7 +1216,7 @@ try:
                                 prevTempJson[renameTempKey(key)] = newData[key]
 
                             # If we are running Tilt, get current values
-                            if tilt is not None:
+                            if (tilt is not None) and (tiltbridge is not None):
                                 # Check each of the Tilt colors
                                 for color in Tilt.TILT_COLORS:
                                     # Only log the Tilt if the color matches the config
@@ -1192,6 +1255,17 @@ try:
                                     prevTempJson['spinBatt'] = None
                                 if checkKey(prevTempJson, 'spinTemp'):
                                     prevTempJson['spinTemp'] = None
+
+                            # Expire old Tiltbridge values
+                            if (time.time() - lastTiltbridge) > 300:
+                                tiltbridge = False # Turn off Tiltbridge in case we switched to BT
+                                logMessage("Turned off Tiltbridge.")
+                                if checkKey(prevTempJson, color + 'Temp'):
+                                    prevTempJson[color + 'Temp'] = None
+                                if checkKey(prevTempJson, color + 'SG'):
+                                    prevTempJson[color + 'SG'] = None
+                                if checkKey(prevTempJson, color + 'Batt'):
+                                    prevTempJson[color + 'Batt'] = None
 
                             # Get newRow
                             newRow = prevTempJson
@@ -1367,9 +1441,9 @@ except KeyboardInterrupt:
     logMessage("Detected keyboard interrupt, exiting.")
     run = 0 # This should let the loop exit gracefully
 
-#except Exception as e:
-#    logMessage("Caught an unhandled exception, exiting.")
-#    run = 0 # This should let the loop exit gracefully
+except Exception as e:
+    logMessage("Caught an unhandled exception, exiting.")
+    run = 0 # This should let the loop exit gracefully
 
 # Process a graceful shutdown:
 
@@ -1378,12 +1452,6 @@ except NameError: bg_ser = None
 if bg_ser is not None:  # If we are running background serial, stop it
     logMessage("Stopping background serial processing.")
     bg_ser.stop()
-
-#==> /home/brewpi/logs/stderr.txt <==
-#Traceback (most recent call last):
-#  File "/home/brewpi/brewpi.py", line 1420, in <module>
-#    tilt.stop()
-#AttributeError: 'bool' object has no attribute 'stop'
 
 try: tilt
 except NameError: tilt = None

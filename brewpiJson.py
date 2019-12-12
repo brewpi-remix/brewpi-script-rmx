@@ -49,7 +49,6 @@ def fixJson(j):
 
 
 def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
-    logMessage("DEBUG:  brewpiJson.addRow() - ", row)
     jsonFile = open(jsonFileName, "r+")
     # jsonFile.seek(-3, 2)  # Go insert point to add the last row
     jsonFile.seek(0, os.SEEK_END)

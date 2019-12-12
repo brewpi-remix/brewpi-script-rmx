@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018, 2019  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,10 +30,9 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
 
 import threading
-import Queue
+import queue
 import sys
 import time
 from BrewPiUtil import printStdErr
@@ -41,12 +40,14 @@ from BrewPiUtil import logMessage
 from serial import SerialException
 from expandLogMessage import filterOutLogMessages
 
+import BrewPiUtil
+
 class BackGroundSerial():
     def __init__(self, serial_port):
         self.buffer = ''
         self.ser = serial_port
-        self.queue = Queue.Queue()
-        self.messages = Queue.Queue()
+        self.queue = queue.Queue()
+        self.messages = queue.Queue()
         self.thread = None
         self.error = False
         self.fatal_error = None
@@ -73,14 +74,14 @@ class BackGroundSerial():
         self.exit_on_fatal_error()
         try:
             return self.queue.get_nowait()
-        except Queue.Empty:
+        except queue.Empty:
             return None
 
     def read_message(self):
         self.exit_on_fatal_error()
         try:
             return self.messages.get_nowait()
-        except Queue.Empty:
+        except queue.Empty:
             return None
 
     def write(self, data):
@@ -88,7 +89,7 @@ class BackGroundSerial():
         # prevent writing to a port in error state. This will leave unclosed handles to serial on the system
         if not self.error:
             try:
-                self.ser.write(data)
+                self.ser.write(data.encode(encoding="cp437"))
             except (IOError, OSError, SerialException) as e:
                 logMessage('Serial Error: {0})'.format(str(e)))
                 self.error = True
@@ -111,7 +112,7 @@ class BackGroundSerial():
                 try:
                     #in_waiting = self.ser.inWaiting() # WiFi Change
                     in_waiting = self.ser.readline()
-                    if in_waiting > 0:
+                    if in_waiting:
                         #new_data = self.ser.read(in_waiting) # WiFi Change
                         new_data = in_waiting
                         lastReceive = time.time()
@@ -120,7 +121,7 @@ class BackGroundSerial():
                     self.error = True
 
             if new_data:
-                self.buffer = self.buffer + new_data
+                self.buffer = self.buffer + new_data.decode(encoding="cp437")
                 line = self.__get_line_from_buffer()
                 if line:
                     self.queue.put(line)
@@ -162,8 +163,7 @@ class BackGroundSerial():
 
     # remove extended ascii characters from string, because they can raise UnicodeDecodeError later
     def __asciiToUnicode(self, s):
-        s = s.replace(chr(0xB0), '&deg')
-        return unicode(s, 'ascii', 'ignore')
+        return BrewPiUtil.asciiToUnicode(s)
 
 if __name__ == '__main__':
     # some test code that requests data from serial and processes the response json

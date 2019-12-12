@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -30,8 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import absolute_import
-from __future__ import print_function
+
 from serial.tools import list_ports
 import BrewPiUtil
 
@@ -93,7 +92,7 @@ def detect_port(bootLoader = False, my_port = None):
     """
     if my_port == "auto":
         my_port = None
-        
+
     port = (None, None)
     ports = find_compatible_serial_ports(bootLoader=bootLoader, my_port=my_port)
 

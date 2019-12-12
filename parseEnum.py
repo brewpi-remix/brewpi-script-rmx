@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-# Copyright (C) 2018  Lee C. Bussy (@LBussy)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -33,29 +33,28 @@
 import re
 
 def parseEnumInFile(hFilePath, enumName):
-        messageDict = {}
-        hFile = open(hFilePath)
-        regex = re.compile("[A-Z]+\(([A-Za-z][A-Z0-9a-z_]*),\s*\"([^\"]*)\"((?:\s*,\s*[A-Za-z][A-Z0-9a-z_\.]*\s*)*)\)\s*,?")
-        for line in hFile:
-                if 'enum ' + enumName in line:
-                        break  # skip lines until enum open is encountered
+    messageDict = {}
+    hFile = open(hFilePath)
+    regex = re.compile("[A-Z]+\(([A-Za-z][A-Z0-9a-z_]*),\s*\"([^\"]*)\"((?:\s*,\s*[A-Za-z][A-Z0-9a-z_\.]*\s*)*)\)\s*,?")
+    for line in hFile:
+        if 'enum ' + enumName in line:
+            break  # skip lines until enum open is encountered
 
-        count = 0
-        for line in hFile:
-                if 'MSG(' in line:
-                        # print line
-                        # print regex
-                        # r = regex.search(str(line))
-                        groups = regex.findall(line)
-                        logKey = groups[0][0]
-                        logString = groups[0][1]
-                        paramNames = groups[0][2].replace(",", " ").split()
-                        messageDict[count] = {'logKey': logKey, 'logString': logString,'paramNames': paramNames}
-                        count += 1
+    count = 0
+    for line in hFile:
+        if 'MSG(' in line:
+            # print line
+            # print regex
+            # r = regex.search(str(line))
+            groups = regex.findall(line)
+            logKey = groups[0][0]
+            logString = groups[0][1]
+            paramNames = groups[0][2].replace(",", " ").split()
+            messageDict[count] = {'logKey': logKey, 'logString': logString,'paramNames': paramNames}
+            count += 1
 
-                if 'END enum ' + enumName in line:
-                        break
+        if 'END enum ' + enumName in line:
+            break
 
-        hFile.close()
-        return messageDict
-
+    hFile.close()
+    return messageDict

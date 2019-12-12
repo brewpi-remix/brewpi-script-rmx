@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import sys
 from sys import path, stderr, stdout, platform
 import os
@@ -50,7 +50,7 @@ try:
     import configobj
 except ImportError:
     print("\nBrewPi requires ConfigObj to run, please install it with \n"
-          "'sudo apt-get install python-configobj")
+          "'sudo pip3 install configobj")
     exit(1)
 
 
@@ -170,7 +170,7 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
     if not os.path.isfile(path):
         try:
             with open(path, 'w'):
-                    os.utime(path, None)
+                os.utime(path, None)
             # Set owner and permissions for file
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
             owner = 'brewpi'
@@ -270,7 +270,7 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
     dontRunFilePath = '{0}do_not_run_brewpi'.format(wwwPath)
 
     printStdErr("\nStopping this chamber's instance(s) of BrewPi to check/update controller.")
-    
+
     # Create do not run file
     dontRunCreated = False
     try:
@@ -354,8 +354,25 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
         return None
 
 
-def asciiToUnicode(s):
+# def asciiToUnicode(s):
     # Remove extended ascii characters from string, because they can raise
     # UnicodeDecodeError later
-    s = s.replace(chr(0xB0), '&deg')
-    return unicode(s, 'ascii', 'ignore')
+def asciiToUnicode(s):
+    #deg_symbol = bytes([0xB0]).decode(encoding="utf-8").strip()
+    #s = s.replace(deg_symbol, '&deg')
+    # This does nothing anymore
+    return s
+
+
+# Add unbuffered capabilities back for Python3
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)

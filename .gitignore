@@ -17,6 +17,7 @@ utils/downloads/
 # Compiled Python files
 =======
 *.py[co]
+__pycache__
 
 # Packages
 *.egg

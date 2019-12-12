@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,8 +30,8 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
-import urllib2
+
+from urllib.request import urlopen
 import simplejson as json
 import os
 import pwd
@@ -60,7 +60,7 @@ class gitHubReleases:
             :return:        Full path to file
         """
         try:
-            f = urllib2.urlopen(url)
+            f = urlopen.urlopen(url)
             print("\nDownloading from: \n{0}".format(url))
 
             # Open our local file for writing
@@ -79,9 +79,9 @@ class gitHubReleases:
             return os.path.abspath(fileName)
 
         #handle errors
-        except urllib2.HTTPError as e:
+        except urlopen.HTTPError as e:
             print("HTTP Error: {0} {1}".format(e.code, url))
-        except urllib2.URLError as e:
+        except urlopen.URLError as e:
             print("URL Error: {0} {1}".format(e.reason, url))
         return None
 
@@ -89,7 +89,10 @@ class gitHubReleases:
         """
         Update myself by downloading a list of releases from GitHub
         """
-        self.releases = json.load(urllib2.urlopen(self.url + "/releases"))
+        #with urlopen(self.url + "/releases") as url:
+        #    self.releases = url.read()
+
+        self.releases = json.loads(urlopen(self.url + "/releases").read().decode('utf-8'))
 
     def findByTag(self, tag):
         """
@@ -126,7 +129,7 @@ class gitHubReleases:
 
     def getBin(self, tag, wordsInFileName, path=None):
         """
-        Writes .bin file in release to target directory. Defaults to 
+        Writes .bin file in release to target directory. Defaults to
         ~/downloads/tag_name/ as download location
 
             :param tag:             Tag name of the release
@@ -154,6 +157,7 @@ class gitHubReleases:
             :param board:   Board name
             :return:        Tag of release
         """
+
         for release in self.releases:
             # search for stable release
             tag = release["tag_name"]
@@ -162,39 +166,13 @@ class gitHubReleases:
                     return tag
         return None
 
-    # def containsSystemImage(self, tag):
-    #     """
-    #     Check whether the release contains a new system image for the Photon
-    #         :param tag:     Release tag
-    #         :return:        True if release contains a system image
-    #     """
-    #     return self.getBinUrl(tag, ['photon', 'system-part1', '.bin']) is not None
-
-    # def getLatestTagForSystem(self, prerelease, since = "0.0.0"):
-    #     """
-    #     Query what the latest tag was for which a system image was included
-    #         :param prerelease:  True if pre-releases should be included
-    #         :param since:       Exclude system images older or equal than
-    #                             version included with this version number
-    #     :return: release tag
-    #     """
-    #     for release in self.releases:
-    #         # search for stable release
-    #         tag = release["tag_name"]
-    #         if LooseVersion(tag) <= LooseVersion(since):
-    #             continue
-    #         if not prerelease and release["prerelease"] == True:
-    #             continue
-    #         if self.containsSystemImage(tag):
-    #             return tag
-    #     return None
-
     def getTags(self, prerelease):
         """
         Get all available tags in repository
             :param prerelease:  True if unstable (prerelease) tags should be included
             :return:            List of tags
         """
+
         if prerelease:
             return [release["tag_name"] for release in self.releases]
         else:
@@ -238,18 +216,11 @@ def extract_values(obj, key):
     return results
 
 if __name__ == "__main__":
-    # test code
+    # Test code
     releases = gitHubReleases(repo)
+
     latest = releases.getLatestTag('uno', False)
     print("Latest tag: " + latest)
-    # print "Downloading hex for latest tag."
-    # localFileName = releases.getBin(latest, ["uno", "hex"])
-    # if localFileName:
-    #     print "Latest hex file downloaded to: \n" + localFileName
-
     print("Stable releases: ", releases.getTags(prerelease=False))
     print("All releases: ", releases.getTags(prerelease=True))
     print("All supported shields: ", releases.getShields())
-
-    #print "Latest stable system image in: ", releases.getLatestTagForSystem(prerelease=False)
-    #print "Latest beta system image in: ", releases.getLatestTagForSystem(prerelease=True)

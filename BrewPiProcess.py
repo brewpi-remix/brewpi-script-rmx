@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import pprint
 import os
 import sys
@@ -43,13 +43,13 @@ try:
         print("Your version of pstuil is %s \n" \
         "BrewPi requires psutil 2.0 or higher, please upgrade your version of psutil.\n" \
         "This can best be done via pip, please run:\n" \
-        "  sudo apt-get install build-essential python-dev python-pip\n" \
-        "  sudo pip install psutil --upgrade\n" % psutil.__version__, file=sys.stderr)
+        "  sudo apt install python3-pip\n" \
+        "  sudo pip3 install psutil --upgrade\n" % psutil.__version__, file=sys.stderr)
         sys.exit(1)
 
 except ImportError:
     print("BrewPi requires psutil to run, please install it via pip:")
-    print("  sudo pip install psutil --upgrade")
+    print("  sudo pip3 install psutil --upgrade")
     sys.exit(1)
 
 import BrewPiSocket
@@ -80,7 +80,7 @@ class BrewPiProcess:
         if self.sock is not None:
             conn = self.sock.connect()
             if conn:
-                conn.send('quit')
+                conn.send('quit'.encode(encoding="cp437"))
                 conn.close()  # Do not shutdown the socket, other processes are still connected to it.
                 print("Quit message sent to BrewPi instance with pid %s." % self.pid)
                 return True
@@ -106,14 +106,14 @@ class BrewPiProcess:
         if self.pid == otherProcess.pid:
             return 0  # This is me! I don't have a conflict with myself
         if otherProcess.cfg == self.cfg:
-            print("Conflict: same config file as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same config file is already running.")
             return 1
         if otherProcess.port == self.port:
-            print("Conflict: same serial port as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same serial port is already running.")
             return 1
         if [otherProcess.sock.type, otherProcess.sock.file, otherProcess.sock.host, otherProcess.sock.port] == \
                 [self.sock.type, self.sock.file, self.sock.host, self.sock.port]:
-            print("Conflict: same socket as another BrewPi instance already running.")
+            print("Conflict: A BrewPi process using the same BEERSOCKET is already running.")
             return 1
         return 0
 
@@ -166,11 +166,10 @@ class BrewPiProcesses():
             cfg = cfg[0]  # add full path to config file
         else:
             # Get path from arguments and use that to build default path to config
-            cfg = os.path.dirname(str(bps).translate(None, r"[]'")) + '/settings/config.cfg'
-            # The following will be needed in Python 3:
-            # cfg = os.path.dirname(str(bps)).translate(str.maketrans('', '', r"[]'")) + '/settings/config.cfg'
+            cfg = os.path.dirname(str(bps)).translate(str.maketrans('', '', r"[]'")) + '/settings/config.cfg'
         bp.cfg = util.readCfgWithDefaults(cfg)
-        bp.port = bp.cfg['port']
+        if bp.cfg['port'] is not None:
+            bp.port = bp.cfg['port']
         bp.sock = BrewPiSocket.BrewPiSocket(bp.cfg)
         return bp
 

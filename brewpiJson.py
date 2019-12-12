@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -35,6 +35,9 @@ import time
 import os
 import re
 import Tilt
+from BrewPiUtil import Unbuffered
+from BrewPiUtil import logMessage
+from BrewPiUtil import logError
 
 
 def fixJson(j):
@@ -47,7 +50,9 @@ def fixJson(j):
 
 def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
     jsonFile = open(jsonFileName, "r+")
-    jsonFile.seek(-3, 2)  # Go insert point to add the last row
+    # jsonFile.seek(-3, 2)  # Go insert point to add the last row
+    jsonFile.seek(0, os.SEEK_END)
+    jsonFile.seek(jsonFile.tell() - 3, os.SEEK_SET)
     ch = jsonFile.read(1)
     jsonFile.seek(0, os.SEEK_CUR)
     # When alternating between reads and writes, the file contents should be flushed, see
@@ -112,12 +117,6 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
             if color == tiltColor:
                 jsonFile.write(",")
 
-                # Log tilt Temp
-                if row.get(color + 'Temp', None) is None:
-                    jsonFile.write("null,")
-                else:
-                    jsonFile.write("{\"v\":" + str(row[color + 'Temp']) + "},")
-
                 # Log Tilt SG
                 if row.get(color + 'SG', None) is None:
                     jsonFile.write("null")
@@ -126,23 +125,10 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
 
     # Write iSpindel values
     elif iSpindel:
-        jsonFile.write(",")
-
-        # Log tilt Temp
         if row['spinSG'] is None:
-            jsonFile.write("null,")
+            jsonFile.write(",null,")
         else:
-            jsonFile.write("{\"v\":" + str(row['spinSG']) + "},")
-
-        if row['spinTemp'] is None:
-            jsonFile.write("null,")
-        else:
-            jsonFile.write("{\"v\":" + str(row['spinTemp']) + "},")
-
-        if row['spinBatt'] is None:
-            jsonFile.write("null")
-        else:
-            jsonFile.write("{\"v\":" + str(row['spinBatt']) + "}")
+            jsonFile.write(",{\"v\":" + str(row['spinSG']) + "}")
 
     # rewrite end of json file
     jsonFile.write("]}]}")
@@ -150,7 +136,7 @@ def addRow(jsonFileName, row, tiltColor = None, iSpindel = None):
 
 
 def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
-    # Munge together standard column headers    
+    # Munge together standard column headers
     standardCols = ('"cols":[' +
                 '{"type":"datetime","id":"Time","label":"Time"},' +
                 '{"type":"number","id":"BeerTemp","label":"Beer Temp."},' +
@@ -164,15 +150,12 @@ def newEmptyFile(jsonFileName, tiltColor = None, iSpindel = None):
 
     # Now get Tilt data if we are using it
     if tiltColor:
-        tiltCols = (',{"type":"number","id":"' + tiltColor + 'Temp","label":"' + tiltColor + ' Tilt Temp."},' +
-                '{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}')
+        tiltCols = (',{"type":"number","id":"' + tiltColor + 'SG","label":"' + tiltColor + ' Tilt Gravity"}')
         jsonCols = ('{' + standardCols + tiltCols + '],"rows":[]}')
 
     # Or get iSpindel data if we are using that
     elif iSpindel:
-        iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"},' +
-			    '{"type":"number","id":"spinTemp","label":"iSpindel Temperature"},' +
-			    '{"type":"number","id":"spinBatt","label":"iSpindel Battery"}')
+        iSpindelCols = (',{"type":"number","id":"spinSG","label":"iSpindel SG"}')
         jsonCols = ('{' + standardCols + iSpindelCols + '],"rows":[]}')
 
     # No Tilt or iSpindel

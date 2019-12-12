@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -30,7 +30,7 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-from __future__ import print_function
+
 import sys
 import os
 import subprocess
@@ -42,6 +42,8 @@ from gitHubReleases import gitHubReleases
 import brewpiVersion
 import programController as programmer
 
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 # Globals
 firmRepo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
@@ -96,7 +98,7 @@ def goodVersion(versn):
 def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSettings = True, restoreDevices = True, ):
     configFile = '{0}settings/config.cfg'.format(addSlash(scriptPath()))
     config = readCfgWithDefaults(configFile)
-    
+
     stopResult = stopThisChamber(config['scriptPath'], config['wwwPath'])
     if stopResult is True:
         # BrewPi was running and stopped.  Start after update.
@@ -130,7 +132,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     except:
         if hwVersion is None:
             choice = pipeInput("\nUnable to receive version from controller. If your controller is" +
-                               "\nunresponsive, or if this is a new controller you can choose to proceed" + 
+                               "\nunresponsive, or if this is a new controller you can choose to proceed" +
                                "\nand flash the firmware. Would you like to do this? [y/N]: ").lower()
             if not choice.startswith('y'):
                 printStdErr("\nPlease make sure your controller is connected properly and try again.")
@@ -187,14 +189,14 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         if goodVersion(hwVersion):
             printStdErr("\nCurrent firmware version on controller: " + hwVersion.toString())
         else:
-            printStdErr("\nInvalid version returned from controller. Make sure you are running as root" + 
+            printStdErr("\nInvalid version returned from controller. Make sure you are running as root" +
                     "\nand the script is able to shut down correctly.")
             if startAfterUpdate:
                 # Only restart if it was running when we started
                 removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
             else:
-                    printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
-                        '\nmay have to investigate.')
+                printStdErr('\nBrewPi was not running when we started. If it does not start after this you',
+                    '\nmay have to investigate.')
             return False
     else:
         restoreDevices = False
@@ -321,7 +323,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 printStdErr("\nYour current version is newer than %s." % tag)
 
             if userInput:
-                choice = pipeInput("\nIf you are encountering problems, you can reprogram anyway.  Would you like" + 
+                choice = pipeInput("\nIf you are encountering problems, you can reprogram anyway.  Would you like" +
                                 "\nto do this? [y/N]: ").lower()
                 if not choice.startswith('y'):
                     if startAfterUpdate:
@@ -342,7 +344,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreSettings = False
-        choice = pipeInput("\nWould you like me to try to restore your configured devices after" + 
+        choice = pipeInput("\nWould you like me to try to restore your configured devices after" +
                            "\nprogramming? [Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreDevices = False
@@ -394,7 +396,7 @@ def main():
         # print help message for command line options
         print ("Unknown parameter, available options: \n" +
                "\t--silent or -s\t Use default options, do not ask for user input\n" +
-               "\t--beta or -b\t Include unstable (prerelease) releases\n" + 
+               "\t--beta or -b\t Include unstable (prerelease) releases\n" +
                "\t--shield or -h\t Allow flashing a different shield\n")
         return True
 

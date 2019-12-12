@@ -17,19 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-script, a part of
-# the BrewPi project. Legacy support (for the very popular Arduino
-# controller) seems to have been discontinued in favor of new hardware.
-
-# All credit for the original brewpi-script goes to @elcojacobs,
-# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
-# many more contributors around the world. My apologies if I have
-# missed anyone; those were the names listed as contributors on the
-# Legacy branch.
-
-# See: 'original-license.md' for notes about the original project's
-# license and credits.
-
 # Declare this script's constants
 declare SCRIPTPATH GITROOT WWWPATH ROOTWEB
 # Declare /inc/const.inc file constants
@@ -115,6 +102,7 @@ createlinks() {
   echo -e "\nCreating link to multi-index.php in $ROOTWEB."
   rm -f "$ROOTWEB/index.html"
   ln -sf "$WWWPATH/multi-index.php" "$ROOTWEB/index.php"
+  ln -sf "$WWWPATH/multi-api.php" "$ROOTWEB/brewpi-api.php"
 }
 
 ############

@@ -17,21 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-script, a part of
-# the BrewPi project. Legacy support (for the very popular Arduino
-# controller) seems to have been discontinued in favor of new hardware.
-
-# All credit for the original brewpi-script goes to @elcojacobs,
-# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
-# many more contributors around the world. My apologies if I have
-# missed anyone; those were the names listed as contributors on the
-# Legacy branch.
-
-# See: 'original-license.md' for notes about the original project's
-# license and credits.
-
 # Declare this script's constants
-declare SCRIPTPATH GITROOT APTPACKAGES NGINXPACKAGES PIPPACKAGES
+declare SCRIPTPATH GITROOT APTPACKAGES NGINXPACKAGES PIP3PACKAGES
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
@@ -78,11 +65,11 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
     
     # Packages to be installed/checked via apt
-    APTPACKAGES="git arduino-core pastebinit build-essential apache2 libapache2-mod-php php-cli php-common php-cgi php php-mbstring python-dev python-pip python-configobj php-xml bluez python-bluez python-scipy python-numpy libcap2-bin"
+    APTPACKAGES="git python3 python3-pip arduino-core pastebinit apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev"
     # nginx packages to be uninstalled via apt if present
     NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
-    # Packages to be installed/check via pip
-    PIPPACKAGES="pyserial psutil simplejson configobj gitpython"
+    # Packages to be installed/check via pip3
+    PIP3PACKAGES="pyserial psutil simplejson configobj gitpython scipy numpy"
 }
 
 ############
@@ -182,6 +169,8 @@ do_packages() {
     # Now install any necessary packages if they are not installed
     local didInstall
     didInstall=0
+    echo -e "\nFixing any broken installations before proceeding."
+    sudo apt-get --fix-broken install -y||die
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in ${APTPACKAGES,,}; do
         pkgOk=$(dpkg-query -W --showformat='${Status}\n' ${pkg,,} | \
@@ -224,21 +213,53 @@ do_packages() {
     fi
     
     # Install any Python packages not installed, update those installed
-    echo -e "\nChecking and installing required dependencies via pip."
+    echo -e "\nChecking and installing required dependencies via pip3."
     pipcmd='pipInstalled=$(pip list --format=columns)'
     eval "$pipcmd"
     pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
     eval "$pipcmd"
-    for pkg in ${PIPPACKAGES,,}; do
+    for pkg in ${PIP3PACKAGES,,}; do
         if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nInstalling '$pkg'."
-            pip install $pkg -q||die
+            pip3 install $pkg -q||die
         else
             echo -e "\nChecking for update to '$pkg'."
-            pip install $pkg --upgrade -q||die
+            pip3 install $pkg --upgrade -q||die
         fi
     done
 }
+
+############
+### Reset BT baud rate < Pi4
+############
+
+do_aioblescan() {
+    # Install aioblescan
+    local blerepo device fast safe file
+    echo -e "\nInstalling BLEacon support via aioblescan."
+    blerepo="https://github.com/brewpi-remix/aioblescan.git"
+    file="/usr/bin/btuart"
+    fast="\$HCIATTACH \/dev\/serial1 bcm43xx 921600 noflow - \$BDADDR"
+    safe="\$HCIATTACH \/dev\/serial1 bcm43xx 460800 noflow - \$BDADDR"
+    rm -fr "$HOMEPATH/aioblescan"
+    git clone "$blerepo" "$HOMEPATH/aioblescan"
+    (cd "$HOMEPATH/aioblescan" || exit; python3 setup.py install)
+    rm -fr "$HOMEPATH/aioblescan"
+    # Slow down uart speeds on < Pi4
+    if [ -f "$file" ]; then
+        sed -i "s/$fast/$safe/g" "$file"
+    fi
+    device=$(hciconfig | grep "hci" | grep "UART" | tr -s ' ' | cut -d":" -f1)
+    if [ -n "$device" ]; then
+        if grep -vq "Pi 4" /proc/device-tree/model; then
+            stty -F /dev/serial1 460800
+        fi
+    fi
+}
+
+############
+### Main
+############
 
 main() {
     init "$@" # Init and call supporting libs
@@ -250,6 +271,7 @@ main() {
     rem_php5 # Remove php5 packages
     rem_nginx # Remove nginx packages
     do_packages # Check on required packages
+    do_aioblescan
     banner "complete"
 }
 

@@ -17,19 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# These scripts were originally a part of brewpi-script, a part of
-# the BrewPi project. Legacy support (for the very popular Arduino
-# controller) seems to have been discontinued in favor of new hardware.
-
-# All credit for the original brewpi-script goes to @elcojacobs,
-# @m-mcgowan, @rbrady, @steersbob, @glibersat, @Niels-R and I'm sure
-# many more contributors around the world. My apologies if I have
-# missed anyone; those were the names listed as contributors on the
-# Legacy branch.
-
-# See: 'original-license.md' for notes about the original project's
-# license and credits.
-
 # Declare this script's constants/variables
 declare SCRIPTPATH GITROOT wwwPath toolPath didUpdate quick
 didUpdate=0
@@ -296,7 +283,7 @@ flash() {
     echo "" > /dev/tty 
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
-        [Yy]* ) eval "python -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        [Yy]* ) eval "python3 -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
         * ) ;;
     esac
 }

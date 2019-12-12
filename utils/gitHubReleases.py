@@ -39,9 +39,6 @@ import grp
 import stat
 from distutils.version import LooseVersion
 
-import pprint                               # DEBUG
-pp = pprint.PrettyPrinter(indent=4).pprint  # DEBUG
-
 repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 
 class gitHubReleases:

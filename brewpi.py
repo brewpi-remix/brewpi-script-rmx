@@ -1257,7 +1257,7 @@ try:
                                     prevTempJson['spinTemp'] = None
 
                             # Expire old Tiltbridge values
-                            if (time.time() - lastTiltbridge) > 300:
+                            if ((time.time() - lastTiltbridge) > 300) and tiltbridge == True:
                                 tiltbridge = False # Turn off Tiltbridge in case we switched to BT
                                 logMessage("Turned off Tiltbridge.")
                                 if checkKey(prevTempJson, color + 'Temp'):

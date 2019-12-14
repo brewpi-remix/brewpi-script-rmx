@@ -586,8 +586,11 @@ prevSettingsUpdate = time.time()
 
 # Timestamps to expire values
 lastBbApi = 0
+timeoutBB = 300
 lastiSpindel = 0
+timeoutiSpindel = 1800
 lastTiltbridge = 0
+timeoutTiltbridge = 300
 
 startBeer(config['beerName'])  # Set up files and prep for run
 
@@ -1239,7 +1242,7 @@ try:
                                             prevTempJson[color + 'Batt'] = None
 
                             # Expire old BB keypairs
-                            if (time.time() - lastBbApi) > 300:
+                            if (time.time() - lastBbApi) > timeoutBB:
                                 if checkKey(prevTempJson, 'bbbpm'):
                                     del prevTempJson['bbbpm']
                                 if checkKey(prevTempJson, 'bbamb'):
@@ -1248,7 +1251,7 @@ try:
                                     del prevTempJson['bbves']
 
                             # Expire old iSpindel keypairs
-                            if (time.time() - lastiSpindel) > 300:
+                            if (time.time() - lastiSpindel) > timeoutiSpindel:
                                 if checkKey(prevTempJson, 'spinSG'):
                                     prevTempJson['spinSG'] = None
                                 if checkKey(prevTempJson, 'spinBatt'):
@@ -1257,7 +1260,7 @@ try:
                                     prevTempJson['spinTemp'] = None
 
                             # Expire old Tiltbridge values
-                            if ((time.time() - lastTiltbridge) > 300) and tiltbridge == True:
+                            if ((time.time() - lastTiltbridge) > timeoutTiltbridge) and tiltbridge == True:
                                 tiltbridge = False # Turn off Tiltbridge in case we switched to BT
                                 logMessage("Turned off Tiltbridge.")
                                 if checkKey(prevTempJson, color + 'Temp'):

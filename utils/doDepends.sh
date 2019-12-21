@@ -214,7 +214,7 @@ do_packages() {
     
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
-    pipcmd='pipInstalled=$(pip list --format=columns)'
+    pipcmd='pipInstalled=$(pip3 list --format=columns)'
     eval "$pipcmd"
     pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
     eval "$pipcmd"

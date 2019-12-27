@@ -53,7 +53,7 @@ userInput = True
 def pipeInput(prompt=""):
     saved_stdin = sys.stdin
     sys.stdin = open('/dev/tty', 'r')
-    result = raw_input(prompt)
+    result = input(prompt)
     sys.stdin = saved_stdin
     return (result)
 
@@ -119,7 +119,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     ser = None
 
     ### Get version number
-    printStdErr("\nChecking current firmware version.")
+    printStdErr("\nChecking current firmware version.\n")
     try:
         ser = setupSerial(config, 57600, 1.0, 1.0, True)
         hwVersion = brewpiVersion.getVersionFromSerial(ser)

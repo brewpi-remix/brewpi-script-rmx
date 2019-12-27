@@ -31,7 +31,7 @@
 # license and credits.
 
 
-from urllib.request import urlopen
+from urllib.request import urlopen as urlopen
 import simplejson as json
 import os
 import pwd
@@ -60,7 +60,7 @@ class gitHubReleases:
             :return:        Full path to file
         """
         try:
-            f = urlopen.urlopen(url)
+            f = urlopen(url)
             print("\nDownloading from: \n{0}".format(url))
 
             # Open our local file for writing
@@ -79,10 +79,12 @@ class gitHubReleases:
             return os.path.abspath(fileName)
 
         #handle errors
-        except urlopen.HTTPError as e:
-            print("HTTP Error: {0} {1}".format(e.code, url))
-        except urlopen.URLError as e:
-            print("URL Error: {0} {1}".format(e.reason, url))
+        #except urlopen.HTTPError as e:
+        #    print("HTTP Error: {0} {1}".format(e.code, url))
+        #except urlopen.URLError as e:
+        #    print("URL Error: {0} {1}".format(e.reason, url))
+        except Exception as ex:
+            print("Unknown Error: {0}".format(ex))
         return None
 
     def update(self):

@@ -94,7 +94,11 @@ class gitHubReleases:
         #with urlopen(self.url + "/releases") as url:
         #    self.releases = url.read()
 
-        self.releases = json.loads(urlopen(self.url + "/releases").read().decode('utf-8'))
+        try:
+            self.releases = json.loads(urlopen(self.url + "/releases").read().decode('utf-8'))
+        except:
+            print("Unhandled error while downloading releases from GitHub.")
+            sys.exit(1)
 
     def findByTag(self, tag):
         """

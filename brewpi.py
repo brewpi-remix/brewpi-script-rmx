@@ -66,8 +66,16 @@ if sys.version_info < (3, 7):  # Check needed software dependencies
     print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
 
-import sentry_sdk
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+####  ********************************************************************
+####
+####  IMPORTANT NOTE:  I don't care if you play with the code, but if
+####  you do, please comment out the next lines.  Otherwise I will
+####  receive a notice for every mistake you make.
+####
+####  ********************************************************************
+
+#import sentry_sdk
+#sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 compatibleHwVersion = "0.2.4"
 
@@ -286,11 +294,14 @@ def changeWwwSetting(settingName, value):
         wwwSettingsFile = open(wwwSettingsFileName, 'w+b')  # Create new file
         wwwSettings = {}
 
-    wwwSettings[settingName] = str(value)
-    wwwSettingsFile.seek(0)
-    wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
-    wwwSettingsFile.truncate()
-    wwwSettingsFile.close()
+    try:
+        wwwSettings[settingName] = str(value)
+        wwwSettingsFile.seek(0)
+        wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
+        wwwSettingsFile.truncate()
+        wwwSettingsFile.close()
+    except:
+        logError("Ran into an error writing the WWW JSON file.")
 
 
 def setFiles():

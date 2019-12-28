@@ -206,6 +206,8 @@ class BrewPiProcesses():
             matching = [p for p in psutil.process_iter() if any('python' in p.name() and 'updateFirmware.py'in s for s in p.cmdline())]
         except psutil.AccessDenied:
             pass
+        except:
+            return False
 
         if len(matching) > 0:
             return 1

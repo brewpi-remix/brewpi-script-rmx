@@ -66,8 +66,16 @@ if sys.version_info < (3, 7):  # Check needed software dependencies
     print("\nSorry, requires Python 3.7+.", file=sys.stderr)
     sys.exit(1)
 
-import sentry_sdk
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+####  ********************************************************************
+####
+####  IMPORTANT NOTE:  I don't care if you play with the code, but if
+####  you do, please comment out the next lines.  Otherwise I will
+####  receive a notice for every mistake you make.
+####
+####  ********************************************************************
+
+#import sentry_sdk
+#sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 compatibleHwVersion = "0.2.4"
 
@@ -286,11 +294,14 @@ def changeWwwSetting(settingName, value):
         wwwSettingsFile = open(wwwSettingsFileName, 'w+b')  # Create new file
         wwwSettings = {}
 
-    wwwSettings[settingName] = str(value)
-    wwwSettingsFile.seek(0)
-    wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
-    wwwSettingsFile.truncate()
-    wwwSettingsFile.close()
+    try:
+        wwwSettings[settingName] = str(value)
+        wwwSettingsFile.seek(0)
+        wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
+        wwwSettingsFile.truncate()
+        wwwSettingsFile.close()
+    except:
+        logError("Ran into an error writing the WWW JSON file.")
 
 
 def setFiles():
@@ -429,6 +440,22 @@ def resumeLogging():
         return {'status': 1, 'statusMessage': "Logging was not paused."}
 
 
+def checkBluetooth(interface = 0):
+    sock = None
+    try:
+        sock = socket.socket(family = socket.AF_BLUETOOTH,
+                             type = socket.SOCK_RAW,
+                             proto = socket.BTPROTO_HCI)
+        sock.setblocking(False)
+        sock.setsockopt(socket.SOL_HCI, socket.HCI_FILTER, pack("IIIh2x", 0xffffffff,0xffffffff,0xffffffff,0))
+        sock.bind((interface,))
+    except:
+        if sock is not None:
+            sock.close()
+        return False
+    else:
+        return True
+
 # Bytes are read from nonblocking serial into this buffer and processed when
 # the buffer contains a full line.
 ser = util.setupSerial(config)
@@ -456,16 +483,19 @@ if not prevTempJson:
 
 # Initialize Tilt and start monitoring
 if checkKey(config, 'tiltColor') and config['tiltColor'] != "":
-    import Tilt
-    tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
-    tilt.loadSettings()
-    tilt.start()
-    # Create prevTempJson for Tilt
-    prevTempJson.update({
-        config['tiltColor'] + 'Temp': 0,
-        config['tiltColor'] + 'SG': 0,
-        config['tiltColor'] + 'Batt': 0
-    })
+    if not checkBluetooth():
+        logError("Configured for Tilt but no Bluetooth radio available.")
+    else:
+        import Tilt
+        tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
+        tilt.loadSettings()
+        tilt.start()
+        # Create prevTempJson for Tilt
+        prevTempJson.update({
+            config['tiltColor'] + 'Temp': 0,
+            config['tiltColor'] + 'SG': 0,
+            config['tiltColor'] + 'Batt': 0
+        })
 
 # Initialise iSpindel and start monitoring
 ispindel = None

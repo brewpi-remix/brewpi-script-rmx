@@ -1411,7 +1411,9 @@ try:
                             logMessage("Line received was: {0}".format(line))
                         elif line[0] == 'L':  # LCD content received
                             prevLcdUpdate = time.time()
-                            lcdText = [n.replace(chr(9600), "&deg;") for n in json.loads(line[2:])]
+                            lcdText = json.loads(line[2:])
+                            lcdText[1] = lcdText[1].replace(lcdText[1][18], "&deg;")
+                            lcdText[2] = lcdText[2].replace(lcdText[2][18], "&deg;")
                         elif line[0] == 'C':  # Control constants received
                             cc = json.loads(line[2:])
                             # Update the json with the right temp format for the web page

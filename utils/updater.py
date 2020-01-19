@@ -38,8 +38,13 @@ import subprocess
 from time import localtime, strftime
 import sys
 import os
-import urllib2
+#import urllib2
 import getopt
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
+from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, readCfgWithDefaults, addSlash, setupSerial, scriptPath
+from gitHubReleases import gitHubReleases
+import brewpiVersion
 
 # import sentry_sdk
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
@@ -353,19 +358,29 @@ def main():
         print("Try running it again with sudo, exiting.")
         exit(1)
 
-    checkForUpdates()
+    path = scriptPath()
+    print(path)
+    quit()
+
+    configFile = '{0}settings/config.cfg'.format(addSlash(scriptPath()))
+    config = readCfgWithDefaults(configFile)
+
+    from pprint import pprint as pp
+
+    pp(config)
+    #print(config['scriptPath'])
+    #print(config['wwwPath'])
+
+    quit()
+
+    # checkForUpdates() # TODO:  See if I want to run this here
     print("")
 
-    print("It is not recommended to update during a brew.\n" \
-        "If you are actively logging a brew we recommend canceling the the update with ctrl-c.")
+    print("\nI do not recommend you update while logging a brew.\n"\
+          "If you are actively logging a brew we recommend canceling\n"\
+          "the the update with ctrl-c.")
 
     changed = False
-    scriptPath = '/home/brewpi'
-
-    # set a first guess for the web path. If files are not found here, the user is asked later
-    webPath = '/var/www/html' # default since Jessie
-    if not os.path.isdir('/var/www/html'):
-        webPath = '/var/www' # earlier default www dir
 
     print("\n\n*** Updating BrewPi script repository ***")
 
@@ -387,14 +402,12 @@ def main():
             print("The path '%s' does not seem to be a valid git repository." % scriptPath)
             scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
             continue
-
         if not correctRepo:
             print("The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath)
             scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
             continue
-        ### Add BrewPi repo into the sys path, so we can import those modules as needed later
-        sys.path.insert(0, scriptPath)
-        quitBrewPi(webPath) # exit running instances of BrewPi
+
+        stopThisChamber(config.scriptPath, config.wwwPath)
         changed = check_repo(scriptRepo) or changed
         break
     else:
@@ -458,8 +471,6 @@ def main():
     print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
 
 if __name__ == '__main__':
-    print('This script is currently not used. Please use the doUpdate.sh script while I',
-            '\nfigure out whether to update this or stick with the shell script.')
-    #result = main()
-    #exit(result)
+    result = main()
+    exit(result)
     sys.exit()

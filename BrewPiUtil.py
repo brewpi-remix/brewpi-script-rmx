@@ -147,7 +147,7 @@ def scriptPath():
     Return the path of BrewPiUtil.py. __file__ only works in modules, not in the main script.
     That is why this function is needed.
     """
-    return os.path.dirname(__file__)
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):

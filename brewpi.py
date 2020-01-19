@@ -1473,10 +1473,12 @@ try:
             traceback.print_exc()
 
 except KeyboardInterrupt:
+    print() # Simply a visual hack if we are running via command line
     logMessage("Detected keyboard interrupt, exiting.")
     run = 0 # This should let the loop exit gracefully
 
 except Exception as e:
+    logError(e)
     logMessage("Caught an unhandled exception, exiting.")
     run = 0 # This should let the loop exit gracefully
 

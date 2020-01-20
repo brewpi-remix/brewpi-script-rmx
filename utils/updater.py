@@ -85,7 +85,7 @@ def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
         startAfterUpdate = None
     return startAfterUpdate
 
-def updateMeAndRun(scriptpath, opts = "") -> bool: # Pull down current version and run it instead
+def updateMeAndRun(scriptpath, args = None) -> bool: # Pull down current version and run it instead
     # Download current script from Git and run it instead
     retval = True
     global rawurl
@@ -117,11 +117,13 @@ def updateMeAndRun(scriptpath, opts = "") -> bool: # Pull down current version a
 
     if retval:
         logMessage("Executing online version of script.")
-        print("DEBUG: opts = {0}".format(opts))
+        print("DEBUG: opts = {0}".format(args))
         try:
-            pout = subprocess.run([
-                tmpscript,
-                opts])
+            pout = None
+            if not args:
+                pout = subprocess.run([tmpscript])
+            else:
+                pout = subprocess.run([tmpscript, args])
             if pout.returncode > 0:
                 retval = False  # Error
 
@@ -476,9 +478,9 @@ def main():
 
         if thisscript == tmpscriptname: # Really do the update
             # Delete the temp script before we do an update
-            logMessage("DEBUG: Temp script is {0}}, bailing.".format(os.path.join(scriptpath, thisscript)))
+            logMessage("DEBUG: Temp script is {0}, bailing.".format(os.path.join(scriptpath, thisscript)))
             retval = 0
-            return retval # DEBUG
+            return retval # DEBUG 
 
             #deleteFile(os.path.join(scriptpath, thisscript))
 
@@ -504,6 +506,7 @@ def main():
                 retval = 1
             else:
                 # Get the latest update script and run it instead
+                arg = None
                 if userinput:
                     arg = "--ask"
                 if not updateMeAndRun(scriptpath, arg):

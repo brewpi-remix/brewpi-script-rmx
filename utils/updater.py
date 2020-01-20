@@ -39,133 +39,188 @@ from time import localtime, strftime
 import sys
 import os
 #import urllib2
-import getopt
+import argparse
+from git import Repo
+import requests
+from pprint import pprint as pp
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
-from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, readCfgWithDefaults, addSlash, setupSerial, scriptPath
-from gitHubReleases import gitHubReleases
-import brewpiVersion
+try:
+    import BrewPiUtil
+    from BrewPiUtil import logError, logMessage, addSlash, stopThisChamber, scriptPath, readCfgWithDefaults, removeDontRunFile
+    import brewpiVersion
+except ImportError as e:
+    print("Not part of a BrewPi Git repository, error:\n{0}".format(e), file=sys.stderr)
 
+# Configuration items
+rawurl = "https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/updater.py"
+tmpscriptname = "tmpUpdate.py"  # Name of script running from GitHub
+scriptname = "updater.py"       # Name of core script
+
+####  ********************************************************************
+####
+####  IMPORTANT NOTE:  I don't care if you play with the code, but if
+####  you do, please comment out the next lines.  Otherwise I will
+####  receive a notice for every mistake you make.
+####
+####  ********************************************************************
 # import sentry_sdk
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
-
-### Quits all running instances of BrewPi
-def quitBrewPi(webPath):
+def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
+    startAfterUpdate = None
     print("\nStopping running instances of BrewPi.")
-    try:
-        import BrewPiProcess
-        allProcesses = BrewPiProcess.BrewPiProcesses()
-        allProcesses.stopAll(webPath+"/do_not_run_brewpi")
-    except:
-        pass  # if we cannot stop running instances of the script, just continue. Might be a very old version
+    stopResult = stopThisChamber(scriptPath, wwwPath)
+    if stopResult is True:
+        # BrewPi was running and stopped.  Start after update.
+        startAfterUpdate = True
+    elif stopResult is False:
+        # Unable to stop BrewPi
+        startAfterUpdate = False
+    elif stopResult is None:
+        # BrewPi was not probably not running, don't start after update.
+        startAfterUpdate = None
+    return startAfterUpdate
 
-# remove do_not_run file
-def startBrewPi(webPath):
-    filePath = webPath+"/do_not_run_brewpi"
-    if os.path.isfile(filePath):
-        os.remove(filePath)
+def updateMeAndRun(scriptpath) -> bool: # Pull down current version and run it instead
+    # Download current script from Git and run it instead
+    retval = True
+    global rawurl
+    global scriptname
+    tmpscript = os.path.join(scriptpath, tmpscriptname)
+    repo = Repo(scriptpath)
+    branch = repo.active_branch
+    url = str.replace("THISBRANCH", branch)
 
-### calls updateToolsRepo.sh, which returns 0 if the brewpi-tools repo is up-to-date
-def checkForUpdates():
-    if os.path.exists(os.path.dirname(os.path.realpath(__file__)) + "/updateToolsRepo.sh"):
+    response = requests.get(url)
+    if response.status_code == 200:
+        logMessage("Downloading current version of this script.")
         try:
-            print("Checking whether the update script is up to date.")
-            subprocess.check_output(["sudo", "bash", os.path.dirname(os.path.realpath(__file__)) + "/updateToolsRepo.sh"], stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            print("This script was not up-to-date and has been automatically updated.\nPlease re-run updater.py.")
-            sys.exit(1)
+            owner = 'brewpi'
+            group = 'brewpi'
+            uid = pwd.getpwnam(owner).pw_uid  # Get UID
+            gid = grp.getgrnam(group).gr_gid  # Get GID
+            filemode = stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH | stat.S_IROTH | stat.S_IXOTH  # 775
+            file = open(tmpscript, 'w')
+            file.write(response.text)
+            file.close()
+            os.chown(tmpscript, uid, gid)  # chown root directory
+            os.chmod(tmpscript, filemode)  # chmod root directory
+        except Exception as e:
+            logError("Failed to write temp file, error: {0}".format(e))
+            retval = False
     else:
-        print ("The required file updateToolsRepo.sh was not found. This is likely to occur\n" + \
-                "if you manually copied updater.py here.  Please run this from the original\n" + \
-                "location you installed the brewpi-tools git repo and try again.\n")
-        sys.exit(1)
+        logError("Failed to download update script from GitHub.")
+        retval = False
 
-### call installDependencies.sh, so commands are only defined in one place.
-def runAfterUpdate(scriptDir):
-    try:
-        print("Installing dependencies, updating CRON and fixing file permissions.")
-        subprocess.check_call(["sudo", "bash", scriptDir + "/utils/runAfterUpdate.sh"], stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError:
-        print ("I tried to execute the runAfterUpdate.sh bash script, but an error occurred.\n" + \
-               "Try running it from the command line in your <brewpi-script>/utils dir.\n")
-
-### Stash any local repo changes
-def stashChanges(repo):
-    print ("\nYou have local changes in this repository, that are prevent a successful merge.\n" + \
-           "These changes can be stashed to bring your repository back to its original\n" + \
-           "state so we can merge.\n" + \
-           "Your changes are not lost, but saved on the stash.  You can (optionally) get\n" + \
-           "them back later with 'git stash pop'.")
-    choice = raw_input("Would you like to stash local changes? (Required to continue) [Y/n]: ")
-    if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-        print("Attempting to stash any changes.\n")
+    if retval:
+        logMessage("Executing online version of script.")
         try:
-            repo.git.config('--get', 'user.name')
-        except git.GitCommandError as e:
-            print("Warning: No user name set for git, which is necessary to stash.")
-            print("--> Please enter a global username for git on this system:")
-            userName = raw_input()
-            repo.git.config('--global', 'user.name', userName)
-        try:
-            repo.git.config('--get', 'user.email')
-        except git.GitCommandError as e:
-            print("Warning: No user e-mail address set for git, which is necessary to stash.")
-            print("--> Please enter a global user e-mail address for git on this system: ")
-            userEmail = raw_input()
-            repo.git.config('--global', 'user.email', userEmail)
-        try:
-            resp = repo.git.stash()
-            print("\n" + resp + "\n")
-            print("Stash successful.")
+            # TODO:  Execute tmpscript
+            print("DEBUG:  Running {0}.".format(tmpscript))
+            pass
+        except Exception as e:
+            logError("Failed to execute online file, error: {0}".format(e))
+            retval = False
 
-            print("##################################################################")
-            print("#Your local changes were in conflict with the last update of code.#")
-            print("##################################################################")
-            print("The conflict was:\n")
-            print("-------------------------------------------------------")
-            print(repo.git.stash("show", "--full-diff", "stash@{0}"))
-            print("-------------------------------------------------------")
-            print ("\nTo make merging possible, these changes were stashed.\n" + \
-                   "To merge the changes back in, you can use 'git stash pop'.\n" + \
-                   "Only do this if you really know what you are doing.  Your\n" + \
-                   "changes might be incompatible with the update or could\n" + \
-                   "cause a new merge conflict.")
+    return retval
 
-            return True
-        except git.GitCommandError as e:
-            print(e)
-            print("Unable to stash, don't want to overwrite your stuff, aborting this branch\nupdate.")
-            return False
+def getRepoName(url: str) -> str:
+    last_slash_index = url.rfind("/")
+    last_suffix_index = url.rfind(".git")
+    if last_suffix_index < 0:
+        last_suffix_index = len(url)
+    if last_slash_index < 0 or last_suffix_index <= last_slash_index:
+        logError("Badly formatted url: '{}'".format(url))
+    return url[last_slash_index + 1:last_suffix_index]
+
+def checkRoot(): # Determine if we are running as root or not
+    if os.geteuid() != 0:
+        return False
     else:
-        print("Changes are not stashed, cannot continue without stashing. Aborting update.")
+        return True
+
+def deleteFile(file): # Delete a file
+    if os.path.exists(file):
+        os.remove(file)
+        return True
+    else:
         return False
 
-### Function used to stash local changes and update a branch passed to it
-def update_repo(repo, remote, branch):
-    stashed = False
-    repo.git.fetch(remote, branch)
-    try:
-        print(repo.git.merge(remote + '/' + branch))
-    except git.GitCommandError as e:
-        print(e)
-        if "Your local changes to the following files would be overwritten by merge" in str(e):
-            stashed = stashChanges(repo)
-            if not stashed:
-                return False
+def doArgs(scriptpath) -> bool:
+    retval = False
+    # Initiate the parser
+    helptext = "This script will update your current chamber to the latest version,\nor allow " +\
+               "you to change your current branch. Be sure to run as root or with sudo."
+    parser = argparse.ArgumentParser(description = helptext)
 
-        print("Trying to merge again.")
-        try:
-            print(repo.git.merge(remote + '/' + branch))
-        except git.GitCommandError as e:
-            print(e)
-            print("Sorry, cannot automatically stash/discard local changes. Aborting.")
-            return False
-    print(branch + " updated.")
-    return True
+    # Add arguments
+    parser.add_argument("-v", "--version", help="show current version and exit", action="store_true")
+    parser.add_argument("-a", "--ask",
+                        help="ask which branch to check out",
+                        action="store_true")
 
-### Function to be used to check most recent commit date on the repo passed to it
-def check_repo(repo):
+    # Read arguments from the command line
+    args = parser.parse_args()
+
+    # Check for --version or -V
+    if args.version:
+        repo = Repo(scriptpath)
+        tags = repo.tags
+        tag = tags[len(tags) - 1]
+        url = ""
+        for remote in repo.remotes:
+            url = remote.url  # Assuming only one remote at this time
+        reponame = getRepoName(url)
+        print("Current version of '{0}': {1}.".format(reponame, tag))
+        exit(0)
+
+    # Check for --ask or -a
+    if args.ask:
+        retval = True # Change branches
+
+    return retval
+
+def refreshBranches() -> bool:
+    logMessage("Refreshing branch information.")
+    pout = subprocess.run([
+        "git",
+        "config",
+        "remote.origin.fetch",
+        "+refs/heads/*:refs/remotes/origin/*"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL)
+    if pout.returncode > 0:
+        return False # Error
+
+    pout = subprocess.run([
+        "git",
+        "fetch",
+        "--all"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    if pout.returncode > 0:
+        return False # Error
+
+    return True # Ok
+
+def banner(thisscript, adj):
+    logMessage("\n***Script {0} {1}.***".format(thisscript, adj))
+
+def runAfterUpdate(scriptpath): # Handle dependencies update and cleanup
+    retval = True
+    logMessage("Updating dependencies as needed.")
+    dodepends = os.path.join(scriptpath, "utils/doDepends.sh")
+    pout = subprocess.run([
+        "bash",
+        dodepends])
+    if pout.returncode > 0:
+        logError("Updating dependencies failed.")
+        retval = False # Error
+    return retval
+
+def check_repo(repo): # Check most recent commit date on the repo passed to it
     updated = False
     localBranch = repo.active_branch.name
     newBranch = localBranch
@@ -322,155 +377,140 @@ def check_repo(repo):
         print("Your local version of " + localName + " is up to date.")
     return updated or checkedOutDifferentBranch
 
-def main():
-    try:
-        import git
-    except ImportError:
-        print("This update script requires gitpython, please install it with:\n'sudo pip install gitpython'")
-        sys.exit(1)
-
-    # Read in command line arguments
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "a", ['ask'])
-    except getopt.GetoptError:
-        print ("Unknown parameter, available options: \n" + \
-            "  updater.py --ask     Do not use default options, but ask me which branches\n" + \
-            "                       to check out")
-        sys.exit()
-
-    userInput = False
-    for o, a in opts:
-        # print help message for command line options
-        if o in ('-a', '--ask'):
-            print("\nUsing interactive (advanced) update with user input.\n")
-            userInput = True
-
-
-    print("######################################################")
-    print("####                                              ####")
-    print("####        Welcome to the BrewPi Updater         ####")
-    print("####                                              ####")
-    print("######################################################")
-    print("")
-
-    if os.geteuid() != 0:
-        print("This update script should be run as root.")
-        print("Try running it again with sudo, exiting.")
-        exit(1)
-
-    path = scriptPath()
-    print(path)
-    quit()
-
-    configFile = '{0}settings/config.cfg'.format(addSlash(scriptPath()))
-    config = readCfgWithDefaults(configFile)
-
-    from pprint import pprint as pp
-
-    pp(config)
-    #print(config['scriptPath'])
-    #print(config['wwwPath'])
-
-    quit()
-
-    # checkForUpdates() # TODO:  See if I want to run this here
-    print("")
-
-    print("\nI do not recommend you update while logging a brew.\n"\
-          "If you are actively logging a brew we recommend canceling\n"\
-          "the the update with ctrl-c.")
-
-    changed = False
-
-    print("\n\n*** Updating BrewPi script repository ***")
-
-    for i in range(3):
-        correctRepo = False
-        try:
-            scriptRepo = git.Repo(scriptPath)
-            gitConfig = open(scriptPath + '/.git/config', 'r')
-            for line in gitConfig:
-                if "url =" in line and "brewpi-script" in line:
-                    correctRepo = True
-                    break
-            gitConfig.close()
-        except git.NoSuchPathError:
-            print("The path '%s' does not exist" % scriptPath)
-            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-            continue
-        except (git.InvalidGitRepositoryError, IOError):
-            print("The path '%s' does not seem to be a valid git repository." % scriptPath)
-            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-            continue
-        if not correctRepo:
-            print("The path '%s' does not seem to be the BrewPi python script git repository." % scriptPath)
-            scriptPath = raw_input("To which path did you install the BrewPi python scripts?  ")
-            continue
-
-        stopThisChamber(config.scriptPath, config.wwwPath)
-        changed = check_repo(scriptRepo) or changed
-        break
-    else:
-        print("Maximum number of tries reached, updating BrewPi scripts aborted.")
-
-    print("\n\n*** Updating BrewPi web interface repository ***")
-    for i in range(3):
-        correctRepo = False
-        try:
-            webRepo = git.Repo(webPath)
-            gitConfig = open(webPath + '/.git/config', 'r')
-            for line in gitConfig:
-                if "url =" in line and "brewpi-www" in line:
-                    correctRepo = True
-                    break
-            gitConfig.close()
-        except git.NoSuchPathError:
-            print("The path '%s' does not exist" % webPath)
-            webPath = raw_input("To which path did you install the BrewPi web application?  ")
-            continue
-        except (git.InvalidGitRepositoryError, IOError):
-            print("The path '%s' does not seem to be a valid git repository." % webPath)
-            webPath = raw_input("To which path did you install the BrewPi web application?  ")
-            continue
-        if not correctRepo:
-            print("The path '%s' does not seem to be the BrewPi web interface git repository." % webPath)
-            webPath = raw_input("To which path did you install the BrewPi web application?  ")
-            continue
-        changed = check_repo(webRepo) or changed
-        break
-    else:
-        print("Maximum number of tries reached, updating BrewPi web interface aborted.")
-
-    if changed:
-        print("\nOne our more repositories were updated, running runAfterUpdate.sh from\n%s/utils." % scriptPath)
-        runAfterUpdate(scriptPath)
-    else:
-        print("\nNo changes were made, skipping runAfterUpdate.sh.")
-        print("If you encounter problems, you can start it manually with:")
-        print("'sudo %s/utils/runAfterUpdate.sh'" % scriptPath)
-
-    print("\nThe update script can automatically check your controller firmware version\n" + \
-        "and program it with the latest release on GitHub, would you like to do this")
-    choice = raw_input("now? [Y/n]: ")
+def stashChanges(repo): # Stash any local repo changes
+    print ("\nYou have local changes in this repository, that are prevent a successful merge.\n" + \
+           "These changes can be stashed to bring your repository back to its original\n" + \
+           "state so we can merge.\n" + \
+           "Your changes are not lost, but saved on the stash.  You can (optionally) get\n" + \
+           "them back later with 'git stash pop'.")
+    choice = raw_input("Would you like to stash local changes? (Required to continue) [Y/n]: ")
     if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-        # start as a separate python process, or it will not use the updated modules
-        updateScript = os.path.join(scriptPath, 'utils', 'updateFirmware.py')
-        if userInput:
-            p = subprocess.Popen("python3 {0} --beta".format(updateScript), shell=True)
-        else:
-            p = subprocess.Popen("python3 {0} --silent".format(updateScript), shell=True)
-        p.wait()
-        result = p.returncode
-        if(result == 0):
-            print("Firmware update complete.")
-    else:
-        print("Skipping controller update.")
+        print("Attempting to stash any changes.\n")
+        try:
+            repo.git.config('--get', 'user.name')
+        except git.GitCommandError as e:
+            print("Warning: No user name set for git, which is necessary to stash.")
+            print("--> Please enter a global username for git on this system:")
+            userName = raw_input()
+            repo.git.config('--global', 'user.name', userName)
+        try:
+            repo.git.config('--get', 'user.email')
+        except git.GitCommandError as e:
+            print("Warning: No user e-mail address set for git, which is necessary to stash.")
+            print("--> Please enter a global user e-mail address for git on this system: ")
+            userEmail = raw_input()
+            repo.git.config('--global', 'user.email', userEmail)
+        try:
+            resp = repo.git.stash()
+            print("\n" + resp + "\n")
+            print("Stash successful.")
 
-    startBrewPi(webPath)
-    print("\n\n*** Done updating BrewPi ***\n")
-    print("Please refresh your browser with ctrl-F5 to make sure it is not showing an\nold cached version.")
+            print("##################################################################")
+            print("#Your local changes were in conflict with the last update of code.#")
+            print("##################################################################")
+            print("The conflict was:\n")
+            print("-------------------------------------------------------")
+            print(repo.git.stash("show", "--full-diff", "stash@{0}"))
+            print("-------------------------------------------------------")
+            print ("\nTo make merging possible, these changes were stashed.\n" + \
+                   "To merge the changes back in, you can use 'git stash pop'.\n" + \
+                   "Only do this if you really know what you are doing.  Your\n" + \
+                   "changes might be incompatible with the update or could\n" + \
+                   "cause a new merge conflict.")
+
+            return True
+        except git.GitCommandError as e:
+            print(e)
+            print("Unable to stash, don't want to overwrite your stuff, aborting this branch\nupdate.")
+            return False
+    else:
+        print("Changes are not stashed, cannot continue without stashing. Aborting update.")
+        return False
+
+def update_repo(repo, remote, branch): # Update a branch passed to it
+    stashed = False
+    repo.git.fetch(remote, branch)
+    try:
+        print(repo.git.merge(remote + '/' + branch))
+    except git.GitCommandError as e:
+        print(e)
+        if "Your local changes to the following files would be overwritten by merge" in str(e):
+            stashed = stashChanges(repo)
+            if not stashed:
+                return False
+
+        print("Trying to merge again.")
+        try:
+            print(repo.git.merge(remote + '/' + branch))
+        except git.GitCommandError as e:
+            print(e)
+            print("Sorry, cannot automatically stash/discard local changes. Aborting.")
+            return False
+    print(branch + " updated.")
+    return True
+
+def main():
+    retval = 0
+    if not checkRoot():
+        logError("Must run as root or with sudo.")
+        retval = 1
+    else: # Running as root/sudo
+        global tmpscriptname
+        thisscript = os.path.basename(__file__)
+        scriptpath = addSlash(scriptPath())
+        configfile = os.path.join(scriptpath, "settings/config.cfg")
+        config = readCfgWithDefaults(configfile)
+        wwwpath = config['wwwPath']
+
+        # Check command line arguments
+        userinput = doArgs(scriptpath)
+        if userinput:
+            refreshBranches()
+            # TODO:  Change branch
+
+        if thisscript == tmpscriptname: # Really do the update
+            # Delete the temp script before we do an update
+            logMessage("DEBUG: Temp script is {0}}, bailing.".format(os.path.join(scriptpath, thisscript)))
+            retval = 0
+            return retval # DEBUG
+
+            #deleteFile(os.path.join(scriptpath, thisscript))
+
+            if userinput:
+                pass
+                # TODO:  Change branch
+            else:
+                pass
+                # TODO:  Loop through directories to do an update
+
+                #getrepos "$@" # Get list of repositories to update
+                #if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
+                #if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
+                #if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
+
+
+        else: # Download temp file and run it
+            thisscript = scriptname
+            banner(thisscript, "starting")
+            restart = stopBrewPi(scriptpath, wwwpath)
+            if restart == False:
+                logError("Unable to stop running BrewPi.")
+                retval = 1
+            else:
+                # Get the latest update script and run it instead
+                if not updateMeAndRun(scriptpath):
+                    retval = 1
+                else:
+                    logMessage("Refresh your browser with ctrl-F5 if open.")
+                    removeDontRunFile(wwwpath)
+                    banner(thisscript, "complete")
+                    # cleanup # Update dependencies if we did a git update
+                    # flash # Offer to flash controller
+                    # runAfterUpdate(scriptpath)
+                    retval = 0
+
+    return retval
 
 if __name__ == '__main__':
     result = main()
-    exit(result)
-    sys.exit()
+    sys.exit(result)

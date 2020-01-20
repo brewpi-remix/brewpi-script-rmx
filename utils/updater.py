@@ -38,6 +38,9 @@ import subprocess
 from time import localtime, strftime
 import sys
 import os
+import pwd
+import grp
+import stat
 #import urllib2
 import argparse
 from git import Repo
@@ -82,7 +85,7 @@ def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
         startAfterUpdate = None
     return startAfterUpdate
 
-def updateMeAndRun(scriptpath) -> bool: # Pull down current version and run it instead
+def updateMeAndRun(scriptpath, opts = "") -> bool: # Pull down current version and run it instead
     # Download current script from Git and run it instead
     retval = True
     global rawurl
@@ -90,8 +93,7 @@ def updateMeAndRun(scriptpath) -> bool: # Pull down current version and run it i
     tmpscript = os.path.join(scriptpath, tmpscriptname)
     repo = Repo(scriptpath)
     branch = repo.active_branch
-    url = str.replace("THISBRANCH", branch)
-
+    url = rawurl.replace("THISBRANCH", str(branch))
     response = requests.get(url)
     if response.status_code == 200:
         logMessage("Downloading current version of this script.")
@@ -115,10 +117,14 @@ def updateMeAndRun(scriptpath) -> bool: # Pull down current version and run it i
 
     if retval:
         logMessage("Executing online version of script.")
+        print("DEBUG: opts = {0}".format(opts))
         try:
-            # TODO:  Execute tmpscript
-            print("DEBUG:  Running {0}.".format(tmpscript))
-            pass
+            pout = subprocess.run([
+                tmpscript,
+                opts])
+            if pout.returncode > 0:
+                retval = False  # Error
+
         except Exception as e:
             logError("Failed to execute online file, error: {0}".format(e))
             retval = False
@@ -498,11 +504,13 @@ def main():
                 retval = 1
             else:
                 # Get the latest update script and run it instead
-                if not updateMeAndRun(scriptpath):
+                if userinput:
+                    arg = "--ask"
+                if not updateMeAndRun(scriptpath, arg):
                     retval = 1
                 else:
                     logMessage("Refresh your browser with ctrl-F5 if open.")
-                    removeDontRunFile(wwwpath)
+                    removeDontRunFile(os.path.join(wwwpath, "do_not_run_brewpi"))
                     banner(thisscript, "complete")
                     # cleanup # Update dependencies if we did a git update
                     # flash # Offer to flash controller

@@ -50,7 +50,7 @@ from pprint import pprint as pp
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 try:
     import BrewPiUtil
-    from BrewPiUtil import addSlash, stopThisChamber, scriptPath, readCfgWithDefaults, removeDontRunFile
+    from BrewPiUtil import addSlash, printStdErr, printStdOut, stopThisChamber, scriptPath, readCfgWithDefaults, removeDontRunFile
     import brewpiVersion
 except ImportError as e:
     print("Not part of a BrewPi Git repository, error:\n{0}".format(e), file=sys.stderr)
@@ -59,6 +59,7 @@ except ImportError as e:
 rawurl = "https://raw.githubusercontent.com/brewpi-remix/brewpi-script-rmx/THISBRANCH/utils/updater.py"
 tmpscriptname = "tmpUpdate.py"  # Name of script running from GitHub
 scriptname = "updater.py"       # Name of core script
+usedts = False                  # Use Date/Time stamps
 
 ####  ********************************************************************
 ####
@@ -71,10 +72,18 @@ scriptname = "updater.py"       # Name of core script
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 def logMessage(*objs):
-    print(*objs, file=sys.stdout)
+    global usedts
+    if usedts:
+        printStdOut(strftime("%Y-%m-%d %H:%M:%S "), *objs)
+    else:
+        printStdOut(*objs)
 
 def logError(*objs):
-    print(*objs, file=sys.stderr)
+    global usedts
+    if usedts:
+        printStdErr(strftime("%Y-%m-%d %H:%M:%S "), *objs)
+    else:
+        printStdErr(*objs)
 
 def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
     startAfterUpdate = None
@@ -91,7 +100,7 @@ def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
         startAfterUpdate = None
     return startAfterUpdate
 
-def updateMeAndRun(scriptpath, args = None) -> bool: # Pull down current version and run it instead
+def updateMeAndRun(scriptpath, args) -> bool: # Pull down current version and run it instead
     # Download current script from Git and run it instead
     retval = True
     global rawurl
@@ -123,13 +132,13 @@ def updateMeAndRun(scriptpath, args = None) -> bool: # Pull down current version
 
     if retval:
         logMessage("Executing online version of script.")
-        print("DEBUG: opts = {0}".format(args))
+        arguments = []
+        if args[1:]:
+            arguments = args[1:]
+        arguments.insert(0, tmpscript)
+        print("DEBUG: Process args = {0}".format(arguments))
         try:
-            pout = None
-            if not args:
-                pout = subprocess.run([tmpscript])
-            else:
-                pout = subprocess.run([tmpscript, args])
+            pout = subprocess.run(arguments)
             if pout.returncode > 0:
                 retval = False  # Error
 
@@ -173,7 +182,7 @@ def doArgs(scriptpath) -> bool:
     parser.add_argument("-a", "--ask",
                         help="ask which branch to check out",
                         action="store_true")
-
+    parser.add_argument("-d", "--datetime", help="use date/time stamp on logs", action="store_true")
     # Read arguments from the command line
     args = parser.parse_args()
 
@@ -463,7 +472,7 @@ def update_repo(repo, remote, branch): # Update a branch passed to it
     print(branch + " updated.")
     return True
 
-def main():
+def main(args):
     retval = True
     if not checkRoot():
         logError("Must run as root or with sudo.")
@@ -475,61 +484,48 @@ def main():
         configfile = os.path.join(scriptpath, "settings/config.cfg")
         config = readCfgWithDefaults(configfile)
         wwwpath = config['wwwPath']
-
         # Check command line arguments
         userinput = doArgs(scriptpath)
-
-        sys.exit(0)
-
-        if thisscript == tmpscriptname: # Really do the update
-            # Delete the temp script before we do an update
+        if thisscript == tmpscriptname:
+            # This is the online version, do update
+            # Delete the temp script before we do the update
             deleteFile(os.path.join(scriptpath, thisscript))
-
             if userinput:
                 refreshBranches() # Make sure all remote branches are present
-                logMessage("DEBUG: userinput = True")
-                retval = True
-                return retval  # DEBUG
                 # TODO:  Change branch
+                logMessage("DEBUG: Running tempscript, userinput = True")
             else:
-                logMessage("DEBUG: userinput = False")
-                retval = True
-                return retval  # DEBUG
-
+                logMessage("DEBUG: Running tempscript, userinput = False")
             # TODO:  Loop through directories to do an update
+            logMessage("DEBUG: Should be looping through and updating repositories here")
             #getrepos "$@" # Get list of repositories to update
             #if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
             #if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
             #if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
-            retval = True
-
-
         else: # Download temp file and run it
-            thisscript = scriptname
-            banner(thisscript, "starting")
+            banner(scriptname, "starting")
             restart = stopBrewPi(scriptpath, wwwpath)
-            if restart == False:
-                logError("Unable to stop running BrewPi.")
-                retval = True
-            else:
+            if restart:
                 # Get the latest update script and run it instead
                 arg = None
                 if userinput:
                     arg = "--ask"
-                if not updateMeAndRun(scriptpath, arg):
-                    retval = True
+                if not updateMeAndRun(scriptpath, args):
+                    retval = False
                 else:
                     logMessage("Refresh your browser with ctrl-F5 if open.")
                     removeDontRunFile(os.path.join(wwwpath, "do_not_run_brewpi"))
                     runAfterUpdate(scriptpath)
                     # flash # Offer to flash controller
-                    banner(thisscript, "complete")
-                    retval = True
+                    banner(scriptname, "complete")
+            else:
+                logError("Unable to stop running BrewPi.")
+                retval = False
 
     return retval
 
 if __name__ == '__main__':
-    if main():
+    if main(sys.argv):
         sys.exit(0)
     else:
         sys.exit(1)

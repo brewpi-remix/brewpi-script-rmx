@@ -50,7 +50,7 @@ from pprint import pprint as pp
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 try:
     import BrewPiUtil
-    from BrewPiUtil import logError, logMessage, addSlash, stopThisChamber, scriptPath, readCfgWithDefaults, removeDontRunFile
+    from BrewPiUtil import addSlash, stopThisChamber, scriptPath, readCfgWithDefaults, removeDontRunFile
     import brewpiVersion
 except ImportError as e:
     print("Not part of a BrewPi Git repository, error:\n{0}".format(e), file=sys.stderr)
@@ -69,6 +69,12 @@ scriptname = "updater.py"       # Name of core script
 ####  ********************************************************************
 # import sentry_sdk
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+
+def logMessage(*objs):
+    print(*objs, file=sys.stdout)
+
+def logError(*objs):
+    print(*objs, file=sys.stderr)
 
 def stopBrewPi(scriptPath, wwwPath): # Quits all running instances of BrewPi
     startAfterUpdate = None
@@ -458,10 +464,10 @@ def update_repo(repo, remote, branch): # Update a branch passed to it
     return True
 
 def main():
-    retval = 0
+    retval = True
     if not checkRoot():
         logError("Must run as root or with sudo.")
-        retval = 1
+        retval = False
     else: # Running as root/sudo
         global tmpscriptname
         thisscript = os.path.basename(__file__)
@@ -472,29 +478,30 @@ def main():
 
         # Check command line arguments
         userinput = doArgs(scriptpath)
-        if userinput:
-            refreshBranches()
-            # TODO:  Change branch
+
+        sys.exit(0)
 
         if thisscript == tmpscriptname: # Really do the update
             # Delete the temp script before we do an update
-            logMessage("DEBUG: Temp script is {0}, bailing.".format(os.path.join(scriptpath, thisscript)))
-            retval = 0
-            return retval # DEBUG 
-
-            #deleteFile(os.path.join(scriptpath, thisscript))
+            deleteFile(os.path.join(scriptpath, thisscript))
 
             if userinput:
-                pass
+                refreshBranches() # Make sure all remote branches are present
+                logMessage("DEBUG: userinput = True")
+                retval = True
+                return retval  # DEBUG
                 # TODO:  Change branch
             else:
-                pass
-                # TODO:  Loop through directories to do an update
+                logMessage("DEBUG: userinput = False")
+                retval = True
+                return retval  # DEBUG
 
-                #getrepos "$@" # Get list of repositories to update
-                #if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
-                #if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
-                #if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
+            # TODO:  Loop through directories to do an update
+            #getrepos "$@" # Get list of repositories to update
+            #if [ -d "$toolPath" ]; then process "$toolPath"; fi # Check and process updates
+            #if [ -d "$SCRIPTPATH" ]; then process "$SCRIPTPATH"; fi # Check and process updates
+            #if [ -d "$wwwPath" ]; then process "$wwwPath"; fi # Check and process updates
+            retval = True
 
 
         else: # Download temp file and run it
@@ -503,25 +510,26 @@ def main():
             restart = stopBrewPi(scriptpath, wwwpath)
             if restart == False:
                 logError("Unable to stop running BrewPi.")
-                retval = 1
+                retval = True
             else:
                 # Get the latest update script and run it instead
                 arg = None
                 if userinput:
                     arg = "--ask"
                 if not updateMeAndRun(scriptpath, arg):
-                    retval = 1
+                    retval = True
                 else:
                     logMessage("Refresh your browser with ctrl-F5 if open.")
                     removeDontRunFile(os.path.join(wwwpath, "do_not_run_brewpi"))
-                    banner(thisscript, "complete")
-                    # cleanup # Update dependencies if we did a git update
+                    runAfterUpdate(scriptpath)
                     # flash # Offer to flash controller
-                    # runAfterUpdate(scriptpath)
-                    retval = 0
+                    banner(thisscript, "complete")
+                    retval = True
 
     return retval
 
 if __name__ == '__main__':
-    result = main()
-    sys.exit(result)
+    if main():
+        sys.exit(0)
+    else:
+        sys.exit(1)

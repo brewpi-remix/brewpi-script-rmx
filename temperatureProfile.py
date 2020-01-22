@@ -42,7 +42,7 @@ def getNewTemp(scriptPath):
         dialect = csv.Sniffer().sniff(csvfile.readline())
         csvfile.seek(0)
         temperatureReader = csv.reader(csvfile, dialect)
-        temperatureReader.next() # Discard the first row, which is the table header
+        next(temperatureReader) # Discard the first row, which is the table header
         prevTemp = None
         nextTemp = None
         interpolatedTemp = -99

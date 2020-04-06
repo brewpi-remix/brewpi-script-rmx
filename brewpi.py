@@ -48,6 +48,8 @@ import grp
 import serial
 import simplejson as json
 from configobj import ConfigObj
+import socket, asyncio, sys
+from struct import pack, unpack, calcsize
 import temperatureProfile
 import programController as programmer
 import brewpiJson

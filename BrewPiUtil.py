@@ -41,17 +41,10 @@ import pwd
 import grp
 from psutil import process_iter as ps
 from time import sleep, strftime
+import configobj
 import BrewPiSocket
 import autoSerial
 import BrewPiProcess
-
-
-try:
-    import configobj
-except ImportError:
-    print("\nBrewPi requires ConfigObj to run, please install it with \n"
-          "'sudo pip3 install configobj")
-    exit(1)
 
 
 def addSlash(path):
@@ -147,7 +140,7 @@ def scriptPath():
     Return the path of BrewPiUtil.py. __file__ only works in modules, not in the main script.
     That is why this function is needed.
     """
-    return os.path.dirname(__file__)
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):
@@ -354,9 +347,6 @@ def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
         return None
 
 
-# def asciiToUnicode(s):
-    # Remove extended ascii characters from string, because they can raise
-    # UnicodeDecodeError later
 def asciiToUnicode(s):
     #deg_symbol = bytes([0xB0]).decode(encoding="utf-8").strip()
     #s = s.replace(deg_symbol, '&deg')

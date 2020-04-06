@@ -728,7 +728,7 @@ try:
                 if cs['mode'] == "p":
                     profileFile = util.addSlash(
                         util.scriptPath()) + 'settings/tempProfile.csv'
-                    with file(profileFile, 'r') as prof:
+                    with open(profileFile, 'r') as prof:
                         cs['profile'] = prof.readline().split(",")[-1].rstrip("\n")
                 cs['dataLogging'] = config['dataLogging']
                 conn.send(json.dumps(cs).encode('utf-8'))
@@ -883,10 +883,10 @@ try:
                     shutil.copy(profileSrcFile, profileDestFile)
                     # For now, store profile name in header row (in an additional
                     # column)
-                    with file(profileDestFile, 'r') as original:
+                    with open(profileDestFile, 'r') as original:
                         line1 = original.readline().rstrip("\n")
                         rest = original.read()
-                    with file(profileDestFile, 'w') as modified:
+                    with open(profileDestFile, 'w') as modified:
                         modified.write(line1 + "," + value + "\n" + rest)
                 except IOError as e:  # Catch all exceptions and report back an error
                     error = "I/O Error(%d) updating profile: %s." % (e.errno,
@@ -894,7 +894,7 @@ try:
                     conn.send(error)
                     logMessage(error)
                 else:
-                    conn.send("Profile successfully updated.")
+                    conn.send("Profile successfully updated.".encode('utf-8'))
                     if cs['mode'] is not 'p':
                         cs['mode'] = 'p'
                         bg_ser.write("j{mode:p}")
@@ -1490,7 +1490,7 @@ try:
                     bg_ser.write("j{beerSet:" + json.dumps(cs['beerSet']) + "}")
 
         except socket.error as e:
-            logMessage("Socket error(%d): %s" % (e.errno, e.strerror))
+            logError("Socket error(%d): %s" % (e.errno, e.strerror))
             traceback.print_exc()
 
 except KeyboardInterrupt:
@@ -1499,7 +1499,12 @@ except KeyboardInterrupt:
     run = 0 # This should let the loop exit gracefully
 
 except Exception as e:
-    logError(e)
+    type, value, traceback = sys.exc_info()
+    fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+    logError("Caught an unhandled exception.")
+    logError("Error info:\n\tError: ({0}}): {1}}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
+        e.errno, e.strerror, type, fname, traceback.tb_lineno
+    ))
     logMessage("Caught an unhandled exception, exiting.")
     run = 0 # This should let the loop exit gracefully
 

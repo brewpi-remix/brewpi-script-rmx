@@ -48,6 +48,8 @@ import grp
 import serial
 import simplejson as json
 from configobj import ConfigObj
+import socket, asyncio, sys
+from struct import pack, unpack, calcsize
 import temperatureProfile
 import programController as programmer
 import brewpiJson
@@ -440,21 +442,40 @@ def resumeLogging():
         return {'status': 1, 'statusMessage': "Logging was not paused."}
 
 
-def checkBluetooth(interface = 0):
+def checkBluetooth(interface=0):
+    exceptions = []
     sock = None
     try:
-        sock = socket.socket(family = socket.AF_BLUETOOTH,
-                             type = socket.SOCK_RAW,
-                             proto = socket.BTPROTO_HCI)
+        sock = socket.socket(family=socket.AF_BLUETOOTH,
+                             type=socket.SOCK_RAW,
+                             proto=socket.BTPROTO_HCI)
         sock.setblocking(False)
         sock.setsockopt(socket.SOL_HCI, socket.HCI_FILTER, pack("IIIh2x", 0xffffffff,0xffffffff,0xffffffff,0))
-        sock.bind((interface,))
+        try:
+            sock.bind((interface,))
+        except OSError as exc:
+            exc = OSError(
+                    exc.errno, 'error while attempting to bind on '
+                    'interface {!r}: {}'.format(
+                        interface, exc.strerror))
+            exceptions.append(exc)
+    except OSError as exc:
+        if sock is not None:
+            sock.close()
+        exceptions.append(exc)
     except:
         if sock is not None:
             sock.close()
-        return False
-    else:
-        return True
+        raise
+    if len(exceptions) == 1:
+        raise exceptions[0]
+    elif len(exceptions) > 1:
+        model = str(exceptions[0])
+        if all(str(exc) == model for exc in exceptions):
+            raise exceptions[0]
+        raise OSError('Multiple exceptions: {}'.format(
+            ', '.join(str(exc) for exc in exceptions)))
+    return sock
 
 # Bytes are read from nonblocking serial into this buffer and processed when
 # the buffer contains a full line.

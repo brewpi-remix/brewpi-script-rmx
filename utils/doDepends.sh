@@ -205,9 +205,9 @@ do_packages() {
     # Cleanup if we updated packages
     if [ -n "$doCleanup" ]; then
         echo -e "\nCleaning up local repositories."
-        apt clean -y||warn
-        apt autoclean -y||warn
-        apt autoremove --purge -y||warn
+        apt-get clean -y||warn
+        apt-get autoclean -y||warn
+        apt-get autoremove --purge -y||warn
     else
         echo -e "\nNo apt updates to apply."
     fi

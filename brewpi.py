@@ -985,8 +985,8 @@ try:
                 try:
                     api = json.loads(value)
 
-                    if checkKey(api, 'api_key'):
-                        apiKey = api['api_key']
+                    if checkKey(api, 'api_name'):
+                        apiKey = api['api_name']
 
                         # BEGIN: Process a Brew Bubbles API POST
                         if apiKey == "Brew Bubbles":  # Received JSON from Brew Bubbles

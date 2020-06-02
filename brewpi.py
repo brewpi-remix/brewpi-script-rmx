@@ -236,7 +236,7 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a'))
     # Overwrite stdout, unbuffered
     sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
 
@@ -1242,7 +1242,6 @@ try:
                     prevDataTime = time.time()
                 prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
                 bg_ser.write("t")  # Request new from controller
-                prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
 
             # Controller not responding
             elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
@@ -1502,8 +1501,8 @@ except Exception as e:
     type, value, traceback = sys.exc_info()
     fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
     logError("Caught an unhandled exception.")
-    logError("Error info:\n\tError: ({0}}): {1}}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
-        e.errno, e.strerror, type, fname, traceback.tb_lineno
+    logError("Error info:\n\tError: ({0}): {1}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
+        getattr(e, "errno", None), getattr(e, "strerror", None), type, fname, traceback.tb_lineno
     ))
     logMessage("Caught an unhandled exception, exiting.")
     run = 0 # This should let the loop exit gracefully

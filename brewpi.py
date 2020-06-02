@@ -479,7 +479,8 @@ def checkBluetooth(interface=0):
 
 # Bytes are read from nonblocking serial into this buffer and processed when
 # the buffer contains a full line.
-ser = util.setupSerial(config)
+# 0 = non-blocking mode, return immediately in any case, returning zero or more, up to the requested number of byte
+ser = util.setupSerial(config, time_out=0, wtime_out=0)
 if not ser:
     sys.exit(1)
 

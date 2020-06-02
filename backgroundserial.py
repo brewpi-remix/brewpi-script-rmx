@@ -101,7 +101,7 @@ class BackGroundSerial():
             if self.ser is not None:
                 self.ser.close()
             del self.ser # this helps to fully release the port to the OS
-            sys.exit("Terminating due to fatal serial error")
+            raise Exception("Terminating due to fatal serial error")
 
     def __listenThread(self):
         lastReceive = time.time()

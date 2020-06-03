@@ -1100,10 +1100,11 @@ try:
                                         # Set time of last update
                                         lastTiltbridge = timestamp = time.time()
                                         _temp = api['tilts'][config['tiltColor']]['temp']
+                                        _gravityOffset = 1.313454 - (0.132674 * _temp) + (0.002057793 * _temp**2) - (0.000002627634 * _temp**3) #TILT doesn't seem to do temp correction
                                         if cc['tempFormat'] == 'C':
                                             _temp = round(bc.convert(_temp, 'F', 'C'), 1)
                                         prevTempJson[config["tiltColor"] + 'Temp'] = round(_temp, 1)
-                                        prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity'])
+                                        prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity']) - _gravityOffset
                                         #  TODO:  prevTempJson[config["tiltColor"] + 'Batt'] = api['tilts'][config['tiltColor']]['batt']
                                         prevTempJson[config["tiltColor"] + 'Batt'] = None
 

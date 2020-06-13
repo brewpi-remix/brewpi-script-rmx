@@ -236,9 +236,9 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a+'))
     # Overwrite stdout, unbuffered
-    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
+    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w+'))
 
 
 # Get www json setting with default
@@ -713,11 +713,11 @@ try:
                 value = ""
 
             if messageType == "ack": # Acknowledge request
-                conn.send('ack')
+                conn.send("ack".encode('utf-8'))
             elif messageType == "lcd": # LCD contents requested
-                conn.send(json.dumps(lcdText).encode(encoding="cp437"))
+                conn.send(json.dumps(lcdText).encode('utf-8'))
             elif messageType == "getMode": # Echo mode setting
-                conn.send(cs['mode'])
+                conn.send(cs['mode']).encode('utf-8')
             elif messageType == "getFridge": # Echo fridge temperature setting
                 conn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
             elif messageType == "getBeer": # Echo beer temperature setting
@@ -1489,9 +1489,18 @@ try:
                     # If temperature has to be updated send settings to controller
                     bg_ser.write("j{beerSet:" + json.dumps(cs['beerSet']) + "}")
 
-        except socket.error as e:
-            logError("Socket error(%d): %s" % (e.errno, e.strerror))
-            traceback.print_exc()
+        except ConnectionError as e:
+            type, value, traceback = sys.exc_info()
+            fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+            logError("Caught a socket error.")
+            logError("Error info:")
+            logError("\tError: ({0}): '{1}'".format(getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+            logError("\tType: {0}".format(type))
+            logError("\tFilename: {0}".format(fname))
+            logError("\tLineNo: {0}".format(traceback.tb_lineno))
+            logMessage("Caught a socket error, exiting.")
+            sys.stderr.close()
+            run = 0 # This should let the loop exit gracefully
 
 except KeyboardInterrupt:
     print() # Simply a visual hack if we are running via command line
@@ -1501,11 +1510,13 @@ except KeyboardInterrupt:
 except Exception as e:
     type, value, traceback = sys.exc_info()
     fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
-    logError("Caught an unhandled exception.")
-    logError("Error info:\n\tError: ({0}}): {1}}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
-        e.errno, e.strerror, type, fname, traceback.tb_lineno
-    ))
-    logMessage("Caught an unhandled exception, exiting.")
+    logError("Caught an unexpected exception.")
+    logError("Error info:")
+    logError("\tError: ({0}): '{1}'".format(getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+    logError("\tType: {0}".format(type))
+    logError("\tFilename: {0}".format(fname))
+    logError("\tLineNo: {0}".format(traceback.tb_lineno))
+    logMessage("Caught an unexpected exception, exiting.")
     run = 0 # This should let the loop exit gracefully
 
 # Process a graceful shutdown:

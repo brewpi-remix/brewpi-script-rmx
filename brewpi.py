@@ -713,7 +713,7 @@ try:
                 value = ""
 
             if messageType == "ack": # Acknowledge request
-                conn.send("ack").encode('utf-8')
+                conn.send("ack".encode('utf-8'))
             elif messageType == "lcd": # LCD contents requested
                 conn.send(json.dumps(lcdText).encode('utf-8'))
             elif messageType == "getMode": # Echo mode setting

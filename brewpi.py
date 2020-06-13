@@ -236,9 +236,9 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'w'))
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a+'))
     # Overwrite stdout, unbuffered
-    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
+    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w+'))
 
 
 # Get www json setting with default

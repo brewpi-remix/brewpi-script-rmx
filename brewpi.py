@@ -713,11 +713,11 @@ try:
                 value = ""
 
             if messageType == "ack": # Acknowledge request
-                conn.send('ack')
+                conn.send('ack').encode('utf-8')
             elif messageType == "lcd": # LCD contents requested
                 conn.send(json.dumps(lcdText).encode(encoding="cp437"))
             elif messageType == "getMode": # Echo mode setting
-                conn.send(cs['mode'])
+                conn.send(cs['mode']).encode('utf-8')
             elif messageType == "getFridge": # Echo fridge temperature setting
                 conn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
             elif messageType == "getBeer": # Echo beer temperature setting
@@ -1502,8 +1502,8 @@ except Exception as e:
     type, value, traceback = sys.exc_info()
     fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
     logError("Caught an unhandled exception.")
-    logError("Error info:\n\tError: ({0}}): {1}}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
-        e.errno, e.strerror, type, fname, traceback.tb_lineno
+    logError("Error info:\n\tError: ({0}): {1}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
+        getattr(e, 'errno', ''), getattr(e, 'strerror', ''), type, fname, traceback.tb_lineno
     ))
     logMessage("Caught an unhandled exception, exiting.")
     run = 0 # This should let the loop exit gracefully

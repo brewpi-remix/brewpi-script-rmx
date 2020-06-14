@@ -1001,17 +1001,35 @@ try:
                             # Set time of last update
                             lastBbApi = timestamp = time.time()
 
+                            # Handle vessel temp conversion
+                            apiTemp = 0
+                            if cc['tempFormat'] == api['temp_unit']:
+                                apiTemp = api['temp']
+                            elif cc['tempFormat'] == 'F':
+                                apiTemp = bc.convert(api['temp'], 'C', 'F')
+                            else:
+                                apiTemp = bc.convert(api['temp'], 'F', 'C')
+
+                            # Handle ambient temp conversion
+                            apiAmbient = 0
+                            if cc['tempFormat'] == api['temp_unit']:
+                                apiAmbient = api['ambient']
+                            elif cc['tempFormat'] == 'F':
+                                apiAmbient = bc.convert(api['ambient'], 'C', 'F')
+                            else:
+                                apiAmbient = bc.convert(api['ambient'], 'F', 'C')
+
                             # Update prevTempJson if keys exist
                             if checkKey(prevTempJson, 'bbbpm'):
                                 prevTempJson['bbbpm'] = api['bpm']
-                                prevTempJson['bbamb'] = api['ambient']
-                                prevTempJson['bbves'] = api['temp']
+                                prevTempJson['bbamb'] = apiAmbient
+                                prevTempJson['bbves'] = apiTemp
                             # Else, append values to prevTempJson
                             else:
                                 prevTempJson.update({
                                     'bbbpm': api['bpm'],
-                                    'bbamb': api['ambient'],
-                                    'bbves': api['temp']
+                                    'bbamb': apiAmbient,
+                                    'bbves': apiTemp
                                 })
                         # END: Process a Brew Bubbles API POST
 

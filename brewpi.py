@@ -1203,14 +1203,14 @@ try:
 
                 # Begin: iSpindel Items
                 if ispindel is not None:
-                    if config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        if checkKey(prevTempJson, 'spinSG'):
-                            if prevTempJson['spinSG'] is not None:
-                                status[statusIndex] = {}
-                                statusType = "iSpindel SG: "
-                                statusValue = str(prevTempJson['spinSG'])
-                                status[statusIndex].update({statusType: statusValue})
-                                statusIndex = statusIndex + 1
+                    # if config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                    if checkKey(prevTempJson, 'spinSG'):
+                        if prevTempJson['spinSG'] is not None:
+                            status[statusIndex] = {}
+                            statusType = "iSpindel SG: "
+                            statusValue = str(prevTempJson['spinSG'])
+                            status[statusIndex].update({statusType: statusValue})
+                            statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'spinBatt'):
                         if prevTempJson['spinBatt'] is not None:
                             status[statusIndex] = {}

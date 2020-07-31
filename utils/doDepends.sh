@@ -23,6 +23,8 @@ declare SCRIPTPATH GITROOT APTPACKAGES NGINXPACKAGES PIP3PACKAGES
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
 declare HOMEPATH REALUSER
+# Declare placeholders for nginx work
+declare KEEP_NGINX
 
 ############
 ### Init
@@ -144,11 +146,12 @@ rem_nginx() {
     else
         echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
         echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
-        read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+        read -p "Would you like to remove nginx before proceeding?  [Y/n]: " yn  < /dev/tty
         case $yn in
             [Nn]* )
-                echo -e "\nUnable to proceed with nginx installed, exiting.";
-            exit 1;;
+                echo -e "\nKeeping nginx, will attempt to deconflict.";
+                KEEP_NGINX=1;
+            ;;
             * )
                 # Loop through the php5 packages that we've found
                 for pkg in ${NGINXPACKAGES,,}; do
@@ -156,6 +159,37 @@ rem_nginx() {
                     sudo apt-get remove --purge $pkg -y -q=2
                 done
                 echo -e "\nCleanup of the nginx environment complete."
+            ;;
+        esac
+    fi
+}
+
+############
+### Keep nginx packages
+############
+
+keep_nginx() {
+    echo -e "\nAttempting to configure nginx for ports 8080/444."
+    # Get list of installed packages
+    nginxPackage="$(dpkg --get-selections | awk '{ print $1 }' | grep 'nginx')"
+    if [[ -z "$nginxPackage" ]] ; then
+        echo -e "\nNo nginx packages found."
+    else
+        echo -e "\nIf you proceed, the script will attempt to reconfigure nginx to use"
+        echo -e "non-default ports of 8080 and 444. This is required to allow automated"
+        read -p "reconfiguration of both services.  Do you wish to continue?  [Y/n]: " yn  < /dev/tty
+        case $yn in
+            [Nn]* )
+                echo -e "\nUnable to proceed with nginx installed, exiting.";
+            exit 1;;
+            * )
+                cp "/etc/nginx/sites-enabled/default" "/etc/nginx/sites-enabled/default.bak";
+                sed -i "s/listen 80 default_server;/listen 8080 default_server;/g" "/etc/nginx/sites-enabled/default";
+                sed -i "s/listen \[::\]:80 default_server;/listen \[::\]:8080 default_server;/g" "/etc/nginx/sites-enabled/default";
+                sed -i "s/listen 443 ssl default_server;/listen 444 ssl default_server;/g" "/etc/nginx/sites-enabled/default";
+                sed -i "s/listen \[::\]:443 ssl default_server;/listen \[::\]:444 ssl default_server;/g" "/etc/nginx/sites-enabled/default";
+                systemctl restart nginx;
+                echo -e "\nReconfigured nginx to serve on port 8080.";
             ;;
         esac
     fi
@@ -270,6 +304,9 @@ main() {
     apt_check # Check on apt packages
     rem_php5 # Remove php5 packages
     rem_nginx # Remove nginx packages
+    if [[ $KEEP_NGINX -eq 1 ]]; then
+        keep_nginx "$@" # Attempt to reconfigure nginx
+    fi
     do_packages # Check on required packages
     do_aioblescan
     banner "complete"

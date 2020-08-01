@@ -30,7 +30,6 @@
 # See: 'original-license.md' for notes about the original project's
 # license and credits.
 
-
 import simplejson as json
 
 def getPinList(boardType, shieldType):
@@ -167,12 +166,18 @@ def getPinList(boardType, shieldType):
                    {'val': 11, 'text': 'Output 2 (A1)', 'type': 'act'},
                    {'val': 10, 'text': 'Output 3 (A0)', 'type': 'act'},
                    {'val': 0, 'text': 'OneWire', 'type': 'onewire'}]
-    elif boardType == "esp8266" and shieldType == "DIY":
+    elif (boardType == "esp8266"):  # Note - Excluding shield definition for now
         pinList = [{'val': 16, 'text': '  D0 (Heat)', 'type': 'act'},
                    {'val': 14, 'text': '  D5 (Cool)', 'type': 'act'},
                    {'val': 13, 'text': '  D7 (Door)', 'type': 'door'},
                    {'val': 12, 'text': 'D6 (OneWire)', 'type': 'onewire'},
                    {'val': 0, 'text': 'D3 (Buzzer)', 'type': 'beep'},]
+    elif (boardType == "esp32"):  # Note - Excluding shield definition for now
+        pinList = [{'val': 25, 'text': '  25 (Heat)', 'type': 'act'},
+                   {'val': 26, 'text': '  26 (Cool)', 'type': 'act'},
+                   {'val': 13, 'text': '  34 (Door)', 'type': 'door'},
+                   {'val': 13, 'text': '13 (OneWire)', 'type': 'onewire'}, ]
+
     else:
         print('Unknown controller or board type')
         pinList = {}
@@ -187,15 +192,18 @@ def getPinListJson(boardType, shieldType):
         return 0
 
 def pinListTest():
-    print(getPinListJson("leonardo", "revA"))
     print(getPinListJson("leonardo", "revC"))
-    print(getPinListJson("uno", "revA"))
     print(getPinListJson("uno", "revC"))
     print(getPinListJson("uno", "I2C"))
+    print(getPinListJson("leonardo", "revA"))
+    print(getPinListJson("uno", "revA"))
+    print(getPinListJson("leonardo", "diy"))
     print(getPinListJson("core", "V1"))
     print(getPinListJson("core", "V2"))
     print(getPinListJson("photon", "V1"))
     print(getPinListJson("photon", "V2"))
+    print(getPinListJson("esp8266", ""))
+    print(getPinListJson("esp32", ""))
 
 if __name__ == "__main__":
     pinListTest()

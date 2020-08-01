@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -18,11 +19,13 @@
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
 # Declare this script's constants
-declare SCRIPTPATH GITROOT APTPACKAGES NGINXPACKAGES PIP3PACKAGES
+declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
 declare HOMEPATH REALUSER
+# Declare placeholders for nginx work
+declare KEEP_NGINX
 
 ############
 ### Init
@@ -66,8 +69,6 @@ init() {
     
     # Packages to be installed/checked via apt
     APTPACKAGES="git python3 python3-pip python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
-    # nginx packages to be uninstalled via apt if present
-    NGINXPACKAGES="libgd-tools fcgiwrap nginx-doc ssl-cert fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libnginx-mod-http-auth-pam libnginx-mod-http-dav-ext libnginx-mod-http-echo libnginx-mod-http-geoip libnginx-mod-http-image-filter libnginx-mod-http-subs-filter libnginx-mod-http-upstream-fair libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream libtiff5 libwebp6 libxpm4 libxslt1.1 nginx nginx-common nginx-full"
     # Packages to be installed/check via pip3
     PIP3PACKAGES="pyserial psutil simplejson configobj gitpython sentry-sdk"
 }
@@ -88,11 +89,18 @@ banner() {
 
 apt_check() {
     echo -e "\nFixing any broken installations before proceeding."
+    # Update any expired keys
+    for key in $(sudo apt-key list 2> /dev/null | grep expired | cut -d'/' -f2 | cut -d' ' -f1); do
+        sudo apt-key adv --recv-keys --keyserver keys.gnupg.net "$key" 2> /dev/null
+    done
+    # Fix any broken installs
     sudo apt-get --fix-broken install -y||die
+    # Remove any orphaned packages
+    sudo apt-get autoremove --purge -y -q=2||die
     # Run 'apt update' if last run was > 1 week ago
     lastUpdate=$(stat -c %Y /var/lib/apt/lists)
     nowTime=$(date +%s)
-    if [ $(($nowTime - $lastUpdate)) -gt 604800 ] ; then
+    if [ $((nowTime - lastUpdate)) -gt 604800 ] ; then
         echo -e "\nLast apt update was over a week ago. Running apt update before updating"
         echo -e "dependencies."
         apt-get update -yq||die
@@ -113,18 +121,13 @@ rem_php5() {
     else
         echo -e "\nFound php5 packages installed.  It is recomended to uninstall all php before"
         echo -e "proceeding as BrewPi requires php7 and will install it during the install"
-        read -p "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+        read -rp "process.  Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
         case $yn in
             [Nn]* )
                 echo -e "\nUnable to proceed with php5 installed, exiting.";
             exit 1;;
             * )
-                php_packages="$(dpkg --get-selections | awk '{ print $1 }' | grep 'php')"
-                # Loop through the php5 packages that we've found
-                for pkg in ${php_packages,,}; do
-                    echo -e "\nRemoving '$pkg'.\n"
-                    sudo apt-get remove --purge $pkg -y -q=2
-                done
+                sudo apt-get autoremove --purge php5 -y -q=2;
                 echo -e "\nCleanup of the php environment complete."
             ;;
         esac
@@ -142,23 +145,48 @@ rem_nginx() {
     if [[ -z "$nginxPackage" ]] ; then
         echo -e "\nNo nginx packages found."
     else
-        echo -e "\nFound nginx packages installed.  It is recomended to uninstall nginx before"
-        echo -e "proceeding as BrewPi requires apache2 and they will conflict with each other."
-        read -p "Would you like to clean this up before proceeding?  [Y/n]: " yn  < /dev/tty
+        echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
+        echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
+        echo -e "nginx to use an alternate port. Would you like to uninstall nginx (u),";
+        read -rp "reconfigure it to use an alternate port (r), or exit (X)? [u/r/X]: " yn  < /dev/tty
         case $yn in
-            [Nn]* )
-                echo -e "\nUnable to proceed with nginx installed, exiting.";
-            exit 1;;
+            [Uu]* )
+                # Uninstall nginx
+                echo.
+                sudo apt-get autoremove --purge nginx -y -q=2;
+                echo -e "\nCleanup of the nginx environment complete.";
+                ;;
+            [Rr]* )
+                KEEP_NGINX=1;;
             * )
-                # Loop through the php5 packages that we've found
-                for pkg in ${NGINXPACKAGES,,}; do
-                    echo -e "\nRemoving '$pkg'.\n"
-                    sudo apt-get remove --purge $pkg -y -q=2
-                done
-                echo -e "\nCleanup of the nginx environment complete."
-            ;;
+                exit 1;
+                ;;
         esac
     fi
+}
+
+############
+### Reconfigure nginx
+############
+
+keep_nginx() {
+    local path ip
+    path="/etc/nginx/sites-enabled"
+    echo -e "\nAttempting to configure nginx for ports 81/444."
+    for file in "$path"/*; do
+        expanded=$(readlink -f "$file")
+        cp "$expanded" "$expanded.bak"
+        sed -i "s/listen 80 default_server/listen 81 default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:80 default_server/listen \[::\]:81 default_server/g" "$expanded"
+        sed -i "s/listen 443 ssl default_server/listen 444 ssl default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:444 ssl default_server/g" "$expanded"
+    done
+    systemctl restart nginx;
+    ip=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+    echo -e "\nReconfigured nginx to serve applications on port 81/444. You will have to"
+    echo -e "access your previous nginx websites with the port at the end of the URL like:"
+    echo -e "http://$(hostname).local:81 or http://$ip:81"
+    sleep 5
 }
 
 ############
@@ -173,12 +201,12 @@ do_packages() {
     sudo apt-get --fix-broken install -y||die
     echo -e "\nChecking and installing required dependencies via apt."
     for pkg in ${APTPACKAGES,,}; do
-        pkgOk=$(dpkg-query -W --showformat='${Status}\n' ${pkg,,} | \
+        pkgOk=$(dpkg-query -W --showformat='${Status}\n' "${pkg,,}" | \
         grep "install ok installed")
         if [ -z "$pkgOk" ]; then
             ((didInstall++))
             echo -e "\nInstalling '$pkg'.\n"
-            apt-get install ${pkg,,} -y -q=2||die
+            apt-get install "${pkg,,}" -y -q=2||die
             echo
         fi
     done
@@ -197,7 +225,7 @@ do_packages() {
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
             echo -e "\nUpgrading '$pkg'.\n"
-            apt-get install ${pkg,,} -y -q=2||die
+            apt-get install "${pkg,,}" -y -q=2||die
             doCleanup=1
         fi
     done
@@ -214,17 +242,20 @@ do_packages() {
     
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
+    # shellcheck disable=SC2016
     pipcmd='pipInstalled=$(pip3 list --format=columns)'
     eval "$pipcmd"
+    # shellcheck disable=SC2016
     pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
     eval "$pipcmd"
     for pkg in ${PIP3PACKAGES,,}; do
+        # shellcheck disable=SC2154
         if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
             echo -e "\nInstalling '$pkg'."
-            pip3 install $pkg -q||die
+            pip3 install "$pkg" -q||die
         else
             echo -e "\nChecking for update to '$pkg'."
-            pip3 install $pkg --upgrade -q||die
+            pip3 install "$pkg" --upgrade -q||die
         fi
     done
 }
@@ -269,7 +300,10 @@ main() {
     banner "starting"
     apt_check # Check on apt packages
     rem_php5 # Remove php5 packages
-    rem_nginx # Remove nginx packages
+    rem_nginx # Offer to remove nginx packages
+    if [[ $KEEP_NGINX -eq 1 ]]; then
+        keep_nginx "$@" # Attempt to reconfigure nginx
+    fi
     do_packages # Check on required packages
     do_aioblescan
     banner "complete"

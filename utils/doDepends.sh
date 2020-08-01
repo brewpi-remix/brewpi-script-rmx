@@ -170,7 +170,7 @@ rem_nginx() {
 ############
 
 keep_nginx() {
-    local path
+    local path ip
     path="/etc/nginx/sites-enabled"
     echo -e "\nAttempting to configure nginx for ports 81/444."
     for file in "$path"/*; do
@@ -182,7 +182,10 @@ keep_nginx() {
         sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:444 ssl default_server/g" "$expanded"
     done
     systemctl restart nginx;
-    echo -e "\nReconfigured nginx to serve applications on port 81/444."
+    ip=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+    echo -e "\nReconfigured nginx to serve applications on port 81/444. You will have to"
+    echo -e "access your previous nginx websites with the port at the end of the URL like:"
+    echo -e "http://$(hostname).local:81 or http://$ip:81"
     sleep 5
 }
 

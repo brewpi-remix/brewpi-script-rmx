@@ -1174,15 +1174,15 @@ try:
 
                 # Begin: Tilt Items
                 if tilt or tiltbridge:
-                    if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        if not prevTempJson[config['tiltColor'] + 'Temp'] == 0: # Use as a check to see if it's online
-                            if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                                if prevTempJson[config['tiltColor'] + 'SG'] is not None:
-                                    status[statusIndex] = {}
-                                    statusType = "Tilt SG: "
-                                    statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
-                                    status[statusIndex].update({statusType: statusValue})
-                                    statusIndex = statusIndex + 1
+                    # if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                    if not prevTempJson[config['tiltColor'] + 'Temp'] == 0: # Use as a check to see if it's online
+                        if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                            if prevTempJson[config['tiltColor'] + 'SG'] is not None:
+                                status[statusIndex] = {}
+                                statusType = "Tilt SG: "
+                                statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
+                                status[statusIndex].update({statusType: statusValue})
+                                statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
                         if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
                             if not prevTempJson[config['tiltColor'] + 'Batt'] == 0:
@@ -1203,14 +1203,14 @@ try:
 
                 # Begin: iSpindel Items
                 if ispindel is not None:
-                    if config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        if checkKey(prevTempJson, 'spinSG'):
-                            if prevTempJson['spinSG'] is not None:
-                                status[statusIndex] = {}
-                                statusType = "iSpindel SG: "
-                                statusValue = str(prevTempJson['spinSG'])
-                                status[statusIndex].update({statusType: statusValue})
-                                statusIndex = statusIndex + 1
+                    # if config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                    if checkKey(prevTempJson, 'spinSG'):
+                        if prevTempJson['spinSG'] is not None:
+                            status[statusIndex] = {}
+                            statusType = "iSpindel SG: "
+                            statusValue = str(prevTempJson['spinSG'])
+                            status[statusIndex].update({statusType: statusValue})
+                            statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'spinBatt'):
                         if prevTempJson['spinBatt'] is not None:
                             status[statusIndex] = {}

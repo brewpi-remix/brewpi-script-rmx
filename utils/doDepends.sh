@@ -147,18 +147,19 @@ rem_nginx() {
     else
         echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
         echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
-        echo -e "nginx to use an alternate port. Would you like to uninstall nginx (Y),";
-        read -rp "reconfigure it to use an alternate port (r), or exit? [Y/r/n]: " yn  < /dev/tty
+        echo -e "nginx to use an alternate port. Would you like to uninstall nginx (u),";
+        read -rp "reconfigure it to use an alternate port (r), or exit (X)? [u/r/X]: " yn  < /dev/tty
         case $yn in
-            [Nn]* )
-                # Exit and don't do anything
-                exit 1;;
+            [Uu]* )
+                # Uninstall nginx
+                echo.
+                sudo apt-get autoremove --purge nginx -y -q=2;
+                echo -e "\nCleanup of the nginx environment complete.";
+                ;;
             [Rr]* )
                 KEEP_NGINX=1;;
             * )
-                # Uninstall nginx
-                sudo apt-get autoremove --purge nginx -y -q=2;
-                echo -e "\nCleanup of the nginx environment complete.";
+                exit 1;
                 ;;
         esac
     fi
@@ -173,14 +174,15 @@ keep_nginx() {
     path="/etc/nginx/sites-enabled"
     echo -e "\nAttempting to configure nginx for ports 81/444."
     for file in "$path"/*; do
-        cp "/etc/nginx/sites-enabled/default" "/etc/nginx/sites-enabled/default.bak"
-        sed -i "s/listen 80 default_server;/listen 81 default_server;/g" "/etc/nginx/sites-enabled/default"
-        sed -i "s/listen \[::\]:80 default_server;/listen \[::\]:81 default_server;/g" "/etc/nginx/sites-enabled/default"
-        sed -i "s/listen 443 ssl default_server;/listen 444 ssl default_server;/g" "/etc/nginx/sites-enabled/default"
-        sed -i "s/listen \[::\]:443 ssl default_server;/listen \[::\]:444 ssl default_server;/g" "/etc/nginx/sites-enabled/default"
+        expanded=$(readlink -f "$file")
+        cp "$expanded" "$expanded.bak"
+        sed -i "s/listen 80 default_server/listen 81 default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:80 default_server/listen \[::\]:81 default_server/g" "$expanded"
+        sed -i "s/listen 443 ssl default_server/listen 444 ssl default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:444 ssl default_server/g" "$expanded"
     done
     systemctl restart nginx;
-    echo -e "\nReconfigured nginx to serve applications on port 81."
+    echo -e "\nReconfigured nginx to serve applications on port 81/444."
     sleep 5
 }
 

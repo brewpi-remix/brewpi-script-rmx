@@ -149,7 +149,7 @@ rem_nginx() {
         echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
         echo -e "nginx to use an alternate port. Choose one of the following:";
         echo -e "\n\t[u] Uninstall nginx (this will break Fermentrack if installed.)";
-        echo -e "\t[r] Reconfiggure nginx (and Fermentrack) to use a different port.";
+        echo -e "\t[r] Reconfigure nginx (and Fermentrack) to use a different port.";
         echo -e "\t[X] Exit and do nothing.\n";
         read -rp "[u/r/X]: " yn  < /dev/tty
         case $yn in

@@ -147,18 +147,25 @@ rem_nginx() {
     else
         echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
         echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
-        echo -e "nginx to use an alternate port. Would you like to uninstall nginx (u),";
-        read -rp "reconfigure it to use an alternate port (r), or exit (X)? [u/r/X]: " yn  < /dev/tty
+        echo -e "nginx to use an alternate port. Choose one of the following:";
+        echo -e "\n\t[u] Uninstall nginx (this will break Fermentrack if installed.)";
+        echo -e "\t[r] Reconfigure nginx (and Fermentrack) to use a different port.";
+        echo -e "\t[X] Exit and do nothing.\n";
+        read -rp "[u/r/X]: " yn  < /dev/tty
         case $yn in
             [Uu]* )
                 # Uninstall nginx
-                echo.
+                echo "";
+                sudo systemctl stop nginx;
+                sudo systemctl disable nginx;
                 sudo apt-get autoremove --purge nginx -y -q=2;
                 echo -e "\nCleanup of the nginx environment complete.";
                 ;;
             [Rr]* )
+                echo -e "\nReconfiguring nginx to alternate port.";
                 KEEP_NGINX=1;;
             * )
+                echo -e "\nMaking no changes.";
                 exit 1;
                 ;;
         esac

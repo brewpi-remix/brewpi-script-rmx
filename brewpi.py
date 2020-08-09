@@ -236,9 +236,9 @@ if logToFiles:
     print("Logging to {0}.".format(logPath))
     print("Output will not be shown in console.")
     # Append stderr, unbuffered
-    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a'))
+    sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a+'))
     # Overwrite stdout, unbuffered
-    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w'))
+    sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w+'))
 
 
 # Get www json setting with default
@@ -713,11 +713,11 @@ try:
                 value = ""
 
             if messageType == "ack": # Acknowledge request
-                conn.send('ack')
+                conn.send("ack".encode('utf-8'))
             elif messageType == "lcd": # LCD contents requested
-                conn.send(json.dumps(lcdText).encode(encoding="cp437"))
+                conn.send(json.dumps(lcdText).encode('utf-8'))
             elif messageType == "getMode": # Echo mode setting
-                conn.send(cs['mode'])
+                conn.send(cs['mode']).encode('utf-8')
             elif messageType == "getFridge": # Echo fridge temperature setting
                 conn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
             elif messageType == "getBeer": # Echo beer temperature setting
@@ -1001,17 +1001,35 @@ try:
                             # Set time of last update
                             lastBbApi = timestamp = time.time()
 
+                            # Handle vessel temp conversion
+                            apiTemp = 0
+                            if cc['tempFormat'] == api['temp_unit']:
+                                apiTemp = api['temp']
+                            elif cc['tempFormat'] == 'F':
+                                apiTemp = bc.convert(api['temp'], 'C', 'F')
+                            else:
+                                apiTemp = bc.convert(api['temp'], 'F', 'C')
+
+                            # Handle ambient temp conversion
+                            apiAmbient = 0
+                            if cc['tempFormat'] == api['temp_unit']:
+                                apiAmbient = api['ambient']
+                            elif cc['tempFormat'] == 'F':
+                                apiAmbient = bc.convert(api['ambient'], 'C', 'F')
+                            else:
+                                apiAmbient = bc.convert(api['ambient'], 'F', 'C')
+
                             # Update prevTempJson if keys exist
                             if checkKey(prevTempJson, 'bbbpm'):
                                 prevTempJson['bbbpm'] = api['bpm']
-                                prevTempJson['bbamb'] = api['ambient']
-                                prevTempJson['bbves'] = api['temp']
+                                prevTempJson['bbamb'] = apiAmbient
+                                prevTempJson['bbves'] = apiTemp
                             # Else, append values to prevTempJson
                             else:
                                 prevTempJson.update({
                                     'bbbpm': api['bpm'],
-                                    'bbamb': api['ambient'],
-                                    'bbves': api['temp']
+                                    'bbamb': apiAmbient,
+                                    'bbves': apiTemp
                                 })
                         # END: Process a Brew Bubbles API POST
 
@@ -1156,15 +1174,15 @@ try:
 
                 # Begin: Tilt Items
                 if tilt or tiltbridge:
-                    if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        if not prevTempJson[config['tiltColor'] + 'Temp'] == 0: # Use as a check to see if it's online
-                            if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                                if prevTempJson[config['tiltColor'] + 'SG'] is not None:
-                                    status[statusIndex] = {}
-                                    statusType = "Tilt SG: "
-                                    statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
-                                    status[statusIndex].update({statusType: statusValue})
-                                    statusIndex = statusIndex + 1
+                    # if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                    if not prevTempJson[config['tiltColor'] + 'Temp'] == 0: # Use as a check to see if it's online
+                        if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                            if prevTempJson[config['tiltColor'] + 'SG'] is not None:
+                                status[statusIndex] = {}
+                                statusType = "Tilt SG: "
+                                statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
+                                status[statusIndex].update({statusType: statusValue})
+                                statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
                         if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
                             if not prevTempJson[config['tiltColor'] + 'Batt'] == 0:
@@ -1185,14 +1203,14 @@ try:
 
                 # Begin: iSpindel Items
                 if ispindel is not None:
-                    if config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        if checkKey(prevTempJson, 'spinSG'):
-                            if prevTempJson['spinSG'] is not None:
-                                status[statusIndex] = {}
-                                statusType = "iSpindel SG: "
-                                statusValue = str(prevTempJson['spinSG'])
-                                status[statusIndex].update({statusType: statusValue})
-                                statusIndex = statusIndex + 1
+                    # if config['dataLogging'] == 'active': # Only display SG in status when not logging data
+                    if checkKey(prevTempJson, 'spinSG'):
+                        if prevTempJson['spinSG'] is not None:
+                            status[statusIndex] = {}
+                            statusType = "iSpindel SG: "
+                            statusValue = str(prevTempJson['spinSG'])
+                            status[statusIndex].update({statusType: statusValue})
+                            statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'spinBatt'):
                         if prevTempJson['spinBatt'] is not None:
                             status[statusIndex] = {}
@@ -1488,9 +1506,18 @@ try:
                     # If temperature has to be updated send settings to controller
                     bg_ser.write("j{beerSet:" + json.dumps(cs['beerSet']) + "}")
 
-        except socket.error as e:
-            logError("Socket error(%d): %s" % (e.errno, e.strerror))
-            traceback.print_exc()
+        except ConnectionError as e:
+            type, value, traceback = sys.exc_info()
+            fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+            logError("Caught a socket error.")
+            logError("Error info:")
+            logError("\tError: ({0}): '{1}'".format(getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+            logError("\tType: {0}".format(type))
+            logError("\tFilename: {0}".format(fname))
+            logError("\tLineNo: {0}".format(traceback.tb_lineno))
+            logMessage("Caught a socket error, exiting.")
+            sys.stderr.close()
+            run = 0 # This should let the loop exit gracefully
 
 except KeyboardInterrupt:
     print() # Simply a visual hack if we are running via command line
@@ -1500,11 +1527,13 @@ except KeyboardInterrupt:
 except Exception as e:
     type, value, traceback = sys.exc_info()
     fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
-    logError("Caught an unhandled exception.")
-    logError("Error info:\n\tError: ({0}): {1}\n\tType: {2}\n\tFilename: {3}\n\tLineNo: {4}".format(
-        getattr(e, "errno", None), getattr(e, "strerror", None), type, fname, traceback.tb_lineno
-    ))
-    logMessage("Caught an unhandled exception, exiting.")
+    logError("Caught an unexpected exception.")
+    logError("Error info:")
+    logError("\tError: ({0}): '{1}'".format(getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+    logError("\tType: {0}".format(type))
+    logError("\tFilename: {0}".format(fname))
+    logError("\tLineNo: {0}".format(traceback.tb_lineno))
+    logMessage("Caught an unexpected exception, exiting.")
     run = 0 # This should let the loop exit gracefully
 
 # Process a graceful shutdown:

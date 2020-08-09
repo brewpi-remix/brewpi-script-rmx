@@ -89,7 +89,11 @@ class BackGroundSerial():
         # prevent writing to a port in error state. This will leave unclosed handles to serial on the system
         if not self.error:
             try:
-                self.ser.write(data.encode(encoding="cp437"))
+                if hasattr(data, 'encode'):
+                    # Encode if it's not already done
+                    self.ser.write(data.encode(encoding='cp437'))
+                else:
+                    self.ser.write(data)
             except (IOError, OSError, SerialException) as e:
                 logMessage('Serial Error: {0})'.format(str(e)))
                 self.error = True

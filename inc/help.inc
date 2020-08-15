@@ -60,6 +60,7 @@ help() {
     arg="$1"
     if [ -n "$arg" ]; then
         arg="${arg//-}" # Strip out all dashes
+        if [[ "$arg" == "r"* ]]; then REINSTALL=1; fi
         if [[ "$arg" == "h"* ]]; then usage; exit 0; fi
         if [[ "$arg" == "v"* ]]; then version; exit 0; fi
     fi

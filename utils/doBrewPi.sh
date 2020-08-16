@@ -48,8 +48,8 @@ loop() {
 
     while :
     do
-        if (python3 -u "$script" --checkstartuponly --dontrunfile); then
-            USE_TIMESTAMP_LOG python3 -u "$script" --log --datetime
+        if (python3 -u "$script" --check --donotrun); then
+            USE_TIMESTAMP_LOG=true python3 -u "$script" --log --datetime
         else
             sleep 1
         fi

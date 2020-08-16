@@ -39,6 +39,7 @@ import psutil
 import stat
 import pwd
 import grp
+import git
 from psutil import process_iter as ps
 from time import sleep, strftime
 from configobj import ConfigObj, ParseError
@@ -231,6 +232,10 @@ def scriptPath():
             str(os.path.abspath(__file__), sys.getfilesystemencoding()))
     except:
         retVal = os.getcwd()
+
+    # Git root is our home path
+    git_repo = git.Repo(retVal, search_parent_directories=True)
+    retVal = git_repo.git.rev_parse("--show-toplevel")
 
     return addSlash(retVal)
 

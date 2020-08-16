@@ -189,6 +189,8 @@ def getGit():
 def options():  # Parse command line options
     global version
     global configFile
+    global checkStartupOnly
+    global logToFiles
 
     parser = argparse.ArgumentParser(
         description="Main BrewPi script which communicates with the controller(s)")
@@ -476,7 +478,7 @@ def setFiles():
 
     localJsonFileName = '{0}{1}.json'.format(dataPath, jsonFileName)
 
-    # Handle if we are runing Tilt or iSpindel
+    # Handle if we are running Tilt or iSpindel
     if checkKey(config, 'tiltColor'):
         brewpiJson.newEmptyFile(localJsonFileName, config['tiltColor'], None)
     elif checkKey(config, 'iSpindel'):
@@ -652,13 +654,21 @@ def setSocket():  # Create a listening socket to communicate with PHP
         phpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         phpSocket.bind(socketFile)  # Bind BEERSOCKET
         # Set owner and permissions for socket
-        fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP  # 660
-        owner = 'brewpi'
-        group = 'www-data'
-        uid = pwd.getpwnam(owner).pw_uid
-        gid = grp.getgrnam(group).gr_gid
-        os.chown(socketFile, uid, gid)  # chown socket
-        os.chmod(socketFile, fileMode)  # chmod socket
+        try:
+            fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP  # 660
+            owner = 'brewpi'
+            group = 'www-data'
+            uid = pwd.getpwnam(owner).pw_uid
+            gid = grp.getgrnam(group).gr_gid
+            os.chown(socketFile, uid, gid)  # chown socket
+            os.chmod(socketFile, fileMode)  # chmod socket
+        except IOError as e:
+            logError("Error({0}) while setting permissions on:".format(e.errno))
+            logError("{0}:".format(socketFile))
+            logError("{0}.".format(e.strerror))
+            logError("You are not running as root or brewpi, or your")
+            logError("permissions are not set correctly. To fix this, run:")
+            logError("sudo {0}utils/doPerms.sh".format(util.scriptPath()))
     # Set socket behavior
     phpSocket.setblocking(1)  # Set socket functions to be blocking
     phpSocket.listen(10)  # Create a backlog queue for up to 10 connections

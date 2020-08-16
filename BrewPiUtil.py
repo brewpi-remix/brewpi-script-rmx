@@ -41,7 +41,7 @@ import pwd
 import grp
 from psutil import process_iter as ps
 from time import sleep, strftime
-import configobj
+from configobj import ConfigObj, ParseError
 import BrewPiSocket
 import autoSerial
 import BrewPiProcess
@@ -58,113 +58,293 @@ def addSlash(path):
     return path
 
 
-def readCfgWithDefaults(cfg):
+def readCfgWithDefaults(configFile = None):
     """
     Reads a config file with the default config file as fallback
 
     Params:
-    cfg: string, path to cfg file
-    defaultCfg: string, path to defaultConfig file.
+    configFile: string, path to config file (defaults to {scriptpath}/settings/config.cfg)
 
     Returns:
     ConfigObj of settings
     """
-    if not cfg:
-        cfg = '{0}settings/config.cfg'.format(addSlash(path[0]))
 
-    # Added to fix default config file detection for multi-chamber
-    if cfg:
-        defaultCfg = '{0}/defaults.cfg'.format(os.path.dirname(cfg))
+    # Get settings folder
+    settings = '{0}settings/'.format(scriptPath())
 
-    #  Conditional line added to fix default config file detection for multi-chamber
-    if not defaultCfg:
-        defaultCfg = '{0}settings/defaults.cfg'.format(addSlash(scriptPath()))
+    # The configFile is always a named file rather than the default one
+    if not configFile:
+        configFile = '{0}config.cfg'.format(settings)
 
-    config = configobj.ConfigObj(defaultCfg)
+    # Now grab the default config file
+    defaultFile = '{0}defaults.cfg'.format(settings)
 
-    if cfg:
-        try:
-            userConfig = configobj.ConfigObj(cfg)
-            config.merge(userConfig)
-        except configobj.ParseError:
-            logMessage(
-                "ERROR: Could not parse user config file {0}.".format(cfg))
-        except IOError:
-            logMessage(
-                "Could not open user config file {0}. Using default config file.".format(cfg))
-    return config
-
-
-def configSet(configFile, settingName, value):
-    if not os.path.isfile(configFile):
-        logMessage("Config file {0} does not exist.".format(configFile))
-        logMessage("Creating with defaults")
+    error = 0
     try:
-        config = configobj.ConfigObj(configFile)
+        defCfg = ConfigObj(defaultFile, file_error=True)
+    except ParseError:
+        error = 1
+        logError("Could not parse default config file:")
+        logError("{0}".format(defaultFile))
+    except IOError:
+        error = 1
+        logError("Could not open default config file:")
+        logError("{0}".format(defaultFile))
+
+    # Write default.cfg file if it's missing
+    if error:
+        defCfg = ConfigObj()
+        defCfg.filename = defaultFile
+        defCfg['scriptPath'] = '/home/brewpi/'
+        defCfg['wwwPath'] = '/var/www/html/'
+        defCfg['port'] = 'auto'
+        defCfg['altport'] = None
+        defCfg['boardType'] = 'arduino'
+        defCfg['beerName'] = 'My BrewPi Remix Run'
+        defCfg['interval'] = '120.0'
+        defCfg['dataLogging'] = 'active'
+        defCfg['logJson'] = True
+        defCfg.write()
+
+    if configFile:
+        try:
+            userConfig = ConfigObj(configFile, file_error=True)
+            defCfg.merge(userConfig)
+        except ParseError:
+            error = 1
+            logError("Could not parse user config file:")
+            logError("{0}".format(configFile))
+        except IOError:
+            error = 1
+            logMessage("No user config file found:")
+            logMessage("{0}".format(configFile))
+            logMessage("Using default configuration.")
+
+    # Fix pathnames
+    defCfg['scriptPath'] = addSlash(defCfg['scriptPath'])
+    defCfg['wwwPath'] = addSlash(defCfg['wwwPath'])
+    return defCfg
+
+
+def configSet(settingName, value, configFile = None):
+    """
+    Merge in new or updated configuration
+
+    Params:
+    settingName: Name of setting to write
+    value: Value of setting to write
+    configFile (optional): Name of configuration file (defaults to config.cfg)
+
+    Returns:
+    ConfigObj of current settings
+    """
+    settings = '{0}settings/'.format(scriptPath())
+    newConfigFile = "{0}config.cfg".format(settings)
+    fileExists = True
+
+    # If we passed a configFile
+    if configFile:
+        # Check for the file
+        if not os.path.isfile(configFile):
+            # If there's no configFile, assume a "/" in it means a valid path at least
+            if "/" in configFile:
+                # Path seems legit, create it later
+                fileExists = False
+            else:
+                # Maybe it was a simple filename, add path and try again
+                configFile = "{0}{1}".format(settings, configFile)
+                if not os.path.isfile(configFile):
+                    # Still no dice
+                    fileExists = False
+        # No configFile passed
+        else:
+            # Path/File exists
+            fileExists = True
+    # No config file passed
+    else:
+        # Default to config.cfg in settings directory
+        configFile = newConfigFile
+        if not os.path.isfile(configFile):
+            fileExists = False
+
+    # If there's no config file, create it and set permissions
+    if not fileExists:
+        try:
+            # Create the file
+            open(configFile, 'a').close()
+            # chmod 660 the new file
+            fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
+            os.chmod(configFile, fileMode)
+            logMessage("Config file {0} did not exist, created new file.".format(configFile))
+        except:
+            logError("Unable to create '{0}'.".format(configFile))
+            return readCfgWithDefaults()
+
+    # Add or update the setting
+    try:
+        comment = "File created or updated on {0}\n#".format(strftime("%Y-%m-%d %H:%M:%S"))
+        config = ConfigObj()
+        config = readCfgWithDefaults()
+        config.initial_comment = [comment]
+        config.filename = configFile
         config[settingName] = value
         config.write()
+    except ParseError:
+        logError("Invalid configuration settings: '{0}': '{1}'".format(settingName, value))
+    except IOError as e:
+        logError("I/O error({0}) while setting permissions on:".format(e.errno))
+        logError("{0}:".format(configFile))
+        logError("{0}.".format(e.strerror))
+        logError("You are not running as root or brewpi, or your")
+        logError("permissions are not set correctly. To fix this, run:")
+        logError("sudo {0}utils/doPerms.sh".format(scriptPath()))
+    # chmod 660 the config file just in case
+    try:
         fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
         os.chmod(configFile, fileMode)
     except IOError as e:
-        logMessage(
-            "I/O error({0}) while updating {1}: {2}\n".format(e.errno, configFile, e.strerror))
-        logMessage("Your permissions likely are not set correctly.  To fix\n",
-                   "this, run 'sudo ./fixPermissions.sh' from your Tools directory.")
-    return readCfgWithDefaults(configFile)  # Return updated ConfigObj
+        logError("I/O error({0}) while setting permissions on:".format(e.errno))
+        logError("{0}:".format(configFile))
+        logError("{0}.".format(e.strerror))
+        logError("You are not running as root or brewpi, or your")
+        logError("permissions are not set correctly. To fix this, run:")
+        logError("sudo {0}utils/doPerms.sh".format(scriptPath()))
+    return readCfgWithDefaults(configFile)  # Return (hopefully updated) ConfigObj
+
+
+def scriptPath():
+    """
+    Return the path of this file
+
+    Params:
+    None
+
+    Returns:
+    Path of module with trailing slash
+    """
+    retVal = ""
+    if frozen():
+        retVal = os.path.dirname(
+            str(sys.executable, sys.getfilesystemencoding()))
+    try:
+        retVal = os.path.dirname(
+            str(os.path.abspath(__file__), sys.getfilesystemencoding()))
+    except:
+        retVal = os.getcwd()
+
+    return addSlash(retVal)
+
+
+def frozen():
+    """
+    Returns whether we are frozen via py2exe
+
+    Params:
+    None
+
+    Returns:
+    True if executing a frozen script, False if not
+    """
+    return hasattr(sys, "frozen")
 
 
 def printStdErr(*objs):
-    print(*objs, file=sys.stderr)
+    """
+    Prints the values to environment's sys.stderr with flush
+    """
+    print(*objs, file=sys.stderr, flush=True)
 
 
 def printStdOut(*objs):
-    print(*objs, file=sys.stdout)
+    """
+    Prints the values to environment's sys.stdout with flush
+    """
+    print(*objs, file=sys.stdout, flush=True)
 
 
 def logMessage(*objs):
     """
-    Prints a timestamped message to stdout
+    Prints a timestamped information message to stdout
     """
-    printStdOut(strftime("%Y-%m-%d %H:%M:%S "), *objs)
+    if 'USE_TIMESTAMP_LOG' in os.environ:
+        printStdOut(strftime("%Y-%m-%d %H:%M:%S [N]"), *objs)
+    else:
+        printStdOut(*objs)
+
+
+def logWarn(*objs):
+    """
+    Prints a timestamped warning message to stdout
+    """ 
+    if 'USE_TIMESTAMP_LOG' in os.environ:
+        printStdOut(strftime("%Y-%m-%d %H:%M:%S [W]"), *objs)
+    else:
+        printStdOut(*objs)
 
 
 def logError(*objs):
     """
     Prints a timestamped message to stderr
     """
-    printStdErr(strftime("%Y-%m-%d %H:%M:%S "), *objs)
+    if 'USE_TIMESTAMP_LOG' in os.environ:
+        printStdOut(strftime("%Y-%m-%d %H:%M:%S [E]"), *objs)
+    else:
+        printStdOut(*objs)
 
 
-def scriptPath():
+def removeDontRunFile(path = None):
     """
-    Return the path of BrewPiUtil.py. __file__ only works in modules, not in the main script.
-    That is why this function is needed.
+    Removes the semaphore file which prevents script processing
+
+    Returns:
+    True: File deleted
+    False: Unable to delete file
+    None: File does not exist
     """
-    return os.path.dirname(os.path.abspath(__file__))
+    if not path:
+        config = readCfgWithDefaults()
+        path = "{0}do_not_run_brewpi".format(config['wwwPath'])
 
-
-def removeDontRunFile(path='/var/www/html/do_not_run_brewpi'):
     if os.path.isfile(path):
         try:
             os.remove(path)
-            if not platform.startswith('win'):  # Daemon not available
-                print("\nBrewPi script will restart automatically.")
+             # Daemon not available under Windows
+            if not platform.startswith('win'):
+                logMessage("BrewPi script will restart automatically.")
                 return None
             return True
+        except IOError as e:
+            logError("I/O error({0}) while setting deleting:".format(e.errno))
+            logError("{0}:".format(path))
+            logError("{0}.".format(e.strerror))
+            logError("You are not running as root or brewpi, or your")
+            logError("permissions are not set correctly. To fix this, run:")
+            logError("sudo {0}utils/doPerms.sh".format(scriptPath()))
         except:
-            print("\nUnable to remove {0}.".format(path))
+            logError("Unable to remove {0}.".format(path))
             return False
     else:
-        print("\n{0} does not exist.".format(path))
+        logMessage("{0} does not exist.".format(path))
         return None
 
 
-def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
+def createDontRunFile(path = None):
+    """
+    Creates the semaphore file which prevents script processing
+
+    Returns:
+    True: File created
+    False: Unable to create file
+    None: File already exists
+    """
+    if not path:
+        config = readCfgWithDefaults()
+        path = "{0}do_not_run_brewpi".format(config['wwwPath'])
+
     if not os.path.isfile(path):
         try:
-            with open(path, 'w'):
-                os.utime(path, None)
-            # Set owner and permissions for file
+            open(path, 'a').close()
+            # chmod 660 the new file - make sure www-data can delete it
             fileMode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP # 660
             owner = 'brewpi'
             group = 'www-data'
@@ -172,14 +352,21 @@ def createDontRunFile(path='/var/www/html/do_not_run_brewpi'):
             gid = grp.getgrnam(group).gr_gid
             os.chown(path, uid, gid) # chown file
             os.chmod(path, fileMode) # chmod file
-            # File creation successful
+            logMessage("Semaphore {0} created.".format(path))
             return True
+        except IOError as e:
+            logError("I/O error({0}) while setting creating:".format(e.errno))
+            logError("{0}:".format(path))
+            logError("{0}.".format(e.strerror))
+            logError("You are not running as root or brewpi, or your")
+            logError("permissions are not set correctly. To fix this, run:")
+            logError("sudo {0}utils/doPerms.sh".format(scriptPath()))
         except:
             # File creation failure
-            print("\nUnable to create {0}.".format(path))
+            logError("Unable to create {0}.".format(path))
             return False
     else:
-        # print("\nFile already exists at {0}.".format(path))
+        logMessage("Semaphore {0} exists.".format(path))
         return None
 
 
@@ -366,3 +553,64 @@ class Unbuffered(object):
        self.stream.flush()
    def __getattr__(self, attr):
        return getattr(self.stream, attr)
+
+
+def main():
+    # Test the methods and classes
+    #
+    from pprint import pprint as pp
+    path = "/home/brewpi"
+    obj = ConfigObj()
+    #
+    # addSlash()
+    print("Testing addslash(): Passing '{0}' returning '{1}'".format(path, addSlash(path)))
+    # readCfgWithDefaults()
+    obj = readCfgWithDefaults()
+    print("Testing readCfgWithDefaults():")
+    pp(obj)
+    # configSet()
+    oldObj = readCfgWithDefaults()
+    oldValue = oldObj['altport']
+    newObj = configSet('altport', 'Foo')
+    newValue = newObj['altport']
+    discard = configSet('altport', oldObj['altport'])
+    print("Testing configSet():\n\tOld altport = {0}\n\tNew altport = {1}\n\tReturned to original value after test.".format(oldValue, newValue))
+    # scriptPath()
+    print("Testing: scriptPath() = {0}".format(scriptPath()))
+    # frozen()
+    print("Testing: frozen() = {0}".format(frozen()))
+    # printStdErr()
+    printStdErr("Testing printStdErr().")
+    # printStdErr()
+    printStdOut("Testing printStdOut().")
+    # Test Date/time stamp messages:
+    resetenv = False
+    # Using timestamps - Leave it like we found it
+    if not 'USE_TIMESTAMP_LOG' in os.environ:
+        resetenv = True
+        os.environ['USE_TIMESTAMP_LOG'] = 'True'
+    # logMessage()
+    logMessage("Testing logMessage().")
+    # logError()
+    logWarn("Testing logWarn().")
+    # logError()
+    logError("Testing logError().")
+    if resetenv:
+        del os.environ['USE_TIMESTAMP_LOG']
+    # do_not_run_brewpi - Leave it like we found it
+    print("Testing do_not_run_brewpi:")
+    if not os.path.isfile(obj['wwwPath']):
+        createDontRunFile()
+        removeDontRunFile()
+    else:
+        removeDontRunFile()
+        createDontRunFile()
+    # def findSerialPort(bootLoader, my_port=None):
+    # def setupSerial(config, baud_rate=57600, time_out=1.0, wtime_out=1.0, noLog=False):
+    # def stopThisChamber(scriptPath = '/home/brewpi/', wwwPath = '/var/www/html/'):
+    # def asciiToUnicode(s):
+
+if __name__ == "__main__":
+    # Execute tests if run as a script
+    main()
+    sys.exit(0)  # Exit script

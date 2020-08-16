@@ -60,9 +60,7 @@ from struct import pack, unpack, calcsize
 import temperatureProfile
 import programController as programmer
 import brewpiJson
-from BrewPiUtil import Unbuffered
-from BrewPiUtil import logMessage
-from BrewPiUtil import logError
+from BrewPiUtil import Unbuffered, logMessage, logError, addSlash, readCfgWithDefaults
 import BrewPiUtil as util
 import brewpiVersion
 import pinList
@@ -117,7 +115,6 @@ deviceList = dict(listState="", installed=[], available=[])
 version = "0.0.0"
 branch = "unknown"
 commit = "unknown"
-localPath = os.path.dirname(os.path.realpath(__file__))
 configFile = None
 config = None
 dontRunFilePath = None
@@ -180,12 +177,11 @@ def getGit():
     # version = os.popen('git describe --tags $(git rev-list --tags --max-count=1)').read().strip()
     # branch = os.popen('git branch | grep \* | cut -d " " -f2').read().strip()
     # commit = os.popen('git -C . log --oneline -n1').read().strip()
-    global localPath
     global version
     global branch
     global commit
-    repo = git.Repo(localPath)
-    version = next((tag for tag in repo.tags if tag.commit == repo.head.commit), None)
+    repo = git.Repo(util.scriptPath())
+    version = (next((tag for tag in reversed(repo.tags)), None))
     branch = repo.active_branch.name
     commit = str(repo.head.commit)[0:7]
 
@@ -209,6 +205,8 @@ def options():  # Parse command line options
         "-f", "--force", help="quit/kill others and keep this one", action='store_true')
     parser.add_argument(
         "-l", "--log", help="redirect output to log files", action='store_true')
+    parser.add_argument(
+        "-t", "--datetime", help="prepend log entries with date/time stamp", action='store_true')
     parser.add_argument(
         "-d", "--donotrun", help="check for do not run semaphore", action='store_true')
     parser.add_argument(
@@ -267,25 +265,26 @@ def options():  # Parse command line options
                           file=sys.stderr)
                     sys.exit(0)
 
-        # Redirect output of stderr and stdout to files in log directory
-        if args.log:
-            logToFiles = True
+    # Redirect output of stderr and stdout to files in log directory
+    if args.log:
+        logToFiles = True
 
-        # Only start brewpi when the dontrunfile is not found
-        if args.donotrun:
-            checkDontRunFile = True
+    # Redirect output of stderr and stdout to files in log directory
+    if args.datetime:
+        os.environ['USE_TIMESTAMP_LOG'] = 'True'
 
-        # Exit after startup checks
-        if args.check:
-            checkStartupOnly = True
+    # Only start brewpi when the dontrunfile is not found
+    if args.donotrun:
+        checkDontRunFile = True
+
+    # Exit after startup checks
+    if args.check:
+        checkStartupOnly = True
 
 
 def config():  # Load config file
     global configFile
     global config
-    global localPath
-    if not configFile:
-        configFile = '{0}settings/config.cfg'.format(util.addSlash(localPath))
     config = util.readCfgWithDefaults(configFile)
 
 
@@ -326,7 +325,7 @@ def setUpLog():  # Set up log files
     global logToFiles
     global logPath
     if logToFiles:
-        logPath = '{0}logs/'.format(util.addSlash(util.scriptPath()))
+        logPath = '{0}logs/'.format(util.scriptPath())
         # Skip logging for this message
         print("Logging to {0}.".format(logPath))
         print("Output will not be shown in console.")
@@ -418,7 +417,7 @@ def setFiles():
     # Concatenate directory names for the data
     beerFileName = config['beerName']
     dataPath = '{0}data/{1}/'.format(
-        util.addSlash(util.scriptPath()), beerFileName)
+        util.scriptPath(), beerFileName)
     wwwDataPath = '{0}data/{1}/'.format(
         util.addSlash(config['wwwPath']), beerFileName)
 
@@ -503,8 +502,8 @@ def startBeer(beerName):
 def startNewBrew(newName):
     global config
     if len(newName) > 1:
-        config = util.configSet(configFile, 'beerName', newName)
-        config = util.configSet(configFile, 'dataLogging', 'active')
+        config = util.configSet('beerName', newName, configFile)
+        config = util.configSet('dataLogging', 'active', configFile)
         startBeer(newName)
         logMessage("Restarted logging for beer '%s'." % newName)
         return {'status': 0, 'statusMessage': "Successfully switched to new brew '%s'. " % urllib.parse.unquote(newName) +
@@ -517,8 +516,8 @@ def startNewBrew(newName):
 def stopLogging():
     global config
     logMessage("Stopped data logging temp control continues.")
-    config = util.configSet(configFile, 'beerName', None)
-    config = util.configSet(configFile, 'dataLogging', 'stopped')
+    config = util.configSet('beerName', None, configFile)
+    config = util.configSet('dataLogging', 'stopped', configFile)
     changeWwwSetting('beerName', None)
     return {'status': 0, 'statusMessage': "Successfully stopped logging."}
 
@@ -527,7 +526,7 @@ def pauseLogging():
     global config
     logMessage("Paused logging data, temp control continues.")
     if config['dataLogging'] == 'active':
-        config = util.configSet(configFile, 'dataLogging', 'paused')
+        config = util.configSet('dataLogging', 'paused', configFile)
         return {'status': 0, 'statusMessage': "Successfully paused logging."}
     else:
         return {'status': 1, 'statusMessage': "Logging already paused or stopped."}
@@ -537,7 +536,7 @@ def resumeLogging():
     global config
     logMessage("Continued logging data.")
     if config['dataLogging'] == 'paused':
-        config = util.configSet(configFile, 'dataLogging', 'active')
+        config = util.configSet('dataLogging', 'active', configFile)
         return {'status': 0, 'statusMessage': "Successfully continued logging."}
     else:
         return {'status': 1, 'statusMessage': "Logging was not paused."}
@@ -645,7 +644,7 @@ def setSocket():  # Create a listening socket to communicate with PHP
             (config.get('socketHost', 'localhost'), int(socketPort)))
         logMessage('Bound to TCP socket on port %d ' % int(socketPort))
     else:
-        socketFile = util.addSlash(util.scriptPath()) + 'BEERSOCKET'
+        socketFile = util.scriptPath() + 'BEERSOCKET'
         if os.path.exists(socketFile):
             # If socket already exists, remove it
             os.remove(socketFile)
@@ -701,60 +700,81 @@ def startSerial():  # Start controller
     global hwVersion
     global compatibleHwVersion
 
-    # Bytes are read from nonblocking serial into this buffer and processed when
-    # the buffer contains a full line.
-    serialConn = util.setupSerial(config)
-    if not serialConn:
+    try:
+        # Bytes are read from nonblocking serial into this buffer and processed when
+        # the buffer contains a full line.
+        serialConn = util.setupSerial(config)
+        if not serialConn:
+            sys.exit(1)
+        else:
+            # Wait for 10 seconds to allow an Uno to reboot
+            logMessage("Waiting 10 seconds for board to restart.")
+            time.sleep(float(config.get('startupDelay', 10)))
+
+        logMessage("Checking software version on controller.")
+        hwVersion = brewpiVersion.getVersionFromSerial(serialConn)
+        if hwVersion is None:
+            logMessage("ERROR: Cannot receive version number from controller.")
+            logMessage("Your controller is either not programmed or running a")
+            logMessage("very old version of BrewPi. Please upload a new version")
+            logMessage("of BrewPi to your controller.")
+            # Script will continue so you can at least program the controller
+            lcdText = ['Could not receive', 'ver from controller',
+                    'Please (re)program', 'your controller.']
+        else:
+            logMessage("Found " + hwVersion.toExtendedString() +
+                    " on port " + serialConn.name + ".")
+            if LooseVersion(hwVersion.toString()) < LooseVersion(compatibleHwVersion):
+                logMessage("Warning: Minimum BrewPi version compatible with this")
+                logMessage("script is {0} but version number received is".format(
+                    compatibleHwVersion))
+                logMessage("{0}.".format(hwVersion.toString()))
+            if int(hwVersion.log) != int(expandLogMessage.getVersion()):
+                logMessage("Warning: version number of local copy of logMessages.h")
+                logMessage("does not match log version number received from")
+                logMessage(
+                    "controller. Controller version = {0}, local copy".format(hwVersion.log))
+                logMessage("version = {0}.".format(
+                    str(expandLogMessage.getVersion())))
+
+        if serialConn is not None:
+            serialConn.flush()
+            # Set up background serial processing, which will continuously read data
+            # from serial and put whole lines in a queue
+            bgSerialConn = BackGroundSerial(serialConn)
+            bgSerialConn.start()
+            # Request settings from controller, processed later when reply is received
+            bgSerialConn.write('s')  # request control settings cs
+            bgSerialConn.write('c')  # request control constants cc
+            bgSerialConn.write('v')  # request control variables cv
+            # Answer from controller is received asynchronously later.
+
+        # Keep track of time between new data requests
+        prevDataTime = 0
+        prevTimeOut = time.time()
+        prevLcdUpdate = time.time()
+        prevSettingsUpdate = time.time()
+        startBeer(config['beerName'])  # Set up files and prep for run
+
+    except KeyboardInterrupt:
+        print()  # Simply a visual hack if we are running via command line
+        logMessage("Detected keyboard interrupt, exiting.")
+        shutdown()
+        sys.exit(0)
+
+    except Exception as e:
+        type, value, traceback = sys.exc_info()
+        fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+        logError("Caught an unexpected exception.")
+        logError("Error info:")
+        logError("\tError: ({0}): '{1}'".format(
+            getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+        logError("\tType: {0}".format(type))
+        logError("\tFilename: {0}".format(fname))
+        logError("\tLineNo: {0}".format(traceback.tb_lineno))
+        logMessage("Caught an unexpected exception, exiting.")
+        shutdown()
         sys.exit(1)
-    else:
-        # Wait for 10 seconds to allow an Uno to reboot
-        logMessage("Waiting 10 seconds for board to restart.")
-        time.sleep(float(config.get('startupDelay', 10)))
-
-    logMessage("Checking software version on controller.")
-    hwVersion = brewpiVersion.getVersionFromSerial(serialConn)
-    if hwVersion is None:
-        logMessage("ERROR: Cannot receive version number from controller.")
-        logMessage("Your controller is either not programmed or running a")
-        logMessage("very old version of BrewPi. Please upload a new version")
-        logMessage("of BrewPi to your controller.")
-        # Script will continue so you can at least program the controller
-        lcdText = ['Could not receive', 'ver from controller',
-                   'Please (re)program', 'your controller.']
-    else:
-        logMessage("Found " + hwVersion.toExtendedString() +
-                   " on port " + serialConn.name + ".")
-        if LooseVersion(hwVersion.toString()) < LooseVersion(compatibleHwVersion):
-            logMessage("Warning: Minimum BrewPi version compatible with this")
-            logMessage("script is {0} but version number received is".format(
-                compatibleHwVersion))
-            logMessage("{0}.".format(hwVersion.toString()))
-        if int(hwVersion.log) != int(expandLogMessage.getVersion()):
-            logMessage("Warning: version number of local copy of logMessages.h")
-            logMessage("does not match log version number received from")
-            logMessage(
-                "controller. Controller version = {0}, local copy".format(hwVersion.log))
-            logMessage("version = {0}.".format(
-                str(expandLogMessage.getVersion())))
-
-    if serialConn is not None:
-        serialConn.flush()
-        # Set up background serial processing, which will continuously read data
-        # from serial and put whole lines in a queue
-        bgSerialConn = BackGroundSerial(serialConn)
-        bgSerialConn.start()
-        # Request settings from controller, processed later when reply is received
-        bgSerialConn.write('s')  # request control settings cs
-        bgSerialConn.write('c')  # request control constants cc
-        bgSerialConn.write('v')  # request control variables cv
-        # Answer from controller is received asynchronously later.
-
-    # Keep track of time between new data requests
-    prevDataTime = 0
-    prevTimeOut = time.time()
-    prevLcdUpdate = time.time()
-    prevSettingsUpdate = time.time()
-    startBeer(config['beerName'])  # Set up files and prep for run
 
 
 def loop():  # Main program loop
@@ -839,8 +859,7 @@ def loop():  # Main program loop
                     phpConn.send(json.dumps(cc).encode('utf-8'))
                 elif messageType == "getControlSettings":  # Echo control settings
                     if cs['mode'] == "p":
-                        profileFile = util.addSlash(
-                            util.scriptPath()) + 'settings/tempProfile.csv'
+                        profileFile = util.scriptPath() + 'settings/tempProfile.csv'
                         with open(profileFile, 'r') as prof:
                             cs['profile'] = prof.readline().split(
                                 ",")[-1].rstrip("\n")
@@ -956,7 +975,7 @@ def loop():  # Main program loop
                     if 5 < newInterval < 5000:
                         try:
                             config = util.configSet(
-                                configFile, 'interval', float(newInterval))
+                                'interval', float(newInterval), configFile)
                         except ValueError:
                             logMessage(
                                 "Cannot convert interval '{0}' to float.".format(value))
@@ -978,19 +997,18 @@ def loop():  # Main program loop
                     phpConn.send(json.dumps(result).encode('utf-8'))
                 elif messageType == "dateTimeFormatDisplay":  # Change date time format
                     config = util.configSet(
-                        configFile, 'dateTimeFormatDisplay', value)
+                        'dateTimeFormatDisplay', value, configFile)
                     changeWwwSetting('dateTimeFormatDisplay', value)
                     logMessage("Changing date format config setting: " + value)
                 elif messageType == "setActiveProfile":  # Get and process beer profile
                     # Copy the profile CSV file to the working directory
                     logMessage(
                         "Setting profile '%s' as active profile." % value)
-                    config = util.configSet(configFile, 'profileName', value)
+                    config = util.configSet('profileName', value, configFile)
                     changeWwwSetting('profileName', value)
                     profileSrcFile = util.addSlash(
                         config['wwwPath']) + "data/profiles/" + value + ".csv"
-                    profileDestFile = util.addSlash(
-                        util.scriptPath()) + 'settings/tempProfile.csv'
+                    profileDestFile = util.scriptPath() + 'settings/tempProfile.csv'
                     profileDestFileOld = profileDestFile + '.old'
                     try:
                         if os.path.isfile(profileDestFile):

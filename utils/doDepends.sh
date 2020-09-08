@@ -19,7 +19,7 @@
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
 # Declare this script's constants
-declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES
+declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES REINSTALL GOODPORT GOODPORTSSL
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
@@ -179,22 +179,34 @@ rem_nginx() {
 keep_nginx() {
     local path ip
     path="/etc/nginx/sites-enabled"
-    echo -e "\nAttempting to configure nginx for ports 81/444."
+    # goodport # TODO:  determine a good port here
+    GOODPORT=81
+    GOODPORTSSL=444
+    #
+    echo -e "\nAttempting to configure nginx for ports $GOODPORT/$GOODPORTSSL."
     for file in "$path"/*; do
         expanded=$(readlink -f "$file")
         cp "$expanded" "$expanded.bak"
-        sed -i "s/listen 80 default_server/listen 81 default_server/g" "$expanded"
-        sed -i "s/listen \[::\]:80 default_server/listen \[::\]:81 default_server/g" "$expanded"
-        sed -i "s/listen 443 ssl default_server/listen 444 ssl default_server/g" "$expanded"
-        sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:444 ssl default_server/g" "$expanded"
+        sed -i "s/listen 80 default_server/listen $GOODPORT default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:80 default_server/listen \[::\]:$GOODPORT default_server/g" "$expanded"
+        sed -i "s/listen 443 ssl default_server/listen $GOODPORTSSL ssl default_server/g" "$expanded"
+        sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:$GOODPORTSSL ssl default_server/g" "$expanded"
     done
     systemctl restart nginx;
     ip=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
-    echo -e "\nReconfigured nginx to serve applications on port 81/444. You will have to"
+    echo -e "\nReconfigured nginx to serve applications on port $GOODPORT/$GOODPORTSSL. You will have to"
     echo -e "access your previous nginx websites with the port at the end of the URL like:"
-    echo -e "http://$(hostname).local:81 or http://$ip:81"
+    echo -e "http://$(hostname).local:$GOODPORT or http://$ip:$GOODPORT"
     sleep 5
 }
+
+############
+### Get safe ports for nginx
+############
+
+#goodport() {
+    # ss -tulw | grep "LISTEN" | tr -s " " | cut -d " " -f5 | cut -d ":" -f2 | grep -w 81
+#}
 
 ############
 ### Install and update required packages
@@ -206,17 +218,28 @@ do_packages() {
     didInstall=0
     echo -e "\nFixing any broken installations before proceeding."
     sudo apt-get --fix-broken install -y||die
-    echo -e "\nChecking and installing required dependencies via apt."
+    if [ -n "$REINSTALL" ]; then
+        echo -e "\nForcing reinstall of all required packages via apt."
+    else
+        echo -e "\nChecking and installing required packages via apt."
+    fi
     for pkg in ${APTPACKAGES,,}; do
-        pkgOk=$(dpkg-query -W --showformat='${Status}\n' "${pkg,,}" | \
-        grep "install ok installed")
-        if [ -z "$pkgOk" ]; then
-            ((didInstall++))
-            echo -e "\nInstalling '$pkg'.\n"
-            apt-get install "${pkg,,}" -y -q=2||die
+        if [ -n "$REINSTALL" ]; then
+            
+            apt-get --reinstall install "${pkg,,}" -y -q=2||die
             echo
+        else
+            pkgOk=$(dpkg-query -W --showformat='${Status}\n' "${pkg,,}" | \
+            grep "install ok installed")
+            if [ -z "$pkgOk" ]; then
+                ((didInstall++))
+                echo -e "\nInstalling '$pkg'.\n"
+                apt-get install "${pkg,,}" -y -q=2||die
+                echo
+            fi
         fi
     done
+    sudo systemctl start apache2
     if [[ "$didInstall" -gt 0 ]]; then
         echo -e "All required apt packages have been installed."
     else

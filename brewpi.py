@@ -1531,6 +1531,7 @@ except Exception as e:
     fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
     logError("Caught an unexpected exception.")
     logError("Error info:")
+    logError("\tError: {0}".format(str(e)))
     logError("\tError: ({0}): '{1}'".format(getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
     logError("\tType: {0}".format(type))
     logError("\tFilename: {0}".format(fname))

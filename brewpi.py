@@ -904,7 +904,7 @@ def loop():  # Main program loop
                         # Round to 2 dec, python will otherwise produce 6.999999999
                         cs['beerSet'] = round(newTemp, 2)
                         bgSerialConn.write(
-                            "j{mode:b, beerSet:" + json.dumps(cs['beerSet']) + "}")
+                            "j{mode:\"b\", beerSet:" + json.dumps(cs['beerSet']) + "}")
                         logMessage("Beer temperature set to {0} degrees by web.".format(
                             str(cs['beerSet'])))
                         raise socket.timeout  # Go to serial communication to update controller
@@ -924,7 +924,7 @@ def loop():  # Main program loop
                     if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
                         cs['mode'] = 'f'
                         cs['fridgeSet'] = round(newTemp, 2)
-                        bgSerialConn.write("j{mode:f, fridgeSet:" +
+                        bgSerialConn.write("j{mode:\"f\", fridgeSet:" +
                                            json.dumps(cs['fridgeSet']) + "}")
                         logMessage("Fridge temperature set to {0} degrees by web.".format(
                             str(cs['fridgeSet'])))
@@ -937,7 +937,7 @@ def loop():  # Main program loop
                         logMessage("advanced settings.")
                 elif messageType == "setOff":  # Control mode set to OFF
                     cs['mode'] = 'o'
-                    bgSerialConn.write("j{mode:o}")
+                    bgSerialConn.write("j{mode:\"o\"}")
                     logMessage("Temperature control disabled.")
                     raise socket.timeout
                 elif messageType == "setParameters":
@@ -1043,7 +1043,7 @@ def loop():  # Main program loop
                             "Profile successfully updated.".encode('utf-8'))
                         if cs['mode'] is not 'p':
                             cs['mode'] = 'p'
-                            bgSerialConn.write("j{mode:p}")
+                            bgSerialConn.write("j{mode:\"p\"}")
                             logMessage("Profile mode enabled.")
                             raise socket.timeout  # Go to serial communication to update controller
                 elif messageType == "programController" or messageType == "programArduino":  # Reprogram controller
@@ -1815,3 +1815,4 @@ if __name__ == "__main__":
     # execute only if run as a script
     main()
     sys.exit(0)  # Exit script
+

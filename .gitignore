@@ -13,6 +13,7 @@ requirements.txt
 !.gitignore
 .idea/
 utils/downloads/
+venv/
 
 # Compiled Python files
 =======

@@ -14,9 +14,9 @@ requirements.txt
 .idea/
 utils/downloads/
 venv/
+.gitconfig
 
 # Compiled Python files
-=======
 *.py[co]
 __pycache__
 

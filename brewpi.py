@@ -1477,7 +1477,7 @@ def loop():  # Main program loop
                                     for color in Tilt.TILT_COLORS:
                                         # Only log the Tilt if the color matches the config
                                         if color == config["tiltColor"]:
-                                            tiltValue = tilt.getValue()
+                                            tiltValue = tilt.getValue(color)
                                             if tiltValue is not None:
                                                 _temp = tiltValue.temperature
                                                 if cc['tempFormat'] == 'C':

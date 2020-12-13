@@ -223,21 +223,7 @@ def scriptPath():
     Returns:
     Path of module with trailing slash
     """
-    retVal = ""
-    if frozen():
-        retVal = os.path.dirname(
-            str(sys.executable, sys.getfilesystemencoding()))
-    try:
-        retVal = os.path.dirname(
-            str(os.path.abspath(__file__), sys.getfilesystemencoding()))
-    except:
-        retVal = os.getcwd()
-
-    # Git root is our home path
-    git_repo = git.Repo(retVal, search_parent_directories=True)
-    retVal = git_repo.git.rev_parse("--show-toplevel")
-
-    return addSlash(retVal)
+    return addSlash(os.path.dirname(os.path.abspath(__file__)))
 
 
 def frozen():

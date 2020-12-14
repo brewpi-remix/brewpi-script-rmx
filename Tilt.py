@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
+# Requires the following pip packages:
+# aioblescan, numpy, libatlas-base-dev
+# Requires setcap in order to run without root:
+#   sudo setcap cap_net_raw+eip $(eval readlink -f `which python3`)
+
 import sys
 from os.path import dirname, abspath, exists, isfile, getmtime
 from csv import reader
@@ -16,23 +21,26 @@ from struct import unpack
 import json
 import numpy
 
-import sentry_sdk
-sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
+# DEBUG:
+# import sentry_sdk
+# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
-# Tilt format based on iBeacon format and filter includes Apple iBeacon
-# identifier portion (4c000215) as well as Tilt specific uuid preamble
-# (a495)
+# The Tilt format is based on the iBeacon format, and the filter value includes
+# the Apple iBeacon identifier portion (4c000215) as well as the Tilt specific
+# uuid preamble (a495).
 TILT = '4c000215a495'
+
+# A list of all possible Tilt colors.
 TILT_COLORS = [
     'Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink'
 ]
-opts = None
 
 
 class TiltManager:
     """
     Manages the monitoring of all Tilts and storing the read values
     """
+
     threads = []
 
     def __init__(self, color=None, averagingPeriod=0, medianWindow=0, dev_id=0):
@@ -44,16 +52,20 @@ class TiltManager:
         :param medianWindow: Median filter setting in number of  entries
         :param dev_id: Device ID of the local Bluetooth device to use
         """
+
         self.tilt = None
         self.color = color
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
         if color == None:
+            # Set up an array of Tilt objects, one for each color
             self.tilt = [None] * len(TILT_COLORS)
             for i in range(len(TILT_COLORS)):
-                self.tilt[i] = Tilt(TILT_COLORS[i], averagingPeriod, medianWindow)
+                self.tilt[i] = Tilt(
+                    TILT_COLORS[i], averagingPeriod, medianWindow)
         else:
+            # Set up a single Tilt object
             self.tilt = Tilt(color, averagingPeriod, medianWindow)
         self.conn = None
         self.btctrl = None
@@ -133,6 +145,7 @@ class TiltManager:
         :param battery: Battery age value to be stored
         :return: None
         """
+
         if isinstance(self.tilt, list):
             for i in range(len(TILT_COLORS)):
                 if color == TILT_COLORS[i]:
@@ -147,17 +160,28 @@ class TiltManager:
 
         :return: Tilt value
         """
+
+        returnValue = None
         if isinstance(self.tilt, list):
+            # If there's an array of Tilt objects, loop through till we have a match
             for i in range(len(TILT_COLORS)):
                 if TILT_COLORS[i] == color:
                     returnValue = self.tilt[i].getValues(color)
         else:
+            # If there's a single Tilt object, return it's value
             returnValue = self.tilt.getValues(color)
         return returnValue
 
     def decode(self, packet):
-        # Tilt format based on iBeacon format and filter includes Apple iBeacon
-        # identifier portion (4c000215) as well as Tilt specific uuid preamble (a495)
+        """
+        Format Tilt values.
+        Tilt format based on iBeacon format and filter includes Apple iBeacon
+        identifier portion (4c000215) as well as Tilt specific uuid preamble
+        (a495).
+
+        :param packet: Raw BLEacon packet
+        :return: Tilt values encoded as JSON
+        """
 
         global TILT
         data = {}
@@ -183,6 +207,7 @@ class TiltManager:
 
         :return: None
         """
+
         packet = aiobs.HCI_Event()
         packet.decode(data)
         response = self.decode(packet)
@@ -316,6 +341,7 @@ class Tilt:
         These values will be calibrated before storing if calibration is
         enabled
         """
+
         self.cleanValues()
         self.calibrate(color)
         calTemp = self.tempCal(temperature)
@@ -333,6 +359,7 @@ class Tilt:
         This will be the latest read value unless averaging / median has
         been enabled
         """
+
         colorValues = []
         returnValue = None
 
@@ -358,6 +385,7 @@ class Tilt:
 
         :return:  Averaged values
         """
+
         returnValue = None
         if len(values) > 0:
             returnValue = TiltValue('', 0, 0, 0)
@@ -374,7 +402,7 @@ class Tilt:
             returnValue.gravity = returnValue.gravity
 
             # Make sure battery returns only real values (> 0)
-            returnValue.battery = getBatteryValue(values, color)
+            returnValue.battery = self.getBatteryValue(values, color)
 
         return returnValue
 
@@ -389,6 +417,7 @@ class Tilt:
                         averaged
         :return: Median value
         """
+
         # Ensure there are enough values to do a median filter, if not shrink
         # window temporarily
         if len(values) < window:
@@ -435,6 +464,13 @@ class Tilt:
         return returnValue
 
     def getBatteryValue(self, values, color):
+        """
+        Return battery age in weeks for a given color
+
+        :param values:  An array of Tilt values
+        :return: Integer of battery age in weeks, or 0
+        """
+
         batteryValues = []
         if len(values) > 0:
             for i in range(len(values)):
@@ -450,6 +486,7 @@ class Tilt:
 
         :return: None, operates on values in class
         """
+
         nowTime = datetime.datetime.now()
 
         for value in self.values:
@@ -467,6 +504,7 @@ class Tilt:
         :param which: Which value (gravity or temperature) is to be processed
         :return: The calibration function to be called
         """
+
         # Default time in seconds to wait before checking config files to see if
         # calibration data has changed.
         DATA_REFRESH_WINDOW = 60
@@ -537,6 +575,7 @@ def check_mac(mac):
     :param val: String representation of a valid mac address, e.g.:
         e8:ae:6b:42:cc:20
     """
+
     try:
         if re.match("[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac.lower()):
             return mac.lower()
@@ -546,6 +585,13 @@ def check_mac(mac):
 
 
 def parseArgs():
+    """
+    Parse any command line arguments
+
+    :param: None
+    :return: None
+    """
+
     parser = argparse.ArgumentParser(
         description="Track Tilt BLEacon packets")
     parser.add_argument(
@@ -606,6 +652,7 @@ def checkSetcap() -> (bool, str, str):
     :return str: Base executable
     :return str: getcap values
     """
+
     try:
         base_executable = subprocess.check_output(
             ["readlink", "-e", sys.executable]).strip().decode("utf-8")
@@ -664,12 +711,12 @@ def main():
 
     :return: None
     """
+
     print("\nTilt BLEacon test.")
-    global opts
     opts = parseArgs()
     tiltColorName = None
-    averaging = 300
-    median = 10000
+    averaging = 0
+    median = 0
     device_id = 0
 
     # Check that Python has the correct capabilities set
@@ -684,7 +731,7 @@ def main():
         tiltColorName = opts.color.title()
     else:
         tiltColor = None
-        tiltColorName = "All"
+        tiltColorName = "all"
 
     if opts.median:
         median = opts.median
@@ -701,7 +748,7 @@ def main():
 
     try:
         print(
-            "\nReporting {} Tilt values every 5 seconds. Ctrl-C to stop.".format(tiltColor))
+            "\nReporting {} Tilt values every 5 seconds. Ctrl-C to stop.".format(tiltColorName))
         while 1:
             # If we are running Tilt, get current values
             if tilt:
@@ -714,11 +761,11 @@ def main():
                             temperature = round(tiltValue.temperature, 2)
                             gravity = round(tiltValue.gravity, 3)
                             battery = tiltValue.battery
-                            print("{0}: Temp = {1}°F, Gravity = {2}, Battery = {3} weeks old.".format(
+                            print("{0}:\tTemp: {1}°F, Gravity: {2}, Battery: {3} weeks old.".format(
                                 color, temperature, gravity, battery))
                         else:
                             print(
-                                "Color {0} report: No results returned.".format(color))
+                                "{0}:\tNo results returned.".format(color))
 
     except KeyboardInterrupt:
         print('\nKeyboard interrupt.')

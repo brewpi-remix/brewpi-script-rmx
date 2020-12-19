@@ -12,6 +12,7 @@
 #   I still have no idea why this will not work in a venv
 #   Fix design version (v1, 2, 3)
 #   Fix battery value based on version and gattool?
+#   Change tilt manager object to an array even if one color
 
 import sys
 from os.path import dirname, abspath, exists, isfile, getmtime

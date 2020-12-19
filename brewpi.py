@@ -306,16 +306,16 @@ def checkDoNotRun():  # Check do not run file
         util.addSlash(config['wwwPath']))
 
     # Check dont run file when it exists and exit it it does
-    if checkDontRunFile:
+    if os.path.exists(dontRunFilePath):
+
+        # Do not print anything or it will flood the logs
+        sys.exit(1)
+    else:
+        # This is here to exit with the semaphore anyway, but print notice
+        # This should only be hit when running interactively.
         if os.path.exists(dontRunFilePath):
-            # Do not print anything or it will flood the logs
+            print("Semaphore exists, exiting.")
             sys.exit(1)
-        else:
-            # This is here to exit with the semaphore anyway, but print notice
-            # This should only be hit when running interactively.
-            if os.path.exists(dontRunFilePath):
-                print("Semaphore exists, exiting.")
-                sys.exit(1)
 
 
 def checkOthers():  # Check for other running brewpi

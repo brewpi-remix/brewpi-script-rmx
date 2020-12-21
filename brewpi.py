@@ -144,10 +144,10 @@ lastTiltbridge = 0
 timeoutTiltbridge = 300
 
 # Clamp values for Tilt
-clampSGUpper = 1.150
-clampSGLower = 0.980
-clampTempHigh = 99.0
-clampTempLow = 30.0
+clampSGUpper = 1.175
+clampSGLower = 0.970
+clampTempHigh = 110.0
+clampTempLow = 25.0
 
 # Keep track of time between new data requests
 prevDataTime = 0
@@ -343,8 +343,8 @@ def setUpLog():  # Set up log files
         sys.stderr = Unbuffered(open(logPath + 'stderr.txt', 'a+'))
         # Overwrite stdout, unbuffered
         sys.stdout = Unbuffered(open(logPath + 'stdout.txt', 'w+'))
-    # Start the logs
-    logError('Starting BrewPi.')  # Timestamp stderr
+        # Start the logs
+        logError('Starting BrewPi.')  # Timestamp stderr
     if logToFiles:
         # Make sure we send a message to daemon
         print('Starting BrewPi.', file=sys.__stdout__)
@@ -1301,12 +1301,31 @@ def loop():  # Main program loop
 
                                             # Set time of last update
                                             lastTiltbridge = timestamp = time.time()
-                                            _temp = api['tilts'][config['tiltColor']]['temp']
-                                            if cc['tempFormat'] == 'C':
-                                                _temp = round(bc.convert(_temp, 'F', 'C'), 1)
-                                            prevTempJson[config["tiltColor"] + 'Temp'] = _temp, 1
+
+                                            # Convert to proper temp unit
+                                            _temp = 0
+                                            if cc['tempFormat'] == api['tilts'][config['tiltColor']]['tempUnit']:
+                                                _temp = float(api['tilts'][config['tiltColor']]['temp'])
+                                            elif cc['tempFormat'] == 'F':
+                                                _temp = bc.convert(float(api['tilts'][config['tiltColor']]['temp']), 'C', 'F')
+                                            else:
+                                                _temp = bc.convert(float(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
+
+                                            prevTempJson[config["tiltColor"] + 'Temp'] = _temp
                                             prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity'])
-                                            prevTempJson[config["tiltColor"] + 'Batt'] = None
+
+                                            # high_resolution: true
+                                            # sends_battery: true
+                                            # fwVersion: 0
+
+                                            # if (checkKey(api['tilts'][config['tiltColor']], 'HWVer')):
+                                            #     prevTempJson[config["tiltColor"] + 'HWVer'] = int(api['tilts'][config['tiltColor']]['hwVersion'])
+                                            # if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
+                                            #     prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
+
+                                            if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
+                                                prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+
                         # END:  Tiltbridge Processing
 
                         else:
@@ -1315,9 +1334,11 @@ def loop():  # Main program loop
                     except json.JSONDecodeError:
                         logError("Invalid JSON received from API. String received:")
                         logError(value)
+
                     except Exception as e:
                         logError("Unknown error processing API. String received:")
                         logError(value)
+
                 elif messageType == "statusText":  # Status contents requested
                     status = {}
                     statusIndex = 0
@@ -1468,8 +1489,7 @@ def loop():  # Main program loop
                                 newData = json.loads(line[2:])
                                 # Copy/rename keys
                                 for key in newData:
-                                    prevTempJson[renameTempKey(
-                                        key)] = newData[key]
+                                    prevTempJson[renameTempKey(key)] = newData[key]
 
                                 # If we are running Tilt, get current values
                                 if (tilt is not None) and (tiltbridge is not None):
@@ -1504,6 +1524,9 @@ def loop():  # Main program loop
                                             else:
                                                 logError("Failed to retrieve {} Tilt value, restarting Tilt.".format(color))
                                                 initTilt()
+
+                                                prevTempJson[color + 'HWVer'] = None
+                                                prevTempJson[color + 'SWVer'] = None
 
                                                 prevTempJson[color + 'Temp'] = None
                                                 prevTempJson[color + 'SG'] = None
@@ -1825,4 +1848,3 @@ if __name__ == "__main__":
     # execute only if run as a script
     main()
     sys.exit(0)  # Exit script
-

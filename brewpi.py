@@ -1325,6 +1325,7 @@ def loop():  # Main program loop
 
                                             if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
                                                 prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+
                         # END:  Tiltbridge Processing
 
                         else:
@@ -1523,8 +1524,10 @@ def loop():  # Main program loop
                                             else:
                                                 logError("Failed to retrieve {} Tilt value, restarting Tilt.".format(color))
                                                 initTilt()
+
                                                 prevTempJson[color + 'HWVer'] = None
                                                 prevTempJson[color + 'SWVer'] = None
+
                                                 prevTempJson[color + 'Temp'] = None
                                                 prevTempJson[color + 'SG'] = None
                                                 prevTempJson[color + 'Batt'] = None

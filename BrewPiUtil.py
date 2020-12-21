@@ -278,9 +278,9 @@ def logError(*objs):
     Prints a timestamped message to stderr
     """
     if 'USE_TIMESTAMP_LOG' in os.environ:
-        printStdOut(strftime("%Y-%m-%d %H:%M:%S [E]"), *objs)
+        printStdErr(strftime("%Y-%m-%d %H:%M:%S [E]"), *objs)
     else:
-        printStdOut(*objs)
+        printStdErr(*objs)
 
 
 def removeDontRunFile(path = None):
@@ -536,12 +536,15 @@ def asciiToUnicode(s):
 class Unbuffered(object):
    def __init__(self, stream):
        self.stream = stream
+
    def write(self, data):
        self.stream.write(data)
        self.stream.flush()
+
    def writelines(self, datas):
        self.stream.writelines(datas)
        self.stream.flush()
+
    def __getattr__(self, attr):
        return getattr(self.stream, attr)
 

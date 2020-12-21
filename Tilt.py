@@ -61,7 +61,7 @@ class TiltManager:
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
-        if color == None:
+        if color is None:
             # Set up an array of Tilt objects, one for each color
             self.tilt = [None] * len(TILT_COLORS)
             for i in range(len(TILT_COLORS)):
@@ -329,12 +329,12 @@ class TiltManager:
                     if int(tiltdata['minor']) >= 5000:
                         # Is a Tilt Pro
                         # self.tilt_pro = True
-                        gravity = int(tiltdata['minor']) / 10000
-                        temperature = int(tiltdata['major']) / 10
+                        gravity = float(tiltdata['minor']) / 10000
+                        temperature = float(tiltdata['major']) / 10
                     else:
                         # Is not a Pro model
-                        gravity = int(tiltdata['minor']) / 1000
-                        temperature = int(tiltdata['major'])
+                        gravity = float(tiltdata['minor']) / 1000
+                        temperature = float(tiltdata['major'])
 
                 battery = int(tiltdata['tx_power'])
 
@@ -394,6 +394,7 @@ class TiltManager:
             self.event_loop.call_soon_threadsafe(self.event_loop.stop)
             thread.join()
 
+        self.conn.close()
         self.event_loop.close()
         return
 
@@ -871,6 +872,10 @@ def parseArgs():
         help="number of entries in median window")
     try:
         opts = parser.parse_args()
+        opts.color = opts.color.title() if opts.color else None
+        if opts.color and opts.color not in TILT_COLORS:
+            parser.error("Invalid color choice.")
+        opts.hci = opts.hci if opts.hci else 0
         return opts
     except Exception as e:
         parser.error("Error: " + str(e))
@@ -994,8 +999,12 @@ def main():
                             timestamp = tiltValue.timestamp
                             hwVersion = tiltValue.hwVersion
                             fwVersion = tiltValue.fwVersion
-                            temperature = round(tiltValue.temperature, 2)
-                            gravity = round(tiltValue.gravity, 3)
+                            if (hwVersion == 4): # If we are using a Pro, take advantage of it
+                                temperature = round(tiltValue.temperature, 2)
+                                gravity = round(tiltValue.gravity, 4)
+                            else:
+                                temperature = round(tiltValue.temperature, 2)
+                                gravity = round(tiltValue.gravity, 3)
                             battery = tiltValue.battery
                             mac = tiltValue.mac
                             print("{}:\tLast Report: {}\n\tMAC: {}, Version: {}, Firmware: {}\n\tTemp: {}°F, Gravity: {}, Battery: {} weeks old".format(color, timestamp, mac.upper(), TILT_VERSIONS[hwVersion], fwVersion, temperature, gravity, battery))

@@ -177,6 +177,8 @@ lcdText = ['Script starting up.', ' ', ' ', ' ']
 statusType = ['N/A', 'N/A', 'N/A', 'N/A']
 statusValue = ['N/A', 'N/A', 'N/A', 'N/A']
 
+TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+
 
 def getGit():
     # Get the current script version
@@ -602,8 +604,10 @@ def initTilt():  # Set up Tilt
             tilt.start()
             # Create prevTempJson for Tilt
             prevTempJson.update({
-                config['tiltColor'] + 'Temp': 0,
+                config['tiltColor'] + 'HWVer': 0,
+                config['tiltColor'] + 'SWVer': 0,
                 config['tiltColor'] + 'SG': 0,
+                config['tiltColor'] + 'Temp': 0,
                 config['tiltColor'] + 'Batt': 0
             })
 
@@ -1165,11 +1169,9 @@ def loop():  # Main program loop
                             if apiKey == "Brew Bubbles":  # Received JSON from Brew Bubbles
                                 # Log received line if true, false is short message, none = mute
                                 if outputJson == True:
-                                    logMessage(
-                                        "API BB JSON Recvd: " + json.dumps(api))
+                                    logMessage("API BB JSON Recvd: " + json.dumps(api))
                                 elif outputJson == False:
-                                    logMessage(
-                                        "API Brew Bubbles JSON received.")
+                                    logMessage("API Brew Bubbles JSON received.")
                                 else:
                                     pass  # Don't log JSON messages
 
@@ -1211,12 +1213,10 @@ def loop():  # Main program loop
                             # END: Process a Brew Bubbles API POST
 
                             else:
-                                logMessage(
-                                    "WARNING: Unknown API key received in JSON:")
+                                logMessage("WARNING: Unknown API key received in JSON:")
                                 logMessage(value)
 
                         # Begin: iSpindel Processing
-                        # iSpindel
                         elif checkKey(api, 'name') and checkKey(api, 'ID') and checkKey(api, 'gravity'):
 
                             if ispindel is not None and config['iSpindel'] == api['name']:
@@ -1303,28 +1303,20 @@ def loop():  # Main program loop
                                             lastTiltbridge = timestamp = time.time()
                                             _temp = api['tilts'][config['tiltColor']]['temp']
                                             if cc['tempFormat'] == 'C':
-                                                _temp = round(
-                                                    bc.convert(_temp, 'F', 'C'), 1)
-                                            prevTempJson[config["tiltColor"] +
-                                                         'Temp'] = round(_temp, 1)
-                                            prevTempJson[config["tiltColor"] + 'SG'] = float(
-                                                api['tilts'][config['tiltColor']]['gravity'])
-                                            #  TODO:  prevTempJson[config["tiltColor"] + 'Batt'] = api['tilts'][config['tiltColor']]['batt']
-                                            prevTempJson[config["tiltColor"] +
-                                                         'Batt'] = None
+                                                _temp = round(bc.convert(_temp, 'F', 'C'), 1)
+                                            prevTempJson[config["tiltColor"] + 'Temp'] = _temp, 1
+                                            prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity'])
+                                            prevTempJson[config["tiltColor"] + 'Batt'] = None
                         # END:  Tiltbridge Processing
 
                         else:
-                            logError(
-                                "Received API message, however no matching configuration exists.")
+                            logError("Received API message, however no matching configuration exists.")
 
                     except json.JSONDecodeError:
-                        logError(
-                            "Invalid JSON received from API. String received:")
+                        logError("Invalid JSON received from API. String received:")
                         logError(value)
                     except Exception as e:
-                        logError(
-                            "Unknown error processing API. String received:")
+                        logError("Unknown error processing API. String received:")
                         logError(value)
                 elif messageType == "statusText":  # Status contents requested
                     status = {}
@@ -1342,97 +1334,78 @@ def loop():  # Main program loop
                     if checkKey(prevTempJson, 'bbbpm'):
                         status[statusIndex] = {}
                         statusType = "Airlock: "
-                        statusValue = str(
-                            round(prevTempJson['bbbpm'], 1)) + " bpm"
+                        statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbamb'):
-                        # filter out disconnected sensors
-                        if not int(prevTempJson['bbamb']) == -100:
+                        if int(prevTempJson['bbamb']) > -127:
                             status[statusIndex] = {}
                             statusType = "Ambient Temp: "
-                            statusValue = str(
-                                round(prevTempJson['bbamb'], 1)) + tempSuffix
-                            status[statusIndex].update(
-                                {statusType: statusValue})
+                            statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
+                            status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbves'):
-                        # filter out disconnected sensors
-                        if not int(prevTempJson['bbves']) == -100:
+                        if int(prevTempJson['bbves']) > -127:
                             status[statusIndex] = {}
                             statusType = "Vessel Temp: "
-                            statusValue = str(
-                                round(prevTempJson['bbves'], 1)) + tempSuffix
-                            status[statusIndex].update(
-                                {statusType: statusValue})
+                            statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
+                            status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                     # End: Brew Bubbles Items
 
                     # Begin: Tilt Items
                     if tilt or tiltbridge:
-                        # if not config['dataLogging'] == 'active': # Only display SG in status when not logging data
-                        # Use as a check to see if it's online
                         if not prevTempJson[config['tiltColor'] + 'Temp'] == 0:
                             if checkKey(prevTempJson, config['tiltColor'] + 'SG'):
                                 if prevTempJson[config['tiltColor'] + 'SG'] is not None:
                                     status[statusIndex] = {}
                                     statusType = "Tilt SG: "
-                                    statusValue = str(
-                                        prevTempJson[config['tiltColor'] + 'SG'])
-                                    status[statusIndex].update(
-                                        {statusType: statusValue})
+                                    statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
+                                    status[statusIndex].update({statusType: statusValue})
                                     statusIndex = statusIndex + 1
                         if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
                             if prevTempJson[config['tiltColor'] + 'Batt'] is not None:
                                 if not prevTempJson[config['tiltColor'] + 'Batt'] == 0:
                                     status[statusIndex] = {}
                                     statusType = "Tilt Batt Age: "
-                                    statusValue = str(
-                                        round(prevTempJson[config['tiltColor'] + 'Batt'], 1)) + " wks"
-                                    status[statusIndex].update(
-                                        {statusType: statusValue})
+                                    if round(prevTempJson[config['tiltColor'] + 'Batt']) == 1:
+                                        statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'])) + " wk"
+                                    else:
+                                        statusValue = str(round(prevTempJson[config['tiltColor'] + 'Batt'])) + " wks"
+                                    status[statusIndex].update({statusType: statusValue})
                                     statusIndex = statusIndex + 1
-                        # and (statusIndex <= 3):
                         if checkKey(prevTempJson, config['tiltColor'] + 'Temp'):
                             if prevTempJson[config['tiltColor'] + 'Temp'] is not None:
                                 if not prevTempJson[config['tiltColor'] + 'Temp'] == 0:
                                     status[statusIndex] = {}
                                     statusType = "Tilt Temp: "
-                                    statusValue = str(
-                                        round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
-                                    status[statusIndex].update(
-                                        {statusType: statusValue})
+                                    statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
+                                    status[statusIndex].update({statusType: statusValue})
                                     statusIndex = statusIndex + 1
                     # End: Tilt Items
 
                     # Begin: iSpindel Items
                     if ispindel is not None:
-                        # if config['dataLogging'] == 'active': # Only display SG in status when not logging data
                         if checkKey(prevTempJson, 'spinSG'):
                             if prevTempJson['spinSG'] is not None:
                                 status[statusIndex] = {}
                                 statusType = "iSpindel SG: "
-                                statusValue = str(prevTempJson['spinSG'])
-                                status[statusIndex].update(
-                                    {statusType: statusValue})
+                                statusValue = str(round(prevTempJson['spinSG'], 3))
+                                status[statusIndex].update({statusType: statusValue})
                                 statusIndex = statusIndex + 1
                         if checkKey(prevTempJson, 'spinBatt'):
                             if prevTempJson['spinBatt'] is not None:
                                 status[statusIndex] = {}
                                 statusType = "iSpindel Batt: "
-                                statusValue = str(
-                                    round(prevTempJson['spinBatt'], 1)) + "VDC"
-                                status[statusIndex].update(
-                                    {statusType: statusValue})
+                                statusValue = str(round(prevTempJson['spinBatt'], 1)) + "VDC"
+                                status[statusIndex].update({statusType: statusValue})
                                 statusIndex = statusIndex + 1
                         if checkKey(prevTempJson, 'spinTemp'):
                             if prevTempJson['spinTemp'] is not None:
                                 status[statusIndex] = {}
                                 statusType = "iSpindel Temp: "
-                                statusValue = str(
-                                    round(prevTempJson['spinTemp'], 1)) + tempSuffix
-                                status[statusIndex].update(
-                                    {statusType: statusValue})
+                                statusValue = str(round(prevTempJson['spinTemp'], 2)) + tempSuffix
+                                status[statusIndex].update({statusType: statusValue})
                                 statusIndex = statusIndex + 1
                     # End: iSpindel Items
 
@@ -1507,6 +1480,8 @@ def loop():  # Main program loop
                                             tiltValue = tilt.getValue(color)
                                             if tiltValue is not None:
                                                 _temp = tiltValue.temperature
+                                                prevTempJson[color + 'HWVer'] = TILT_VERSIONS[tiltValue.hwVersion]
+                                                prevTempJson[color + 'SWVer'] = tiltValue.fwVersion
 
                                                 # Clamp temp values
                                                 _temp = clamp(_temp, clampTempLow, clampTempHigh)
@@ -1516,26 +1491,23 @@ def loop():  # Main program loop
                                                     _temp = bc.convert(_temp, 'F', 'C')
 
                                                 # Clamp SG Values
-                                                _grav = clamp(
-                                                    tiltValue.gravity,
-                                                    clampSGLower, clampSGUpper)
+                                                _grav = clamp(tiltValue.gravity, clampSGLower, clampSGUpper)
 
-                                                prevTempJson[color +
-                                                             'Temp'] = round(_temp, 2)
-                                                prevTempJson[color +
-                                                             'SG'] = round(_grav, 3)
-                                                prevTempJson[color +
-                                                             'Batt'] = round(tiltValue.battery, 3)
+                                                if prevTempJson[color + 'HWVer'] == 4:
+                                                    prevTempJson[color + 'SG'] = round(_grav, 4)
+                                                    prevTempJson[color + 'Temp'] = round(_temp, 2)
+                                                else:
+                                                    prevTempJson[color + 'SG'] = round(_grav, 3)
+                                                    prevTempJson[color + 'Temp'] = round(_temp, 1)
+
+                                                prevTempJson[color + 'Batt'] = round(tiltValue.battery, 2)
                                             else:
                                                 logError("Failed to retrieve {} Tilt value, restarting Tilt.".format(color))
                                                 initTilt()
 
-                                                prevTempJson[color +
-                                                             'Temp'] = None
-                                                prevTempJson[color +
-                                                             'SG'] = None
-                                                prevTempJson[color +
-                                                             'Batt'] = None
+                                                prevTempJson[color + 'Temp'] = None
+                                                prevTempJson[color + 'SG'] = None
+                                                prevTempJson[color + 'Batt'] = None
 
                                 # Expire old BB keypairs
                                 if (time.time() - lastBbApi) > timeoutBB:

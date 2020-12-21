@@ -329,12 +329,12 @@ class TiltManager:
                     if int(tiltdata['minor']) >= 5000:
                         # Is a Tilt Pro
                         # self.tilt_pro = True
-                        gravity = int(tiltdata['minor']) / 10000
-                        temperature = int(tiltdata['major']) / 10
+                        gravity = float(tiltdata['minor']) / 10000
+                        temperature = float(tiltdata['major']) / 10
                     else:
                         # Is not a Pro model
-                        gravity = int(tiltdata['minor']) / 1000
-                        temperature = int(tiltdata['major'])
+                        gravity = float(tiltdata['minor']) / 1000
+                        temperature = float(tiltdata['major'])
 
                 battery = int(tiltdata['tx_power'])
 
@@ -999,8 +999,12 @@ def main():
                             timestamp = tiltValue.timestamp
                             hwVersion = tiltValue.hwVersion
                             fwVersion = tiltValue.fwVersion
-                            temperature = round(tiltValue.temperature, 2)
-                            gravity = round(tiltValue.gravity, 3)
+                            if (hwVersion == 4): # If we are using a Pro, take advantage of it
+                                temperature = round(tiltValue.temperature, 2)
+                                gravity = round(tiltValue.gravity, 4)
+                            else:
+                                temperature = round(tiltValue.temperature, 2)
+                                gravity = round(tiltValue.gravity, 3)
                             battery = tiltValue.battery
                             mac = tiltValue.mac
                             print("{}:\tLast Report: {}\n\tMAC: {}, Version: {}, Firmware: {}\n\tTemp: {}°F, Gravity: {}, Battery: {} weeks old".format(color, timestamp, mac.upper(), TILT_VERSIONS[hwVersion], fwVersion, temperature, gravity, battery))

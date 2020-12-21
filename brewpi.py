@@ -143,6 +143,12 @@ timeoutiSpindel = 1800
 lastTiltbridge = 0
 timeoutTiltbridge = 300
 
+# Clamp values for Tilt
+clampSGUpper = 1.150
+clampSGLower = 0.980
+clampTempHigh = 99.0
+clampTempLow = 30.0
+
 # Keep track of time between new data requests
 prevDataTime = 0
 prevTimeOut = 0
@@ -588,7 +594,10 @@ def initTilt():  # Set up Tilt
         if not checkBluetooth():
             logError("Configured for Tilt but no Bluetooth radio available.")
         else:
-            tilt = Tilt.TiltManager(config['tiltColor'], 300, 10000, 0)
+            if tilt:
+                tilt.stop()
+                tilt = None
+            tilt = Tilt.TiltManager(config['tiltColor'], 60, 10, 0)
             tilt.loadSettings()
             tilt.start()
             # Create prevTempJson for Tilt
@@ -703,6 +712,11 @@ def startLogs():  # Log startup messages
                    urllib.parse.unquote(config['beerName']) + ".'")
 
 
+def clamp(raw, minn, maxn):
+    # Clamps value (raw) between minn and maxn
+    return max(min(maxn, raw), minn)
+
+
 def startSerial():  # Start controller
     global config
     global serialConn
@@ -729,11 +743,9 @@ def startSerial():  # Start controller
             logMessage("very old version of BrewPi. Please upload a new version")
             logMessage("of BrewPi to your controller.")
             # Script will continue so you can at least program the controller
-            lcdText = ['Could not receive', 'ver from controller',
-                    'Please (re)program', 'your controller.']
+            lcdText = ['Could not receive', 'ver from controller', 'Please (re)program', 'your controller.']
         else:
-            logMessage("Found " + hwVersion.toExtendedString() +
-                    " on port " + serialConn.name + ".")
+            logMessage("Found " + hwVersion.toExtendedString() + " on port " + serialConn.name + ".")
             if LooseVersion(hwVersion.toString()) < LooseVersion(compatibleHwVersion):
                 logMessage("Warning: Minimum BrewPi version compatible with this")
                 logMessage("script is {0} but version number received is".format(
@@ -769,10 +781,22 @@ def startSerial():  # Start controller
     except KeyboardInterrupt:
         print()  # Simply a visual hack if we are running via command line
         logMessage("Detected keyboard interrupt, exiting.")
-        shutdown()
-        sys.exit(0)
+
+    except RuntimeError:
+        logError(e)
+        type, value, traceback = sys.exc_info()
+        fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+        logError("Caught a Runtime Error.")
+        logError("Error info:")
+        logError("\tError: ({0}): '{1}'".format(
+            getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
+        logError("\tType: {0}".format(type))
+        logError("\tFilename: {0}".format(fname))
+        logError("\tLineNo: {0}".format(traceback.tb_lineno))
+        logMessage("Caught a Runtime Error.")
 
     except Exception as e:
+        logError(e)
         type, value, traceback = sys.exc_info()
         fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
         logError("Caught an unexpected exception.")
@@ -782,9 +806,7 @@ def startSerial():  # Start controller
         logError("\tType: {0}".format(type))
         logError("\tFilename: {0}".format(fname))
         logError("\tLineNo: {0}".format(traceback.tb_lineno))
-        logMessage("Caught an unexpected exception, exiting.")
-        shutdown()
-        sys.exit(1)
+        logMessage("Caught an unexpected exception.")
 
 
 def loop():  # Main program loop
@@ -818,6 +840,11 @@ def loop():  # Main program loop
     global tilt
     global tiltbridge
     global ispindel
+    # Clamp values for Tilt
+    global clampSGUpper
+    global clampSGLower
+    global clampTempHigh
+    global clampTempLow
 
     bc = BrewConvert.BrewConvert()
     run = True  # Allow script loop to run
@@ -1480,17 +1507,29 @@ def loop():  # Main program loop
                                             tiltValue = tilt.getValue(color)
                                             if tiltValue is not None:
                                                 _temp = tiltValue.temperature
+
+                                                # Clamp temp values
+                                                _temp = clamp(_temp, clampTempLow, clampTempHigh)
+
+                                                # Convert to C
                                                 if cc['tempFormat'] == 'C':
-                                                    _temp = bc.convert(
-                                                        _temp, 'F', 'C')
+                                                    _temp = bc.convert(_temp, 'F', 'C')
+
+                                                # Clamp SG Values
+                                                _grav = clamp(
+                                                    tiltValue.gravity,
+                                                    clampSGLower, clampSGUpper)
 
                                                 prevTempJson[color +
                                                              'Temp'] = round(_temp, 2)
                                                 prevTempJson[color +
-                                                             'SG'] = round(tiltValue.gravity, 3)
+                                                             'SG'] = round(_grav, 3)
                                                 prevTempJson[color +
                                                              'Batt'] = round(tiltValue.battery, 3)
                                             else:
+                                                logError("Failed to retrieve {} Tilt value, restarting Tilt.".format(color))
+                                                initTilt()
+
                                                 prevTempJson[color +
                                                              'Temp'] = None
                                                 prevTempJson[color +
@@ -1742,7 +1781,6 @@ def shutdown():  # Process a graceful shutdown
     global tilt
     global thread
     global serialConn
-    global conn
 
     try:
         bgSerialConn  # If we are running background serial, stop it

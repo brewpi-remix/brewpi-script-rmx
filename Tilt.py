@@ -61,7 +61,7 @@ class TiltManager:
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
-        if color == None:
+        if color is None:
             # Set up an array of Tilt objects, one for each color
             self.tilt = [None] * len(TILT_COLORS)
             for i in range(len(TILT_COLORS)):
@@ -394,6 +394,7 @@ class TiltManager:
             self.event_loop.call_soon_threadsafe(self.event_loop.stop)
             thread.join()
 
+        self.conn.close()
         self.event_loop.close()
         return
 
@@ -871,6 +872,10 @@ def parseArgs():
         help="number of entries in median window")
     try:
         opts = parser.parse_args()
+        opts.color = opts.color.title() if opts.color else None
+        if opts.color and opts.color not in TILT_COLORS:
+            parser.error("Invalid color choice.")
+        opts.hci = opts.hci if opts.hci else 0
         return opts
     except Exception as e:
         parser.error("Error: " + str(e))

@@ -1,4 +1,4 @@
-     #!/bin/bash
+#!/bin/bash
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -48,8 +48,8 @@ loop() {
 
     while :
     do
-        if (python3 -u "$script" --checkstartuponly --dontrunfile); then
-            python3 -u "$script" --log
+        if (python3 -u "$script" --check --donotrun); then
+            USE_TIMESTAMP_LOG=true python3 -u "$script" --log --datetime
         else
             sleep 1
         fi

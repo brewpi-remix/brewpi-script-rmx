@@ -1072,7 +1072,7 @@ def loop():  # Main program loop
                     else:
                         phpConn.send(
                             "Profile successfully updated.".encode('utf-8'))
-                        if cs['mode'] is not 'p':
+                        if cs['mode'] != 'p':
                             cs['mode'] = 'p'
                             bgSerialConn.write("j{mode:\"p\"}")
                             logMessage("Profile mode enabled.")

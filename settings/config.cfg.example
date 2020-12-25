@@ -9,6 +9,13 @@
 # startupDelay = 1.0
 # debug = true
 # tiltColor = Purple
+
+# Log JSON:
+# This controls logging to the stdout.txt log, as well as the relative
+# length and verbosity of the messages. 
+#
+#   True    = Full logging.  May grow very quickly.
+#   False   = Terse messages, only a notice.  This is the new default.
 # logJson = True
 
 # On a standard pi installation, the defaults should work.

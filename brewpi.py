@@ -1840,7 +1840,7 @@ def main():
     startSerial()  # Begin serial connections
 
     loop()  # Main processing loop
-    shutdown()  # Process gracefull shutdown
+    shutdown()  # Process graceful shutdown
     logMessage("Exiting.")
 
 

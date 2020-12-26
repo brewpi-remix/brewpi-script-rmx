@@ -1,5 +1,6 @@
 # Home dir files
 .bash_logout
+.bash_aliases
 .bashrc
 .profile
 .bash_history
@@ -9,7 +10,6 @@ brewpi-env/
 coverage.xml
 start.bat
 sftp-config.json
-requirements.txt
 !.gitignore
 .idea/
 utils/downloads/

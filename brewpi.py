@@ -599,7 +599,7 @@ def initTilt():  # Set up Tilt
             if tilt:
                 tilt.stop()
                 tilt = None
-            tilt = Tilt.TiltManager(config['tiltColor'], 60, 10, 0)
+            tilt = Tilt.TiltManager(60, 10, 0)
             tilt.loadSettings()
             tilt.start()
             # Create prevTempJson for Tilt

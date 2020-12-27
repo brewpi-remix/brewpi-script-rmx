@@ -1174,22 +1174,20 @@ def loop():  # Main program loop
                                 # Handle vessel temp conversion
                                 apiTemp = 0
                                 if cc['tempFormat'] == api['temp_unit']:
-                                    apiTemp = api['temp']
+                                    apiTemp = Decimal(api['temp'])
                                 elif cc['tempFormat'] == 'F':
-                                    apiTemp = bc.convert(api['temp'], 'C', 'F')
+                                    apiTemp = Decimal(bc.convert(api['temp'], 'C', 'F'))
                                 else:
-                                    apiTemp = bc.convert(api['temp'], 'F', 'C')
+                                    apiTemp = Decimal(bc.convert(api['temp'], 'F', 'C'))
 
                                 # Handle ambient temp conversion
                                 apiAmbient = 0
                                 if cc['tempFormat'] == api['temp_unit']:
-                                    apiAmbient = api['ambient']
+                                    apiAmbient = Decimal(api['ambient'])
                                 elif cc['tempFormat'] == 'F':
-                                    apiAmbient = bc.convert(
-                                        api['ambient'], 'C', 'F')
+                                    apiAmbient = Decimal(bc.convert(api['ambient'], 'C', 'F'))
                                 else:
-                                    apiAmbient = bc.convert(
-                                        api['ambient'], 'F', 'C')
+                                    apiAmbient = Decimal(bc.convert(api['ambient'], 'F', 'C'))
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'bbbpm'):
@@ -1374,21 +1372,21 @@ def loop():  # Main program loop
                     if checkKey(prevTempJson, 'bbbpm'):
                         status[statusIndex] = {}
                         statusType = "BB Airlock: "
-                        statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
+                        statusValue = format(prevTempJson['bbbpm'], '.1f') + " bpm"
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbamb'):
                         if int(prevTempJson['bbamb']) > -127:
                             status[statusIndex] = {}
                             statusType = "BB Amb Temp: "
-                            statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
+                            statusValue = format(prevTempJson['bbamb'], '.1f') + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbves'):
                         if int(prevTempJson['bbves']) > -127:
                             status[statusIndex] = {}
                             statusType = "BB Ves Temp: "
-                            statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
+                            statusValue = format(prevTempJson['bbves'], '.1f') + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                     # End: Brew Bubbles Items

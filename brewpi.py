@@ -32,6 +32,7 @@
 
 # Standard Imports
 import _thread
+from decimal import *
 from distutils.version import LooseVersion
 import urllib.request
 import urllib.parse
@@ -82,9 +83,6 @@ import BrewConvert
 
 hwVersion = None
 compatibleHwVersion = "0.2.4"
-
-# Change directory to where the script is
-# os.chdir(os.path.dirname(sys.argv[0]))
 
 # Settings will be read from controller, initialize with same defaults as
 # controller. This is mainly to show what's expected. Will all be overwritten
@@ -642,7 +640,8 @@ def renameTempKey(key):
         'tb': 'TiltBatt',
         'sg': 'spinSG',
         'st': 'spinTemp',
-        'sb': 'spinBatt'}
+        'sb': 'spinBatt',
+    }
     return rename.get(key, key)
 
 
@@ -737,7 +736,7 @@ def startSerial():  # Start controller
         else:
             # Wait for 10 seconds to allow an Uno to reboot
             logMessage("Waiting 10 seconds for board to restart.")
-            time.sleep(float(config.get('startupDelay', 10)))
+            time.sleep(int(config.get('startupDelay', 10)))
 
         logMessage("Checking software version on controller.")
         hwVersion = brewpiVersion.getVersionFromSerial(serialConn)
@@ -800,16 +799,14 @@ def startSerial():  # Start controller
         logMessage("Caught a Runtime Error.")
 
     except Exception as e:
-        logError(e)
         type, value, traceback = sys.exc_info()
         fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
         logError("Caught an unexpected exception.")
         logError("Error info:")
-        logError("\tError: ({0}): '{1}'".format(
-            getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
         logError("\tType: {0}".format(type))
         logError("\tFilename: {0}".format(fname))
         logError("\tLineNo: {0}".format(traceback.tb_lineno))
+        logError("\tError:\n{0}".format(e))
         logMessage("Caught an unexpected exception.")
 
 
@@ -925,7 +922,7 @@ def loop():  # Main program loop
                     raise socket.timeout
                 elif messageType == "setBeer":  # New constant beer temperature received
                     try:
-                        newTemp = float(value)
+                        newTemp = Decimal(value)
                     except ValueError:
                         logMessage("Cannot convert temperature '" +
                                    value + "' to float.")
@@ -947,7 +944,7 @@ def loop():  # Main program loop
                         logMessage("advanced settings.")
                 elif messageType == "setFridge":  # New constant fridge temperature received
                     try:
-                        newTemp = float(value)
+                        newTemp = Decimal(value)
                     except ValueError:
                         logMessage(
                             "Cannot convert temperature '{0}' to float.".format(value))
@@ -1016,7 +1013,7 @@ def loop():  # Main program loop
                     if 5 < newInterval < 5000:
                         try:
                             config = util.configSet(
-                                'interval', float(newInterval), configFile)
+                                'interval', Decimal(newInterval), configFile)
                         except ValueError:
                             logMessage(
                                 "Cannot convert interval '{0}' to float.".format(value))
@@ -1302,29 +1299,54 @@ def loop():  # Main program loop
                                             # Set time of last update
                                             lastTiltbridge = timestamp = time.time()
 
+                                            # TiltBridge report reference
+                                            # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
+                                            # {"color", color_name()},
+                                            # {"temp", converted_temp(false)},
+                                            # {"tempUnit", is_celsius() ? "C" : "F"},
+                                            # {"gravity", converted_gravity(use_raw_gravity)},
+                                            # {"gsheets_name", gsheets_beer_name()},
+                                            # {"weeks_on_battery", weeks_since_last_battery_change},
+                                            # {"sends_battery", receives_battery},
+                                            # {"high_resolution", tilt_pro},
+                                            # {"fwVersion", version_code},
+
+                                            # {"mdns_id":"tiltbridgetft","tilts":{"Purple":{"color":"Purple","gravity":"1.0520","gsheets_name":"","temp":"70.0","tempUnit":"F","weeks_on_battery":20},"Yellow":{"color":"Yellow","gravity":"1.0329","gsheets_name":"","temp":"69.8","tempUnit":"F","weeks_on_battery":1}}}
+
+                                            # TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+                                            if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
+                                                if api['tilts'][config['tiltColor']]['high_resolution']:
+                                                    prevTempJson[color + 'HWVer'] = 4
+                                            elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
+                                                if api['tilts'][config['tiltColor']]['sends_battery']:
+                                                    prevTempJson[color + 'HWVer'] = 5 # Battery = >=2
+                                            else:
+                                                prevTempJson[color + 'HWVer'] = 0
+
+                                            if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
+                                                prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
+
                                             # Convert to proper temp unit
                                             _temp = 0
                                             if cc['tempFormat'] == api['tilts'][config['tiltColor']]['tempUnit']:
-                                                _temp = float(api['tilts'][config['tiltColor']]['temp'])
+                                                _temp = Decimal(api['tilts'][config['tiltColor']]['temp'])
                                             elif cc['tempFormat'] == 'F':
-                                                _temp = bc.convert(float(api['tilts'][config['tiltColor']]['temp']), 'C', 'F')
+                                                _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'C', 'F')
                                             else:
-                                                _temp = bc.convert(float(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
+                                                _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
 
-                                            prevTempJson[config["tiltColor"] + 'Temp'] = _temp
-                                            prevTempJson[config["tiltColor"] + 'SG'] = float(api['tilts'][config['tiltColor']]['gravity'])
+                                            _grav = Decimal(api['tilts'][config['tiltColor']]['gravity'])
 
-                                            # high_resolution: true
-                                            # sends_battery: true
-                                            # fwVersion: 0
+                                            if prevTempJson[color + 'HWVer'] == 4:
+                                                prevTempJson[color + 'SG'] = round(_grav, 4)
+                                                prevTempJson[color + 'Temp'] = round(_temp, 1)
+                                            else:
+                                                prevTempJson[color + 'SG'] = round(_grav, 3)
+                                                prevTempJson[color + 'Temp'] = round(_temp)
 
-                                            # if (checkKey(api['tilts'][config['tiltColor']], 'HWVer')):
-                                            #     prevTempJson[config["tiltColor"] + 'HWVer'] = int(api['tilts'][config['tiltColor']]['hwVersion'])
-                                            # if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
-                                            #     prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
-
-                                            if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
-                                                prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+                                            if prevTempJson[color + 'HWVer'] >= 2:
+                                                if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
+                                                    prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
 
                         # END:  Tiltbridge Processing
 
@@ -1346,6 +1368,7 @@ def loop():  # Main program loop
                     # Get any items pending for the status box
                     # Javascript will determine what/how to display
 
+                    # We will append the proper temp suffix (unicode char includes degree sign)
                     if cc['tempFormat'] == 'C':
                         tempSuffix = "&#x2103;"
                     else:
@@ -1354,21 +1377,21 @@ def loop():  # Main program loop
                     # Begin: Brew Bubbles Items
                     if checkKey(prevTempJson, 'bbbpm'):
                         status[statusIndex] = {}
-                        statusType = "Airlock: "
+                        statusType = "BB Airlock: "
                         statusValue = str(round(prevTempJson['bbbpm'], 1)) + " bpm"
                         status[statusIndex].update({statusType: statusValue})
                         statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbamb'):
                         if int(prevTempJson['bbamb']) > -127:
                             status[statusIndex] = {}
-                            statusType = "Ambient Temp: "
+                            statusType = "BB Amb Temp: "
                             statusValue = str(round(prevTempJson['bbamb'], 1)) + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
                     if checkKey(prevTempJson, 'bbves'):
                         if int(prevTempJson['bbves']) > -127:
                             status[statusIndex] = {}
-                            statusType = "Vessel Temp: "
+                            statusType = "BB Ves Temp: "
                             statusValue = str(round(prevTempJson['bbves'], 1)) + tempSuffix
                             status[statusIndex].update({statusType: statusValue})
                             statusIndex = statusIndex + 1
@@ -1381,7 +1404,11 @@ def loop():  # Main program loop
                                 if prevTempJson[config['tiltColor'] + 'SG'] is not None:
                                     status[statusIndex] = {}
                                     statusType = "Tilt SG: "
-                                    statusValue = str(prevTempJson[config['tiltColor'] + 'SG'])
+                                    if checkKey(prevTempJson, config['tiltColor'] + 'HWVer') and prevTempJson[config['tiltColor'] + 'HWVer'] is not None:
+                                        if prevTempJson[config['tiltColor'] + 'HWVer'] == 4: # If we are running a Pro
+                                            statusValue = format(prevTempJson[config['tiltColor'] + 'SG'], '.4f')
+                                        else:
+                                            statusValue = format(prevTempJson[config['tiltColor'] + 'SG'], '.3f')
                                     status[statusIndex].update({statusType: statusValue})
                                     statusIndex = statusIndex + 1
                         if checkKey(prevTempJson, config['tiltColor'] + 'Batt'):
@@ -1400,7 +1427,11 @@ def loop():  # Main program loop
                                 if not prevTempJson[config['tiltColor'] + 'Temp'] == 0:
                                     status[statusIndex] = {}
                                     statusType = "Tilt Temp: "
-                                    statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'], 1)) + tempSuffix
+                                    if checkKey(prevTempJson, config['tiltColor'] + 'HWVer') and prevTempJson[config['tiltColor'] + 'HWVer'] is not None:
+                                        if prevTempJson[config['tiltColor'] + 'HWVer'] == 4: # If we are running a Pro
+                                            statusValue = format(prevTempJson[config['tiltColor'] + 'Temp'], '.1f') + tempSuffix
+                                        else:
+                                            statusValue = str(round(prevTempJson[config['tiltColor'] + 'Temp'])) + tempSuffix
                                     status[statusIndex].update({statusType: statusValue})
                                     statusIndex = statusIndex + 1
                     # End: Tilt Items
@@ -1458,7 +1489,7 @@ def loop():  # Main program loop
                     bgSerialConn.write('s')
 
                 # If no new data has been received for serialRequestInteval seconds
-                if (time.time() - prevDataTime) >= float(config['interval']):
+                if (time.time() - prevDataTime) >= Decimal(config['interval']):
                     if prevDataTime == 0:  # First time through set the previous time
                         prevDataTime = time.time()
                     prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
@@ -1466,7 +1497,7 @@ def loop():  # Main program loop
                     prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
 
                 # Controller not responding
-                elif (time.time() - prevDataTime) > float(config['interval']) + 2 * float(config['interval']):
+                elif (time.time() - prevDataTime) > Decimal(config['interval']) + 2 * Decimal(config['interval']):
                     logMessage(
                         "ERROR: Controller is not responding to new data requests.")
 
@@ -1758,24 +1789,32 @@ def loop():  # Main program loop
         print()  # Simply a visual hack if we are running via command line
         logMessage("Detected keyboard interrupt, exiting.")
 
+
+    # 2020-12-26 18:31:47 [E] Caught an unexpected exception.
+    # 2020-12-26 18:31:47 [E] Error info:
+    # 2020-12-26 18:31:47 [E]         Error: (): ''
+    # 2020-12-26 18:31:47 [E]         Type: <class 'UnboundLocalError'>
+    # 2020-12-26 18:31:47 [E]         Filename: brewpi.py
+    # 2020-12-26 18:31:47 [E]         LineNo: 1321
+
     except Exception as e:
         type, value, traceback = sys.exc_info()
         fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
         logError("Caught an unexpected exception.")
         logError("Error info:")
-        logError("\tError: ({0}): '{1}'".format(
-            getattr(e, 'errno', ''), getattr(e, 'strerror', '')))
         logError("\tType: {0}".format(type))
         logError("\tFilename: {0}".format(fname))
         logError("\tLineNo: {0}".format(traceback.tb_lineno))
+        logError("\tError:\n{0}".format(e))
         logMessage("Caught an unexpected exception, exiting.")
 
 
 def shutdown():  # Process a graceful shutdown
     global bgSerialConn
     global tilt
-    global thread
+    global threads
     global serialConn
+    global bgSerialConn
 
     try:
         bgSerialConn  # If we are running background serial, stop it
@@ -1794,10 +1833,10 @@ def shutdown():  # Process a graceful shutdown
         tilt.stop()
 
     try:
-        thread  # Allow any spawned threads to quit
+        threads  # Allow any spawned threads to quit
     except NameError:
-        thread = None
-    if thread is not None:
+        threads = None
+    if threads is not None:
         for thread in threads:
             logMessage("Waiting for threads to finish.")
             _thread.join()
@@ -1812,13 +1851,12 @@ def shutdown():  # Process a graceful shutdown
             serialConn.close()  # Close port
 
     try:
-        conn  # Close any open socket
+        bgSerialConn  # Close any open socket
     except NameError:
-        conn = None
-    if conn is not None:
+        bgSerialConn = None
+    if bgSerialConn is not None:
         logMessage("Closing open sockets.")
-        phpConn.shutdown(socket.SHUT_RDWR)  # Close socket
-        phpConn.close()
+        bgSerialConn.stop()  # Close socket
 
 
 def main():

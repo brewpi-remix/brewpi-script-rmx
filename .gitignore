@@ -1,6 +1,7 @@
 # Home dir files
 .bash_logout
 .bashrc
+.bash_aliases
 .profile
 .bash_history
 .cache/

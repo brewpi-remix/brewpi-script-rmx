@@ -85,6 +85,7 @@ getVal() {
         val="$(readConfig "${defConfigFile}" "${configItem}")"
     fi
     val=$(printf -- "%s" "${val}";)
+    # shellcheck disable=SC2005
     echo "$(strip "${val}")"
 }
 

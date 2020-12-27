@@ -35,7 +35,7 @@
 ### Usage: value="$(getVal $configItem $scriptPath)"
 ### Arguments: Strings representing:
 ###               $configItem) Configuration item requested
-###               $scriptPath) Script root (will find config in ./settings/*)
+###               $scriptPath) Script root (will find config in ./settings/\*)
 ### Return: String value of configuration item
 ############
 

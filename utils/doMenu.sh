@@ -50,15 +50,15 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-
+    
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-
+    
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-
+    
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"

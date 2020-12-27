@@ -122,7 +122,11 @@ function whatRepo() {
 ### Add some functions
 ############
 
+<<<<<<< HEAD
 # TODO: Finish this file
+=======
+
+>>>>>>> a93aa801cee1dc1060b555a9d0b978ca752529e3
 
 ############
 ### Main function

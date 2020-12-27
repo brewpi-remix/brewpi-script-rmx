@@ -43,13 +43,15 @@ init() {
 ############
 
 loop() {
-    local script stdOut stdErr
+    local script stdOut stdErr python
     script="$GITROOT/brewpi.py"
+    python="$GITROOT/venv/bin/python3"
+
 
     while :
     do
-        if (python3 -u "$script" --check --donotrun); then
-            USE_TIMESTAMP_LOG=true python3 -u "$script" --log --datetime
+        if ("$python" -u "$script" --check --donotrun); then
+            USE_TIMESTAMP_LOG=true "$python" -u "$script" --log --datetime
         else
             sleep 1
         fi

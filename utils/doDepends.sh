@@ -68,9 +68,9 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
     
     # Packages to be installed/checked via apt
-    APTPACKAGES="git python3 python3-pip python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
+    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
-    PIP3PACKAGES="pyserial psutil simplejson configobj gitpython sentry-sdk"
+    PIP3PACKAGES="requirements.txt"
 }
 
 ############
@@ -262,50 +262,26 @@ do_packages() {
     
     # Cleanup if we updated packages
     if [ -n "$doCleanup" ]; then
-        echo -e "\nCleaning up local repositories."
+        echo -e "Cleaning up local repositories."
         apt-get clean -y||warn
         apt-get autoclean -y||warn
         apt-get autoremove --purge -y||warn
     else
         echo -e "\nNo apt updates to apply."
     fi
-    
-    # Install any Python packages not installed, update those installed
-    echo -e "\nChecking and installing required dependencies via pip3."
-    # shellcheck disable=SC2016
-    pipcmd='pipInstalled=$(pip3 list --format=columns)'
-    eval "$pipcmd"
-    # shellcheck disable=SC2016
-    pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
-    eval "$pipcmd"
-    for pkg in ${PIP3PACKAGES,,}; do
-        # shellcheck disable=SC2154
-        if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
-            echo -e "\nInstalling '$pkg'."
-            pip3 install "$pkg" -q||die
-        else
-            echo -e "\nChecking for update to '$pkg'."
-            pip3 install "$pkg" --upgrade -q||die
-        fi
-    done
 }
 
 ############
 ### Reset BT baud rate < Pi4
 ############
 
-do_aioblescan() {
+do_uart() {
     # Install aioblescan
-    local blerepo device fast safe file
-    echo -e "\nInstalling BLEacon support via aioblescan."
-    blerepo="https://github.com/brewpi-remix/aioblescan.git"
+    local device fast safe file
+    echo -e "\nModifying UART speeds for BLEacon support."
     file="/usr/bin/btuart"
     fast="\$HCIATTACH \/dev\/serial1 bcm43xx 921600 noflow - \$BDADDR"
     safe="\$HCIATTACH \/dev\/serial1 bcm43xx 460800 noflow - \$BDADDR"
-    rm -fr "$HOMEPATH/aioblescan"
-    git clone "$blerepo" "$HOMEPATH/aioblescan"
-    (cd "$HOMEPATH/aioblescan" || exit; python3 setup.py install)
-    rm -fr "$HOMEPATH/aioblescan"
     # Slow down uart speeds on < Pi4
     if [ -f "$file" ]; then
         sed -i "s/$fast/$safe/g" "$file"
@@ -319,23 +295,56 @@ do_aioblescan() {
 }
 
 ############
+### Set up venv
+############
+
+do_venv() {
+    # Handle venv and python libraries
+    local venvcmd pipcmd
+    echo -e "\nSetting up venv for user: brewpi."
+    # Copy in .bash_rc and .profile (for colors only)
+    cp "$HOMEPATH/.bashrc" "$GITROOT/"
+    cp "$HOMEPATH/.profile" "$GITROOT/"
+
+    # Set up venv if it is not present
+    if [[ ! -d "/path/to/dir" ]]; then
+        venvcmd="python3 -m venv $GITROOT/venv --prompt bpr"
+        eval "$venvcmd"||die
+    fi
+
+    # Activate venv
+    eval "deactivate 2> /dev/null"
+    echo "alias activate='. ./venv/bin/activate'" > "$GITROOT/.bash_aliases"
+    eval ". $GITROOT/venv/bin/activate"||die
+
+    # Install any Python packages not installed, update those installed
+    echo -e "\nChecking and installing required dependencies via pip3."
+    pipcmd="pip3 install -r $GITROOT/requirements.txt"
+    eval "$pipcmd"||die
+
+    # Deactivate venv
+    eval "deactivate"||die
+}
+
+############
 ### Main
 ############
 
 main() {
-    init "$@" # Init and call supporting libs
-    const "$@" # Get script constants
-    asroot # Make sure we are running with root privs
-    help "$@" # Handle help and version requests
+    init "$@"           # Init and call supporting libs
+    const "$@"          # Get script constants
+    asroot              # Make sure we are running with root privs
+    help "$@"           # Handle help and version requests
     banner "starting"
-    apt_check # Check on apt packages
-    rem_php5 # Remove php5 packages
-    rem_nginx # Offer to remove nginx packages
+    apt_check           # Check on apt packages
+    rem_php5            # Remove php5 packages
+    rem_nginx           # Offer to remove nginx packages
     if [[ $KEEP_NGINX -eq 1 ]]; then
         keep_nginx "$@" # Attempt to reconfigure nginx
     fi
-    do_packages # Check on required packages
-    do_aioblescan
+    do_packages         # Check on required packages
+    do_uart             # Slow down UART
+    do_venv             # Set up venv
     banner "complete"
 }
 

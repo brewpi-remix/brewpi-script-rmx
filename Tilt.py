@@ -1,52 +1,61 @@
 #!/usr/bin/env python3
 
-# Requires the following apt packages:
-# libatlas-base-dev (for numpy)
-# Requires the following pip packages:
-# aioblescan, numpy (for calibrations)
+# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
+
+# This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
-# Requires setcap and bluetooth group membership in order to run without root:
-#   sudo setcap cap_net_raw+eip $(eval readlink -f `which python3`)
+# BrewPi Script RMX is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# BrewPi Script RMX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
-# TODO:
-#   I still have no idea why this will not work in a venv
-#   Fix design version (v1, 2, 3)
-#   Fix battery value based on version and gattool?
-#   Change tilt manager object to an array even if one color
-
-import sys
-from os.path import dirname, abspath, exists, isfile, getmtime
-from csv import reader
-from time import time, sleep
-from configparser import ConfigParser
-import subprocess
-import asyncio
+# Imports sorted by isort
+#
+# System Imports
 import argparse
-import re
+import asyncio
 import datetime
-import threading
-import aioblescan
-from struct import unpack
+from decimal import *
 import json
+import re
+import subprocess
+import sys
+import threading
+from configparser import ConfigParser
+from csv import reader
+from os.path import abspath, dirname, exists, getmtime, isfile
+from struct import unpack
+from time import sleep, time
+# Third Party Imports
 import numpy
+import aioblescan
+# Local Imports
+#
 
-# DEBUG:
-# import sentry_sdk
-# sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
-
-# A list of all possible Tilt colors.
+# Tilt colors
 TILT_COLORS = ['Red', 'Green', 'Black', 'Purple', 'Orange', 'Blue', 'Yellow', 'Pink']
+# Known Tilt hardware versions
 TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
 
 
-class TiltManager:
+class TiltManager(object):
     """
-    Manages the monitoring of all Tilts and storing the read values
+    Class defining the content of a Tilt advertisement. Manages the monitoring
+    of all Tilts and storing the read values
     """
 
+    TILT = 'a495'
     threads = []
 
-    def __init__(self, color=None, averagingPeriod=0, medianWindow=0, dev_id=0):
+    def __init__(self, averagingPeriod=0, medianWindow=0, dev_id=0):
         """
         Initializes TiltManager class with default values
 
@@ -57,26 +66,29 @@ class TiltManager:
         """
 
         self.tilt = None
-        self.color = color
+        self.opts = None
+        self.debug = False
         self.dev_id = dev_id
         self.averagingPeriod = averagingPeriod
         self.medianWindow = medianWindow
-        if color is None:
-            # Set up an array of Tilt objects, one for each color
-            self.tilt = [None] * len(TILT_COLORS)
-            for i in range(len(TILT_COLORS)):
-                self.tilt[i] = Tilt(
-                    TILT_COLORS[i], averagingPeriod, medianWindow)
-        else:
-            # Set up a single Tilt object
-            self.tilt = Tilt(color, averagingPeriod, medianWindow)
+
+        # Set up an array of Tilt objects, one for each color
+        self.tilt = [None] * len(TILT_COLORS)
+        for i in range(len(TILT_COLORS)):
+            self.tilt[i] = Tilt(
+                TILT_COLORS[i], averagingPeriod, medianWindow)
+
         self.conn = None
         self.btctrl = None
         self.event_loop = None
         self.mysocket = None
         self.fac = None
 
-        self.tiltError = False
+    def setDebug(self, debug):
+        self.debug = debug
+
+    def setOpts(self, opts):
+        self.opts = opts
 
     def loadSettings(self):
         """
@@ -177,131 +189,41 @@ class TiltManager:
             returnValue = self.tilt.getValues(color)
         return returnValue
 
-    def decode(self, packet):
+    def decode(self, ev):
         """
-        Format Tilt values.
-        Tilt format based on iBeacon format and filter includes Apple iBeacon
-        identifier portion (4c000215) as well as Tilt specific uuid preamble
-        (a495).
+        Decode BLEacon to Tilt data
 
-        :param packet: Raw BLEacon packet
-        :return: Tilt values encoded as JSON
+        :param ev: Pointer to aioblescan.HCI_Event()
+        :return: Tilt values in JSON
         """
-
-        # The Tilt format is based on the iBeacon format, and the filter value includes
-        # the Apple iBeacon identifier portion (4c000215) as well as the Tilt specific
-        # uuid preamble (a495).
-        TILT = '4c000215a495'
-
-        # The first reference I recall seeing on this format is here:
-        # https://kvurd.com/blog/tilt-hydrometer-ibeacon-data-format/
-        #
-        # Importantly:
-        #
-        # Example tilt hydrometer sensor data message from hcidump -R:
-        #
-        # > 04 3E 27 02 01 00 00 5A 09 9B 16 A3 04 1B 1A FF 4C 00 02 15
-        #   A4 95 BB 10 C5 B1 4B 44 B5 12 13 70 F0 2D 74 DE 00 44 03 F8
-        #   C5 C7
-        #
-        # Explanation (with help from the bluetooth core spec and stackoverflow [4] [5] [6]):
-        #
-        # 04: HCI Packet Type HCI Event
-        # 3E: LE Meta event
-        # 27: Parameter total length (39 octets)
-        # 02: LE Advertising report sub-event
-        # 01: Number of reports (1)
-        # 00: Event type connectable and scannable undirected advertising
-        # 00: Public address type
-        # 5A: address
-        # 09: address
-        # 9B: address
-        # 16: address
-        # A3: address
-        # 04: address
-        # 1B: length of data field (27 octets)
-        # 1A: length of first advertising data (AD) structure (26)
-        # FF: type of first AD structure - manufacturer specific data
-        # 4C: manufacturer ID - Apple iBeacon <- *This is where we start checking for a Tilt
-        # 00: manufacturer ID - Apple iBeacon
-        # 02: type (constant, defined by iBeacon spec)
-        # 15: length (constant, defined by iBeacon spec)
-        # A4: device UUID
-        # 95: device UUID < - This is where we stop checking for a Tilt
-        # BB: device UUID
-        # 10: device UUID < - Color, 10 - 80
-        # C5: device UUID
-        # B1: device UUID
-        # 4B: device UUID
-        # 44: device UUID
-        # B5: device UUID
-        # 12: device UUID
-        # 13: device UUID
-        # 70: device UUID
-        # F0: device UUID
-        # 2D: device UUID
-        # 74: device UUID
-        # DE: device UUID
-        # 00: 'major' field of iBeacon data - temperature (in degrees fahrenheit)
-        # 44: 'major' field of iBeacon data - temperature (in degrees fahrenheit)
-        # 03: 'minor' field of iBeacon data - specific gravity (x1000)
-        # F8: 'minor' field of iBeacon data - specific gravity (x1000)
-        # C5: The TX power in dBm is a signed 8 bit integer. (-59dBm above or 197 unsigned)
-        # C7: Received signal strength indication (RSSI) is a signed 8 bit integer (-57dBm above or 199 unsigned)
-        #
-        # Temperature is a 16 bit unsigned integer, most significant bits first (big endian).
-        #
-        # The specific gravity x 1000 (‘minor’ field of iBeacon data) is a 16 bit unsigned integer, most significant bits first (big endian). Divide by 1000 to get the specific gravity.
-        #
-        # The UUID of the Tilt Hydrometer is shared between devices of that colour. The list is as follows [7]:
-        #
-        # Red:    A495BB10C5B14B44B5121370F02D74DE
-        # Green:  A495BB20C5B14B44B5121370F02D74DE
-        # Black:  A495BB30C5B14B44B5121370F02D74DE
-        # Purple: A495BB40C5B14B44B5121370F02D74DE
-        # Orange: A495BB50C5B14B44B5121370F02D74DE
-        # Blue:   A495BB60C5B14B44B5121370F02D74DE
-        # Yellow: A495BB70C5B14B44B5121370F02D74DE
-        # Pink:   A495BB80C5B14B44B5121370F02D74DE
 
         data = {}
-        raw_data = packet.retrieve('Payload for mfg_specific_data')
-        ev_type = packet.retrieve('ev type')
-        msd = packet.retrieve('Manufacturer Specific Data')
-        if raw_data:
-            pckt = raw_data[0].val
-            payload = raw_data[0].val.hex()
-            mfg_id = payload[0:12]
-            rssi = packet.retrieve('rssi')
-            mac = packet.retrieve('peer')
-            if mfg_id == TILT:
+        manufacturer_data = ev.retrieve("Manufacturer Specific Data")
+        if manufacturer_data:
+            payload = manufacturer_data[0].payload
+            payload = payload[1].val.hex()
+            if payload[4:8] == self.TILT:
+                data['mfg_id'] = payload[0:8]
+                data['color'] = self.tiltName(payload[4:36])
+                data['mac'] = ev.retrieve("peer")[0].val
+                data['uuid'] = payload[0:-1]
+                data['major'] = int.from_bytes(bytes.fromhex(payload[36:40]), byteorder='big')
+                data['minor'] = int.from_bytes(bytes.fromhex(payload[40:44]), byteorder='big')
+                # On the latest tilts, TX power is used for battery age in
+                # weeks since battery change (0-152 when converted to unsigned
+                # 8 bit integer) and other TBD operation codes
+                data['tx_power'] = int.from_bytes(bytes.fromhex(payload[44:46]), byteorder='big', signed=False)
+                data['rssi'] = ev.retrieve("rssi")[-1].val
+                data['ev_type'] = int(ev.retrieve('ev type')[-1].val)
 
-                # packet.show(0) # DEBUG
-                # "ev type"
-                #   0:"generic adv" (Tilt v1)
-                #   3:"no connection adv" (Tilt v2, 3 and Pro)
-                #   4:"scan rsp"
-                data['ev_type'] = ev_type[0].val
-
-                data['uuid'] = payload[8:40]
-                # Temperature (in degrees fahrenheit)
-                data['major'] = unpack('>H', pckt[20:22])[0]
-                data['minor'] = unpack('>H', pckt[22:24])[0]    # Specific gravity (x1000)
-                # tx_power will be -59 every 5 seconds in order to allow iOS
-                # to compute RSSI correctly.  Only use 0 or real value.
-                data['tx_power'] = unpack('>b', pckt[24:25])[0]
-                data['rssi'] = rssi[-1].val
-                data['mac'] = mac[-1].val
-                return json.dumps(data).encode('utf-8')
-        else:
-            return None
+                return json.dumps(data)
 
     def blecallback(self, data):
         """
-        Callback method for the Bluetooth process
-        In turn calls self.decode() and then self.storeValue()
+        Callback method for aioblescan. In turn calls self.decode() and
+        then self.storeValue().
 
-        :param data: Data from aioblescan
+        :param data: Data from aioblescan.BLEScanRequester
         :return: None
         """
 
@@ -309,55 +231,86 @@ class TiltManager:
         temperature = 68
         gravity = 1
 
-        packet = aioblescan.HCI_Event()
-        packet.decode(data)
-        # packet.show(0) # DEBUG
-        response = self.decode(packet)
+        ev = aioblescan.HCI_Event()
+        ev.decode(data)
+        tiltJson = self.decode(ev)
 
-        if response:
-            tiltdata = json.loads(response.decode('utf-8', 'ignore'))
+        display_raw = True
+        if tiltJson:
+            if self.opts:
+                if self.opts.mac: # Limit to MAC in argument
+                    goon = False
+                    mac = ev.retrieve("peer")
+                    for x in mac:
+                        if x.val in self.opts.mac:
+                            goon =True
+                            break
+                    if not goon:
+                        return
 
-            if self.color == None or self.tiltName(tiltdata['uuid']) == self.color:
-                mac = str(tiltdata['mac'])
-                color = self.tiltName(tiltdata['uuid'])
+                if self.opts.raw and self.debug: # Print Debug
+                    display_raw = False
+                    print("Raw data: {}".format(ev.raw_data))
 
-                if int(tiltdata['major']) == 999:
-                    # For the latest Tilts, this is now actually a special code indicating that
-                    # the gravity is the version info.
-                    fwVersion = int(tiltdata['minor'])
-                else:
-                    if int(tiltdata['minor']) >= 5000:
-                        # Is a Tilt Pro
-                        # self.tilt_pro = True
-                        gravity = float(tiltdata['minor']) / 10000
-                        temperature = float(tiltdata['major']) / 10
-                    else:
-                        # Is not a Pro model
-                        gravity = float(tiltdata['minor']) / 1000
-                        temperature = float(tiltdata['major'])
+                if self.opts.json and self.debug: # Print Debug
+                    display_raw = False
+                    print("Tilt JSON: {}".format(tiltJson))
+      
+        else: # Not a Tilt
+            return
 
-                battery = int(tiltdata['tx_power'])
+        if display_raw and self.debug: # Print Debug
+            ev.show(0)
 
-                # Try to derive if we are v1, 2, or 3
-                if int(tiltdata['ev_type']) == 0: # Only Tilt v1 shows as "generic adv"
-                    hwVersion = 1
-                elif int(tiltdata['minor']) >= 5000:
-                    hwVersion = 4
-                else: # TODO: 5 is "v2 or 3" until we can tell the difference between the two of them
-                    hwVersion = 5
+        # Prepare to store Tilt data
+        tiltData = {}
+        tiltdata = json.loads(tiltJson)
 
-                rssi = int(tiltdata['rssi'])
+        mac = str(tiltdata['mac'])
+        color = str(tiltdata['color'])
 
-                timestamp = datetime.datetime.now()
+        if int(tiltdata['major']) == 999:
+            # For the latest Tilts, this is now actually a special code indicating that
+            # the gravity is the version info.
+            fwVersion = int(tiltdata['minor'])
+        else:
+            if int(tiltdata['minor']) >= 5000:
+                # Is a Tilt Pro
+                # self.tilt_pro = True
+                gravity = Decimal(tiltdata['minor']) / 10000
+                temperature = Decimal(tiltdata['major']) / 10
+            else:
+                # Is not a Pro model
+                gravity = Decimal(tiltdata['minor']) / 1000
+                temperature = int(tiltdata['major'])
 
-                self.storeValue(timestamp, mac, hwVersion, fwVersion, color, temperature, gravity, battery)
+        battery = int(tiltdata['tx_power'])
 
-    def start(self):
+        # Try to derive if we are v1, 2, or 3
+        if int(tiltdata['ev_type']) == 0: # Only Tilt v1 shows as "generic adv"
+            hwVersion = 1
+        elif int(tiltdata['minor']) >= 5000:
+            hwVersion = 4
+        else: # TODO: 5 is "v2 or 3" until we can tell the difference between the two of them
+            hwVersion = 5
+
+        rssi = tiltdata['rssi']
+
+        timestamp = datetime.datetime.now()
+
+        # Store value
+        timestamp = datetime.datetime.now()
+        self.storeValue(timestamp, mac, hwVersion, fwVersion, color, temperature, gravity, battery)
+
+    def start(self, debug = False):
         """
         Starts the BLE scanning thread
 
         :return: None
         """
+
+        # Turn debug printing on or off
+        self.setDebug(debug)
 
         self.event_loop = asyncio.get_event_loop()
         # First create and configure a raw socket
@@ -653,19 +606,22 @@ class Tilt:
         batteryValues = []
         for i in range(len(self.values)):
             value = self.values[i]
-            batteryValues.append(value.battery)
+            if not value.battery == 197: # Skip -59 (197 unsigned)
+                batteryValues.append(value.battery)
 
         # Since tx_power will be -59 every 5 seconds in order to allow iOS
         # to compute RSSI correctly, we cache the last good value and only
         # use the max of all on-hand values as the battery age to prevent
         # zeroes.  A zero value should only come from V1 (and maybe v2) Tilts.
-        batteryValue = max(batteryValues)
+        batteryValue = 0
+        if len(batteryValues):
+            batteryValue = max(batteryValues)
         self.lastBatt = max(batteryValue, self.lastBatt)
         return self.lastBatt
 
     def getHwVersion(self, color):
         """
-        Return HArdware Version for a given color
+        Return Hardware Version for a given color
 
         :param values:  An array of Tilt values
         :return: Int of TILT_VERSIONS or empty string
@@ -772,8 +728,8 @@ class Tilt:
                 for row in csvFileReader:
                     # Skip any blank or comment rows
                     if row != [] and row[0][:1] != "#":
-                        originalValues.append(float(row[0]))
-                        actualValues.append(float(row[1]))
+                        originalValues.append(Decimal(row[0]))
+                        actualValues.append(Decimal(row[1]))
                 # Close file
                 csvFile.close()
         except IOError:
@@ -817,7 +773,6 @@ def check_mac(mac):
         pass
     raise argparse.ArgumentTypeError("{}} is not a MAC address".format(mac))
 
-
 def parseArgs():
     """
     Parse any command line arguments
@@ -841,6 +796,12 @@ def parseArgs():
         default=False,
         help="display Tilt data in JSON format")
     parser.add_argument(
+        "-v",
+        "--verbose",
+        action='store_true',
+        default=False,
+        help="display debug data")
+    parser.add_argument(
         "-m",
         "--mac",
         type=check_mac,
@@ -848,39 +809,38 @@ def parseArgs():
         help="filter Tilts by this/these MAC address(es)")
     parser.add_argument(
         "-d",
-        "--hci",
+        "--dev",
         type=int,
         default=0,
         help="select the hci device to use (default 0, i.e. hci0)")
     parser.add_argument(
         "-c",
-        "--color",
+        "--col",
         type=str,
         default=None,
         help="filter by this Tilt color")
     parser.add_argument(
         "-a",
-        "--average",
+        "--avg",
         type=int,
         default=None,
         help="seconds window for averaging")
     parser.add_argument(
         "-n",
-        "--median",
+        "--med",
         type=int,
         default=None,
         help="number of entries in median window")
     try:
         opts = parser.parse_args()
-        opts.color = opts.color.title() if opts.color else None
-        if opts.color and opts.color not in TILT_COLORS:
+        opts.col = opts.col.title() if opts.col else None
+        if opts.col and opts.col not in TILT_COLORS:
             parser.error("Invalid color choice.")
-        opts.hci = opts.hci if opts.hci else 0
+        opts.dev = opts.dev if opts.dev else 0
         return opts
     except Exception as e:
         parser.error("Error: " + str(e))
         sys.exit()
-
 
 def checkSetcap() -> (bool, str, str):
     """
@@ -942,7 +902,6 @@ def checkSetcap() -> (bool, str, str):
         return False, base_executable, getcap_values
     return True, base_executable, getcap_values
 
-
 def main():
     """
     Test function executed when this file is run as a discrete script
@@ -964,25 +923,26 @@ def main():
         print("\nERROR: Missing cap flags on python executable.\nExecutable:\t{}\nCap Values:\t{}\nSuggested command:\t{}".format(pythonPath, getCapValues, commandLine))
         return
 
-    if opts.color:
-        tiltColor = opts.color.title()
-        tiltColorName = opts.color.title()
+    # Select color
+    if opts.col:
+        tiltColor = opts.col.title()
+        tiltColorName = opts.col.title()
     else:
         tiltColor = None
         tiltColorName = "all"
 
-    if opts.median:
-        median = opts.median
+    # Set options
+    if opts.med:
+        median = opts.med
+    if opts.avg:
+        average = opts.avg
+    if opts.dev:
+        device_id = opts.dev
 
-    if opts.average:
-        average = opts.average
-
-    if opts.hci:
-        device_id = opts.hci
-
-    tilt = TiltManager(tiltColor, averaging, median, device_id)
+    tilt = TiltManager(averaging, median, device_id)
+    tilt.setOpts(opts)
     tilt.loadSettings()
-    tilt.start()
+    tilt.start(opts.verbose)
 
     try:
         print("\nReporting {} Tilt values every 5 seconds. Ctrl-C to stop.".format(tiltColorName))
@@ -1000,10 +960,10 @@ def main():
                             hwVersion = tiltValue.hwVersion
                             fwVersion = tiltValue.fwVersion
                             if (hwVersion == 4): # If we are using a Pro, take advantage of it
-                                temperature = round(tiltValue.temperature, 2)
+                                temperature = round(tiltValue.temperature, 1)
                                 gravity = round(tiltValue.gravity, 4)
                             else:
-                                temperature = round(tiltValue.temperature, 2)
+                                temperature = round(tiltValue.temperature)
                                 gravity = round(tiltValue.gravity, 3)
                             battery = tiltValue.battery
                             mac = tiltValue.mac
@@ -1018,7 +978,6 @@ def main():
         if tilt:
             tilt.stop()
     return
-
 
 if __name__ == "__main__":
     main()

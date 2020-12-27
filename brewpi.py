@@ -175,8 +175,6 @@ lcdText = ['Script starting up.', ' ', ' ', ' ']
 statusType = ['N/A', 'N/A', 'N/A', 'N/A']
 statusValue = ['N/A', 'N/A', 'N/A', 'N/A']
 
-TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
-
 
 def getGit():
     # Get the current script version
@@ -601,13 +599,14 @@ def initTilt():  # Set up Tilt
             tilt.loadSettings()
             tilt.start()
             # Create prevTempJson for Tilt
-            prevTempJson.update({
-                config['tiltColor'] + 'HWVer': 0,
-                config['tiltColor'] + 'SWVer': 0,
-                config['tiltColor'] + 'SG': 0,
-                config['tiltColor'] + 'Temp': 0,
-                config['tiltColor'] + 'Batt': 0
-            })
+            if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                prevTempJson.update({
+                    config['tiltColor'] + 'HWVer': 0,
+                    config['tiltColor'] + 'SWVer': 0,
+                    config['tiltColor'] + 'SG': 0,
+                    config['tiltColor'] + 'Temp': 0,
+                    config['tiltColor'] + 'Batt': 0
+                })
 
 
 def initISpindel():  # Initialize iSpindel
@@ -1172,9 +1171,6 @@ def loop():  # Main program loop
                                 else:
                                     pass  # Don't log JSON messages
 
-                                # Set time of last update
-                                lastBbApi = timestamp = time.time()
-
                                 # Handle vessel temp conversion
                                 apiTemp = 0
                                 if cc['tempFormat'] == api['temp_unit']:
@@ -1207,6 +1203,9 @@ def loop():  # Main program loop
                                         'bbamb': apiAmbient,
                                         'bbves': apiTemp
                                     })
+
+                                # Set time of last update
+                                lastBbApi = timestamp = time.time()
                             # END: Process a Brew Bubbles API POST
 
                             else:
@@ -1226,9 +1225,6 @@ def loop():  # Main program loop
                                     logMessage("API iSpindel JSON received.")
                                 else:
                                     pass  # Don't log JSON messages
-
-                                # Set time of last update
-                                lastiSpindel = timestamp = time.time()
 
                                 # Convert to proper temp unit
                                 _temp = 0
@@ -1254,6 +1250,9 @@ def loop():  # Main program loop
                                         'spinSG': api['gravity'],
                                         'spinTemp': _temp
                                     })
+
+                                # Set time of last update
+                                lastiSpindel = timestamp = time.time()
 
                             elif not ispindel:
                                 logError('iSpindel packet received but no iSpindel configuration exists in {0}settings/config.cfg'.format(
@@ -1296,32 +1295,18 @@ def loop():  # Main program loop
                                                         tilt.stop()
                                                         tilt = None
 
-                                            # Set time of last update
-                                            lastTiltbridge = timestamp = time.time()
-
                                             # TiltBridge report reference
                                             # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
-                                            # {"color", color_name()},
-                                            # {"temp", converted_temp(false)},
-                                            # {"tempUnit", is_celsius() ? "C" : "F"},
-                                            # {"gravity", converted_gravity(use_raw_gravity)},
-                                            # {"gsheets_name", gsheets_beer_name()},
-                                            # {"weeks_on_battery", weeks_since_last_battery_change},
-                                            # {"sends_battery", receives_battery},
-                                            # {"high_resolution", tilt_pro},
-                                            # {"fwVersion", version_code},
 
-                                            # {"mdns_id":"tiltbridgetft","tilts":{"Purple":{"color":"Purple","gravity":"1.0520","gsheets_name":"","temp":"70.0","tempUnit":"F","weeks_on_battery":20},"Yellow":{"color":"Yellow","gravity":"1.0329","gsheets_name":"","temp":"69.8","tempUnit":"F","weeks_on_battery":1}}}
-
-                                            # TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+                                            # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
                                             if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
                                                 if api['tilts'][config['tiltColor']]['high_resolution']:
-                                                    prevTempJson[color + 'HWVer'] = 4
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 4
                                             elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
                                                 if api['tilts'][config['tiltColor']]['sends_battery']:
-                                                    prevTempJson[color + 'HWVer'] = 5 # Battery = >=2
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
                                             else:
-                                                prevTempJson[color + 'HWVer'] = 0
+                                                prevTempJson[config['tiltColor'] + 'HWVer'] = 0
 
                                             if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
                                                 prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
@@ -1337,16 +1322,21 @@ def loop():  # Main program loop
 
                                             _grav = Decimal(api['tilts'][config['tiltColor']]['gravity'])
 
-                                            if prevTempJson[color + 'HWVer'] == 4:
-                                                prevTempJson[color + 'SG'] = round(_grav, 4)
-                                                prevTempJson[color + 'Temp'] = round(_temp, 1)
+                                            # Choose proper resolution for SG and Temp
+                                            if (prevTempJson[config['tiltColor'] + 'HWVer']) == 4:
+                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_grav, 4)
+                                                prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp, 1)
                                             else:
-                                                prevTempJson[color + 'SG'] = round(_grav, 3)
-                                                prevTempJson[color + 'Temp'] = round(_temp)
+                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_grav, 3)
+                                                prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
 
-                                            if prevTempJson[color + 'HWVer'] >= 2:
+                                            # Get battery value from anything >= Tilt v2
+                                            if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
                                                 if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
                                                     prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+
+                                            # Set time of last update
+                                            lastTiltbridge = timestamp = time.time()
 
                         # END:  Tiltbridge Processing
 
@@ -1358,8 +1348,14 @@ def loop():  # Main program loop
                         logError(value)
 
                     except Exception as e:
-                        logError("Unknown error processing API. String received:")
-                        logError(value)
+                        type, value, traceback = sys.exc_info()
+                        fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
+                        logError("Unknown error processing API. String received:\n{}".format(value))
+                        logError("Error info:")
+                        logError("\tType: {0}".format(type))
+                        logError("\tFilename: {0}".format(fname))
+                        logError("\tLineNo: {0}".format(traceback.tb_lineno))
+                        logError("\tError: {0}".format(e))
 
                 elif messageType == "statusText":  # Status contents requested
                     status = {}
@@ -1531,7 +1527,7 @@ def loop():  # Main program loop
                                             tiltValue = tilt.getValue(color)
                                             if tiltValue is not None:
                                                 _temp = tiltValue.temperature
-                                                prevTempJson[color + 'HWVer'] = TILT_VERSIONS[tiltValue.hwVersion]
+                                                prevTempJson[color + 'HWVer'] = tiltValue.hwVersion
                                                 prevTempJson[color + 'SWVer'] = tiltValue.fwVersion
 
                                                 # Clamp temp values
@@ -1789,14 +1785,6 @@ def loop():  # Main program loop
         print()  # Simply a visual hack if we are running via command line
         logMessage("Detected keyboard interrupt, exiting.")
 
-
-    # 2020-12-26 18:31:47 [E] Caught an unexpected exception.
-    # 2020-12-26 18:31:47 [E] Error info:
-    # 2020-12-26 18:31:47 [E]         Error: (): ''
-    # 2020-12-26 18:31:47 [E]         Type: <class 'UnboundLocalError'>
-    # 2020-12-26 18:31:47 [E]         Filename: brewpi.py
-    # 2020-12-26 18:31:47 [E]         LineNo: 1321
-
     except Exception as e:
         type, value, traceback = sys.exc_info()
         fname = os.path.split(traceback.tb_frame.f_code.co_filename)[1]
@@ -1805,7 +1793,7 @@ def loop():  # Main program loop
         logError("\tType: {0}".format(type))
         logError("\tFilename: {0}".format(fname))
         logError("\tLineNo: {0}".format(traceback.tb_lineno))
-        logError("\tError:\n{0}".format(e))
+        logError("\tError: {0}".format(e))
         logMessage("Caught an unexpected exception, exiting.")
 
 

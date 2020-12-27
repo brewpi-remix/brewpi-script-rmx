@@ -300,7 +300,7 @@ do_uart() {
 
 do_venv() {
     # Handle venv and python libraries
-    local venvcmd pipcmd
+    local venvcmd pipcmd activateAlias aliasFile
     echo -e "\nSetting up venv for user: brewpi."
     # Copy in .bash_rc and .profile (for colors only)
     cp "$HOMEPATH/.bashrc" "$GITROOT/"
@@ -314,8 +314,15 @@ do_venv() {
 
     # Activate venv
     eval "deactivate 2> /dev/null"
-    echo "alias activate='. ./venv/bin/activate'" > "$GITROOT/.bash_aliases"
     eval ". $GITROOT/venv/bin/activate"||die
+
+    # Set alias for activate
+    # shellcheck disable=SC2089
+    activateAlias="alias activate='. ./venv/bin/activate'"
+    aliasFile="$GITROOT/.bash_aliases"
+    if ! grep "^$activateAlias\$" "$aliasFile" &>/dev/null; then
+        echo "$activateAlias" > "$aliasFile"
+    fi
 
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
@@ -324,6 +331,21 @@ do_venv() {
 
     # Deactivate venv
     eval "deactivate"||die
+}
+
+############
+### Set up real user aliases
+############
+
+do_aliases() {
+    # TODO:  Check for chambers and activate this
+    # Set alias for activate
+    local activateAlias aliasFile
+    activateAlias="alias brewpi='sudo $GITROOT/utils/doMenu.sh'"
+    aliasFile="$GITROOT/.bash_aliases"
+    if ! grep "^$activateAlias\$" "$aliasFile" &>/dev/null; then
+        echo "$activateAlias" > "$aliasFile"
+    fi
 }
 
 ############

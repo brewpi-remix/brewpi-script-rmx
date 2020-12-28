@@ -1,34 +1,43 @@
 # ======= settings above this line have been added automatically =======
-# uncomment settings here, these override the settings in defaults.cfg
+# These are the settings which may be used in the config.cfg file
 
-# scriptPath = /home/brewpi/
-# wwwPath = /var/www/html
-# port = /dev/ttyACM0
-# altport = /dev/ttyACM1
-# boardType = arduino
-# startupDelay = 1.0
-# debug = true
-# tiltColor = Purple
+# scriptPath = /home/brewpi/    # Path where brewpi.py may be found
+# wwwPath = /var/www/html       # Root of website
+# port = /dev/ttyACM0           # Port to use for Arduino
+# altport = /dev/ttyACM1        # Secondary port to use for Arduino
+# boardType = arduino           # Controller board type
+# interval = 120                # Logging interval
+# startupDelay = 10             # Delay to allow controller to start
+# debug = true                  # Currently not used
+# tiltColor = Purple            # Color of Tilt to log
+# iSpindel = Yellow             # Color of iSpindel to log
 
 # Log JSON:
 # This controls logging to the stdout.txt log, as well as the relative
 # length and verbosity of the messages. 
-#
 #   True    = Full logging.  May grow very quickly.
 #   False   = Terse messages, only a notice.  This is the new default.
 # logJson = True
 
-# On a standard pi installation, the defaults should work.
-# If you are using a different linux flavor or Windows, you can
-# set the tool locations here
+# Clamp values
+# Set these to the upper and lower limits you ever want to see logged
+# Make sure they are appropriate for your temperature unit, they will
+# not be converted.
+# clampSGUpper = 1.175
+# clampSGLower = 0.970
+# clampTempHigh = 110.0
+# clampTempLow = 0.0
+
+# On a standard pi installation, the defaults should work.  If you are using
+# a different linux flavor or Windows, you can set the tool locations here
 
 # arduinoHome = c:/arduino-1.0.4/
 # avrdudeHome = # location of avr tools, defaults to arduinohome/hardware/tools
 # avrsizeHome = # defaults to empty string because avrsize is on path on Linux
-# avrConf = # location of global avr conf. Defaults to avrdudeHome/avrdude.conf
+# avrConf =     # location of global avr conf. Defaults to avrdudeHome/avrdude.conf
 
-# On Windows, the scripts defaults to an Internet socket instead of a system
-# socket.
+# On Windows, the scripts defaults to an Internet socket instead of a
+# system socket (BEERSOCKET). (Currently not used)
 # useInetSocket=true
 # socketPort=6332
 # socketHost=127.0.0.1

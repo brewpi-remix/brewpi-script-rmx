@@ -32,43 +32,44 @@
 
 # Standard Imports
 import _thread
+import argparse
+import asyncio
+import getopt
+import grp
+import os
+import pwd
+import shutil
+import socket
+import stat
+import sys
+import time
+import traceback
+import urllib.error
+import urllib.parse
+import urllib.request
 from decimal import *
 from distutils.version import LooseVersion
-import urllib.request
-import urllib.parse
-import urllib.error
-import traceback
-import shutil
 from pprint import pprint
-import getopt
-import os
-import socket
-import time
-import sys
-import stat
-import pwd
-import grp
-import serial
+from struct import calcsize, pack, unpack
+
 import git
-import argparse
+import serial
 import simplejson as json
 from configobj import ConfigObj
-import socket
-import asyncio
-import sys
-import Tilt
-from struct import pack, unpack, calcsize
-import temperatureProfile
-import programController as programmer
+
+import BrewConvert
 import brewpiJson
-from BrewPiUtil import Unbuffered, logMessage, logError, addSlash, readCfgWithDefaults
+import BrewPiProcess
 import BrewPiUtil as util
 import brewpiVersion
-import pinList
 import expandLogMessage
-import BrewPiProcess
+import pinList
+import programController as programmer
+import temperatureProfile
+import Tilt
 from backgroundserial import BackGroundSerial
-import BrewConvert
+from BrewPiUtil import (Unbuffered, addSlash, logError, logMessage,
+                        readCfgWithDefaults)
 
 # ********************************************************************
 ####

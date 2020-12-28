@@ -141,12 +141,6 @@ timeoutiSpindel = 1800
 lastTiltbridge = 0
 timeoutTiltbridge = 300
 
-# Clamp values for Tilt
-clampSGUpper = 1.175
-clampSGLower = 0.970
-clampTempHigh = 110.0
-clampTempLow = 25.0
-
 # Keep track of time between new data requests
 prevDataTime = 0
 prevTimeOut = 0
@@ -840,11 +834,6 @@ def loop():  # Main program loop
     global tilt
     global tiltbridge
     global ispindel
-    # Clamp values for Tilt
-    global clampSGUpper
-    global clampSGLower
-    global clampTempHigh
-    global clampTempLow
 
     bc = BrewConvert.BrewConvert()
     run = True  # Allow script loop to run
@@ -1180,7 +1169,7 @@ def loop():  # Main program loop
                                 else:
                                     apiTemp = Decimal(bc.convert(api['temp'], 'F', 'C'))
                                 # Clamp and round temp values
-                                apiTemp = clamp(round(apiTemp, 2), clampTempLow, clampTempHigh)
+                                apiTemp = clamp(round(apiTemp, 2), Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                 # Handle ambient temp conversion
                                 apiAmbient = 0
@@ -1191,7 +1180,7 @@ def loop():  # Main program loop
                                 else:
                                     apiAmbient = Decimal(bc.convert(api['ambient'], 'F', 'C'))
                                 # Clamp and round temp values
-                                apiAmbient = clamp(round(apiAmbient, 2), clampTempLow, clampTempHigh)
+                                apiAmbient = clamp(round(apiAmbient, 2), Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'bbbpm'):
@@ -1239,10 +1228,10 @@ def loop():  # Main program loop
                                     _temp = bc.convert(
                                         api['temperature'], 'F', 'C')
                                 # Clamp and round temp values
-                                _temp = clamp(round(_temp, 2), clampTempLow, clampTempHigh)
+                                _temp = clamp(round(_temp, 2), Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                 # Clamp and round gravity values
-                                _gravity = clamp(api['gravity'], clampSGLower, clampSGUpper)
+                                _gravity = clamp(api['gravity'], Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'battery'):
@@ -1330,10 +1319,10 @@ def loop():  # Main program loop
                                             _gravity = Decimal(api['tilts'][config['tiltColor']]['gravity'])
 
                                             # Clamp and round gravity values
-                                            _temp = clamp(_temp, clampTempLow, clampTempHigh)
+                                            _temp = clamp(_temp, Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                             # Clamp and round temp values
-                                            _gravity = clamp(_gravity, clampSGLower, clampSGUpper)
+                                            _gravity = clamp(_gravity, Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
 
                                             # Choose proper resolution for SG and Temp
                                             if (prevTempJson[config['tiltColor'] + 'HWVer']) == 4:
@@ -1546,14 +1535,14 @@ def loop():  # Main program loop
                                                 prevTempJson[color + 'SWVer'] = tiltValue.fwVersion
 
                                                 # Clamp temp values
-                                                _temp = clamp(_temp, clampTempLow, clampTempHigh)
+                                                _temp = clamp(_temp, Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                                 # Convert to C
                                                 if cc['tempFormat'] == 'C':
                                                     _temp = bc.convert(_temp, 'F', 'C')
 
                                                 # Clamp SG Values
-                                                _grav = clamp(tiltValue.gravity, clampSGLower, clampSGUpper)
+                                                _grav = clamp(tiltValue.gravity, Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
 
                                                 if prevTempJson[color + 'HWVer'] == 4:
                                                     changeWwwSetting('isHighResTilt', True)

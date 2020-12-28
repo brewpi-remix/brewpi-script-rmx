@@ -402,7 +402,7 @@ def changeWwwSetting(settingName, value):
         wwwSettings = {}
 
     try:
-        wwwSettings[settingName] = str(value)
+        wwwSettings[settingName] = value
         wwwSettingsFile.seek(0)
         wwwSettingsFile.write(json.dumps(wwwSettings).encode(encoding="cp437"))
         wwwSettingsFile.truncate()
@@ -1179,6 +1179,8 @@ def loop():  # Main program loop
                                     apiTemp = Decimal(bc.convert(api['temp'], 'C', 'F'))
                                 else:
                                     apiTemp = Decimal(bc.convert(api['temp'], 'F', 'C'))
+                                # Clamp and round temp values
+                                apiTemp = clamp(round(apiTemp, 2), clampTempLow, clampTempHigh)
 
                                 # Handle ambient temp conversion
                                 apiAmbient = 0
@@ -1188,6 +1190,8 @@ def loop():  # Main program loop
                                     apiAmbient = Decimal(bc.convert(api['ambient'], 'C', 'F'))
                                 else:
                                     apiAmbient = Decimal(bc.convert(api['ambient'], 'F', 'C'))
+                                # Clamp and round temp values
+                                apiAmbient = clamp(round(apiAmbient, 2), clampTempLow, clampTempHigh)
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'bbbpm'):
@@ -1234,18 +1238,23 @@ def loop():  # Main program loop
                                 else:
                                     _temp = bc.convert(
                                         api['temperature'], 'F', 'C')
+                                # Clamp and round temp values
+                                _temp = clamp(round(_temp, 2), clampTempLow, clampTempHigh)
+
+                                # Clamp and round gravity values
+                                _gravity = clamp(api['gravity'], clampSGLower, clampSGUpper)
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'battery'):
                                     prevTempJson['spinBatt'] = api['battery']
-                                    prevTempJson['spinSG'] = api['gravity']
+                                    prevTempJson['spinSG'] = _gravity
                                     prevTempJson['spinTemp'] = _temp
 
                                 # Else, append values to prevTempJson
                                 else:
                                     prevTempJson.update({
                                         'spinBatt': api['battery'],
-                                        'spinSG': api['gravity'],
+                                        'spinSG': _gravity,
                                         'spinTemp': _temp
                                     })
 
@@ -1318,14 +1327,22 @@ def loop():  # Main program loop
                                             else:
                                                 _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
 
-                                            _grav = Decimal(api['tilts'][config['tiltColor']]['gravity'])
+                                            _gravity = Decimal(api['tilts'][config['tiltColor']]['gravity'])
+
+                                            # Clamp and round gravity values
+                                            _temp = clamp(_temp, clampTempLow, clampTempHigh)
+
+                                            # Clamp and round temp values
+                                            _gravity = clamp(_gravity, clampSGLower, clampSGUpper)
 
                                             # Choose proper resolution for SG and Temp
                                             if (prevTempJson[config['tiltColor'] + 'HWVer']) == 4:
-                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_grav, 4)
+                                                changeWwwSetting('isHighResTilt', True)
+                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 4)
                                                 prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp, 1)
                                             else:
-                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_grav, 3)
+                                                changeWwwSetting('isHighResTilt', False)
+                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 3)
                                                 prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
 
                                             # Get battery value from anything >= Tilt v2
@@ -1539,9 +1556,11 @@ def loop():  # Main program loop
                                                 _grav = clamp(tiltValue.gravity, clampSGLower, clampSGUpper)
 
                                                 if prevTempJson[color + 'HWVer'] == 4:
+                                                    changeWwwSetting('isHighResTilt', True)
                                                     prevTempJson[color + 'SG'] = round(_grav, 4)
                                                     prevTempJson[color + 'Temp'] = round(_temp, 2)
                                                 else:
+                                                    changeWwwSetting('isHighResTilt', False)
                                                     prevTempJson[color + 'SG'] = round(_grav, 3)
                                                     prevTempJson[color + 'Temp'] = round(_temp, 1)
 

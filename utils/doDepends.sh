@@ -143,7 +143,7 @@ rem_nginx() {
     # Check for nginx running on port 80
     nginixInstalled=$(sudo netstat -tulpn | grep :80 | grep nginx)
     if [ -z "$nginixInstalled" ] ; then
-        echo -e "\nNo nginx damon found running on port 80."
+        echo -e "\nNo nginx daemon found running on port 80."
     else
         echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
         echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";

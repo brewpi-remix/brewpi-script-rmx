@@ -20,7 +20,7 @@
 # Declare this script's constants
 declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES REINSTALL GOODPORT GOODPORTSSL
 # Declare /inc/const.inc file constants
-declare THISSCRIPT GITROOT USERROOT
+declare THISSCRIPT GITROOT USERROOT REALUSER
 # Declare /inc/asroot.inc file constants
 declare HOMEPATH 
 # Declare placeholders for nginx work
@@ -306,7 +306,7 @@ do_venv() {
 
     # Set up venv if it is not present
     if [[ ! -d "$USERROOT/venv" ]]; then
-        echo -e "\nSetting up venv for user: brewpi."
+        echo -e "\nSetting up venv for BrewPi user."
         # Copy in .bash_rc and .profile (for colors only)
         cp "$HOMEPATH/.bashrc" "$USERROOT/"
         cp "$HOMEPATH/.profile" "$USERROOT/"
@@ -314,7 +314,7 @@ do_venv() {
         venvcmd="python3 -m venv "$USERROOT/venv" --prompt bpr"
         eval "$venvcmd"||die
     else
-        echo -e "\nUser venv already exists."
+        echo -e "\nBrewPi user venv already exists."
     fi
 
     # Activate venv
@@ -338,17 +338,19 @@ do_aliases() {
     # Set alias for menu
     local menuAlias activateAlias aliasFile
 
-    menuAlias="alias brewpi='sudo $GITROOT/utils/doMenu.sh'"
-    aliasFile="$GITROOT/.bash_aliases"
-    if ! grep "^$menuAlias\$" "$aliasFile" &>/dev/null; then
-        echo "$menuAlias" > "$aliasFile"
+    # Set alias for activate
+    activateAlias="alias activate="
+    aliasFile="$USERROOT/.bash_aliases"
+    if ! grep "^$activateAlias" "$aliasFile" &>/dev/null; then
+        echo -e "\nAdding alias to activate venv for BrewPi user."
+        echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
     fi
 
-    # Set alias for activate
-    activateAlias="alias activate='. ./venv/bin/activate'"
-    aliasFile="$USERROOT/.bash_aliases"
-    if ! grep "^$activateAlias\$" "$aliasFile" &>/dev/null; then
-        echo "$activateAlias" > "$aliasFile"
+    menuAlias="alias brewpi="
+    aliasFile="$HOMEPATH/.bash_aliases"
+    if ! grep "^$menuAlias" "$aliasFile" &>/dev/null; then
+    echo -e "\nAdding alias for BrewPi Menu for $REALUSER user."
+        echo "$menuAlias'sudo $GITROOT/utils/doMenu.sh'" >> "$aliasFile"
     fi
 }
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2034
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -21,9 +20,9 @@
 # Declare this script's constants
 declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES REINSTALL GOODPORT GOODPORTSSL
 # Declare /inc/const.inc file constants
-declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+declare THISSCRIPT GITROOT USERROOT
 # Declare /inc/asroot.inc file constants
-declare HOMEPATH REALUSER
+declare HOMEPATH 
 # Declare placeholders for nginx work
 declare KEEP_NGINX
 
@@ -46,27 +45,31 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
+    # Get BrewPi user directory
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/userroot.inc" "$@"
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
-    
+
     # Read configuration
     # shellcheck source=/dev/null
     . "$GITROOT/inc/config.inc" "$@"
-    
+
     # Check network connectivity
     # shellcheck source=/dev/null
     . "$GITROOT/inc/nettest.inc" "$@"
-    
+
     # Packages to be installed/checked via apt
     APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
@@ -299,34 +302,28 @@ do_uart() {
 ############
 
 do_venv() {
-    # Handle venv and python libraries
     local venvcmd pipcmd activateAlias aliasFile
-    echo -e "\nSetting up venv for user: brewpi."
-    # Copy in .bash_rc and .profile (for colors only)
-    cp "$HOMEPATH/.bashrc" "$GITROOT/"
-    cp "$HOMEPATH/.profile" "$GITROOT/"
 
     # Set up venv if it is not present
-    if [[ ! -d "/path/to/dir" ]]; then
-        venvcmd="python3 -m venv $GITROOT/venv --prompt bpr"
+    if [[ ! -d "$USERROOT/venv" ]]; then
+        echo -e "\nSetting up venv for user: brewpi."
+        # Copy in .bash_rc and .profile (for colors only)
+        cp "$HOMEPATH/.bashrc" "$USERROOT/"
+        cp "$HOMEPATH/.profile" "$USERROOT/"
+
+        venvcmd="python3 -m venv "$USERROOT/venv" --prompt bpr"
         eval "$venvcmd"||die
+    else
+        echo -e "\nUser venv already exists."
     fi
 
     # Activate venv
     eval "deactivate 2> /dev/null"
-    eval ". $GITROOT/venv/bin/activate"||die
-
-    # Set alias for activate
-    # shellcheck disable=SC2089
-    activateAlias="alias activate='. ./venv/bin/activate'"
-    aliasFile="$GITROOT/.bash_aliases"
-    if ! grep "^$activateAlias\$" "$aliasFile" &>/dev/null; then
-        echo "$activateAlias" > "$aliasFile"
-    fi
+    eval ". $USERROOT/venv/bin/activate"||die
 
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
-    pipcmd="pip3 install -r $GITROOT/requirements.txt"
+    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES"
     eval "$pipcmd"||die
 
     # Deactivate venv
@@ -338,11 +335,18 @@ do_venv() {
 ############
 
 do_aliases() {
-    # TODO:  Check for chambers and activate this
-    # Set alias for activate
-    local activateAlias aliasFile
-    activateAlias="alias brewpi='sudo $GITROOT/utils/doMenu.sh'"
+    # Set alias for menu
+    local menuAlias activateAlias aliasFile
+
+    menuAlias="alias brewpi='sudo $GITROOT/utils/doMenu.sh'"
     aliasFile="$GITROOT/.bash_aliases"
+    if ! grep "^$menuAlias\$" "$aliasFile" &>/dev/null; then
+        echo "$menuAlias" > "$aliasFile"
+    fi
+
+    # Set alias for activate
+    activateAlias="alias activate='. ./venv/bin/activate'"
+    aliasFile="$USERROOT/.bash_aliases"
     if ! grep "^$activateAlias\$" "$aliasFile" &>/dev/null; then
         echo "$activateAlias" > "$aliasFile"
     fi
@@ -355,6 +359,7 @@ do_aliases() {
 main() {
     init "$@"           # Init and call supporting libs
     const "$@"          # Get script constants
+    userroot "$@"       # Get BrewPi user's home directory
     asroot              # Make sure we are running with root privs
     help "$@"           # Handle help and version requests
     banner "starting"
@@ -367,6 +372,7 @@ main() {
     do_packages         # Check on required packages
     do_uart             # Slow down UART
     do_venv             # Set up venv
+    do_aliases          # Set up BrewPi user aliases
     banner "complete"
 }
 

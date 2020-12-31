@@ -104,7 +104,11 @@ def readCfgWithDefaults(configFile = None):
         defCfg['beerName'] = 'My BrewPi Remix Run'
         defCfg['interval'] = '120.0'
         defCfg['dataLogging'] = 'active'
-        defCfg['logJson'] = True
+        defCfg['logJson'] = False
+        defCfg['clampSGUpper'] = 1.175
+        defCfg['clampSGLower'] = 0.970
+        defCfg['clampTempUpper'] = 110.0
+        defCfg['clampTempLower'] = -5.0
         defCfg.write()
 
     if configFile:

@@ -47,7 +47,11 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
+    # Get BrewPi user directory
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/userroot.inc" "$@"
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"

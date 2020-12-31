@@ -26,15 +26,28 @@ declare GITROOT
 init() {
     # Change to current dir (assumed to be in a repo) so we can get the git info
     pushd . &> /dev/null || exit 1
-    cd "$(dirname $(readlink -e $0))" || exit 1 # Move to where the script is
+    SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+    cd "$SCRIPTPATH" || exit 1 # Move to where the script is
     GITROOT="$(git rev-parse --show-toplevel)" &> /dev/null
     if [ -z "$GITROOT" ]; then
-        echo -e "\nERROR:  Unable to find my repository, did you move this file?"
+        echo -e "\nERROR: Unable to find my repository, did you move this file or not run as root?"
         popd &> /dev/null || exit 1
         exit 1
     fi
 
+    # Get project constants
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/const.inc" "$@"
+
+    # Get BrewPi user directory
+    USERROOT=$(echo "$GITROOT" | cut -d "/" -f-3)
+
+    # Get error handling functionality
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/error.inc" "$@"
+
     # Get help and version functionality
+    # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
 }
 
@@ -43,13 +56,14 @@ init() {
 ############
 
 loop() {
-    local script stdOut stdErr
+    local script python
     script="$GITROOT/brewpi.py"
+    python="$USERROOT/venv/bin/python3"
 
     while :
     do
-        if (python3 -u "$script" --check --donotrun); then
-            USE_TIMESTAMP_LOG=true python3 -u "$script" --log --datetime
+        if ("$python" -u "$script" --check --donotrun); then
+            USE_TIMESTAMP_LOG=true "$python" -u "$script" --log --datetime
         else
             sleep 1
         fi

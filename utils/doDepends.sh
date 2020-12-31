@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2034
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -21,9 +20,9 @@
 # Declare this script's constants
 declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES REINSTALL GOODPORT GOODPORTSSL
 # Declare /inc/const.inc file constants
-declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
+declare THISSCRIPT GITROOT USERROOT REALUSER
 # Declare /inc/asroot.inc file constants
-declare HOMEPATH REALUSER
+declare HOMEPATH 
 # Declare placeholders for nginx work
 declare KEEP_NGINX
 
@@ -46,31 +45,35 @@ init() {
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
+    # Get BrewPi user directory
+    # shellcheck source=/dev/null
+    . "$GITROOT/inc/userroot.inc" "$@"
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
-    
+
     # Read configuration
     # shellcheck source=/dev/null
     . "$GITROOT/inc/config.inc" "$@"
-    
+
     # Check network connectivity
     # shellcheck source=/dev/null
     . "$GITROOT/inc/nettest.inc" "$@"
-    
+
     # Packages to be installed/checked via apt
-    APTPACKAGES="git python3 python3-pip python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
+    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
-    PIP3PACKAGES="pyserial psutil simplejson configobj gitpython sentry-sdk"
+    PIP3PACKAGES="requirements.txt"
 }
 
 ############
@@ -143,7 +146,7 @@ rem_nginx() {
     # Check for nginx running on port 80
     nginixInstalled=$(sudo netstat -tulpn | grep :80 | grep nginx)
     if [ -z "$nginixInstalled" ] ; then
-        echo -e "\nNo nginx damon found running on port 80."
+        echo -e "\nNo nginx daemon found running on port 80."
     else
         echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
         echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
@@ -262,50 +265,26 @@ do_packages() {
     
     # Cleanup if we updated packages
     if [ -n "$doCleanup" ]; then
-        echo -e "\nCleaning up local repositories."
+        echo -e "Cleaning up local repositories."
         apt-get clean -y||warn
         apt-get autoclean -y||warn
         apt-get autoremove --purge -y||warn
     else
         echo -e "\nNo apt updates to apply."
     fi
-    
-    # Install any Python packages not installed, update those installed
-    echo -e "\nChecking and installing required dependencies via pip3."
-    # shellcheck disable=SC2016
-    pipcmd='pipInstalled=$(pip3 list --format=columns)'
-    eval "$pipcmd"
-    # shellcheck disable=SC2016
-    pipcmd='pipInstalled=$(echo "$pipInstalled" | cut -f1 -d" ")'
-    eval "$pipcmd"
-    for pkg in ${PIP3PACKAGES,,}; do
-        # shellcheck disable=SC2154
-        if [[ ! ${pipInstalled,,} == *"$pkg"* ]]; then
-            echo -e "\nInstalling '$pkg'."
-            pip3 install "$pkg" -q||die
-        else
-            echo -e "\nChecking for update to '$pkg'."
-            pip3 install "$pkg" --upgrade -q||die
-        fi
-    done
 }
 
 ############
 ### Reset BT baud rate < Pi4
 ############
 
-do_aioblescan() {
+do_uart() {
     # Install aioblescan
-    local blerepo device fast safe file
-    echo -e "\nInstalling BLEacon support via aioblescan."
-    blerepo="https://github.com/brewpi-remix/aioblescan.git"
+    local device fast safe file
+    echo -e "\nModifying UART speeds for BLEacon support."
     file="/usr/bin/btuart"
     fast="\$HCIATTACH \/dev\/serial1 bcm43xx 921600 noflow - \$BDADDR"
     safe="\$HCIATTACH \/dev\/serial1 bcm43xx 460800 noflow - \$BDADDR"
-    rm -fr "$HOMEPATH/aioblescan"
-    git clone "$blerepo" "$HOMEPATH/aioblescan"
-    (cd "$HOMEPATH/aioblescan" || exit; python3 setup.py install)
-    rm -fr "$HOMEPATH/aioblescan"
     # Slow down uart speeds on < Pi4
     if [ -f "$file" ]; then
         sed -i "s/$fast/$safe/g" "$file"
@@ -319,23 +298,83 @@ do_aioblescan() {
 }
 
 ############
+### Set up venv
+############
+
+do_venv() {
+    local venvcmd pipcmd activateAlias aliasFile
+
+    # Set up venv if it is not present
+    if [[ ! -d "$USERROOT/venv" ]]; then
+        echo -e "\nSetting up venv for BrewPi user."
+        # Copy in .bash_rc and .profile (for colors only)
+        cp "$HOMEPATH/.bashrc" "$USERROOT/"
+        cp "$HOMEPATH/.profile" "$USERROOT/"
+
+        venvcmd="python3 -m venv "$USERROOT/venv" --prompt bpr"
+        eval "$venvcmd"||die
+    else
+        echo -e "\nBrewPi user venv already exists."
+    fi
+
+    # Activate venv
+    eval "deactivate 2> /dev/null"
+    eval ". $USERROOT/venv/bin/activate"||die
+
+    # Install any Python packages not installed, update those installed
+    echo -e "\nChecking and installing required dependencies via pip3."
+    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES"
+    eval "$pipcmd"||die
+
+    # Deactivate venv
+    eval "deactivate"||die
+}
+
+############
+### Set up real user aliases
+############
+
+do_aliases() {
+    # Set alias for menu
+    local menuAlias activateAlias aliasFile
+
+    # Set alias for activate
+    activateAlias="alias activate="
+    aliasFile="$USERROOT/.bash_aliases"
+    if ! grep "^$activateAlias" "$aliasFile" &>/dev/null; then
+        echo -e "\nAdding alias to activate venv for BrewPi user."
+        echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
+    fi
+
+    menuAlias="alias brewpi="
+    aliasFile="$HOMEPATH/.bash_aliases"
+    if ! grep "^$menuAlias" "$aliasFile" &>/dev/null; then
+    echo -e "\nAdding alias for BrewPi Menu for $REALUSER user."
+        echo "$menuAlias'sudo $GITROOT/utils/doMenu.sh'" >> "$aliasFile"
+    fi
+}
+
+############
 ### Main
 ############
 
 main() {
-    init "$@" # Init and call supporting libs
-    const "$@" # Get script constants
-    asroot # Make sure we are running with root privs
-    help "$@" # Handle help and version requests
+    init "$@"           # Init and call supporting libs
+    const "$@"          # Get script constants
+    userroot "$@"       # Get BrewPi user's home directory
+    asroot              # Make sure we are running with root privs
+    help "$@"           # Handle help and version requests
     banner "starting"
-    apt_check # Check on apt packages
-    rem_php5 # Remove php5 packages
-    rem_nginx # Offer to remove nginx packages
+    apt_check           # Check on apt packages
+    rem_php5            # Remove php5 packages
+    rem_nginx           # Offer to remove nginx packages
     if [[ $KEEP_NGINX -eq 1 ]]; then
         keep_nginx "$@" # Attempt to reconfigure nginx
     fi
-    do_packages # Check on required packages
-    do_aioblescan
+    do_packages         # Check on required packages
+    do_uart             # Slow down UART
+    do_venv             # Set up venv
+    do_aliases          # Set up BrewPi user aliases
     banner "complete"
 }
 

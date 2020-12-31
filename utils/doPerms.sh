@@ -83,7 +83,7 @@ perms() {
     chown -R www-data:www-data "$wwwPath" || warn
     chown -R brewpi:www-data "$wwwPath/data" || warn
     find "$wwwPath" -type d -exec chmod 2770 {} \; || warn
-    find "$wwwPath" -type f -exec chmod 640 {} \; || warn
+    find "$wwwPath" -type f -exec chmod 660 {} \; || warn
     find "$wwwPath/data" -type f -exec chmod 660 {} \; || warn
     find "$wwwPath" -type f -name "*.json" -exec chmod 660 {} \; || warn
     echo -e "\nFixing file permissions for $GITROOT."

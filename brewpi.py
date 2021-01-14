@@ -1296,14 +1296,13 @@ def loop():  # Main program loop
                                             # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
 
                                             # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+                                            prevTempJson[config['tiltColor'] + 'HWVer'] = 0
                                             if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
                                                 if api['tilts'][config['tiltColor']]['high_resolution']:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 4
                                             elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
                                                 if api['tilts'][config['tiltColor']]['sends_battery']:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
-                                            else:
-                                                prevTempJson[config['tiltColor'] + 'HWVer'] = 0
 
                                             if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
                                                 prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])

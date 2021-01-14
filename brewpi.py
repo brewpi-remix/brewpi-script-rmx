@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -587,21 +587,25 @@ def initTilt():  # Set up Tilt
         if not checkBluetooth():
             logError("Configured for Tilt but no Bluetooth radio available.")
         else:
-            if tilt:
-                tilt.stop()
+            try:
+                tilt  # If we are running a Tilt, stop it
+            except NameError:
                 tilt = None
-            tilt = Tilt.TiltManager(60, 10, 0)
-            tilt.loadSettings()
-            tilt.start()
-            # Create prevTempJson for Tilt
-            if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                prevTempJson.update({
-                    config['tiltColor'] + 'HWVer': 0,
-                    config['tiltColor'] + 'SWVer': 0,
-                    config['tiltColor'] + 'SG': 0,
-                    config['tiltColor'] + 'Temp': 0,
-                    config['tiltColor'] + 'Batt': 0
-                })
+            if tilt is not None:
+                tilt.stop()
+            try:
+                tilt.start()
+                # Create prevTempJson for Tilt
+                if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                    prevTempJson.update({
+                        config['tiltColor'] + 'HWVer': 0,
+                        config['tiltColor'] + 'SWVer': 0,
+                        config['tiltColor'] + 'SG': 0,
+                        config['tiltColor'] + 'Temp': 0,
+                        config['tiltColor'] + 'Batt': 0
+                    })
+            except:
+                logMessage("Configured for Tilt, however no Tilt is present.")
 
 
 def initISpindel():  # Initialize iSpindel

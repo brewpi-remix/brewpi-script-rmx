@@ -343,7 +343,10 @@ class TiltManager(object):
             command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
             self.btctrl.send_command(command)
 
-            asyncio.gather(*asyncio.Task.all_tasks()).cancel()
+            try:
+                asyncio.gather(*asyncio.Task.all_tasks()).cancel()
+            except:
+                pass
             for thread in self.threads:
                 self.event_loop.call_soon_threadsafe(self.event_loop.stop)
                 thread.join()

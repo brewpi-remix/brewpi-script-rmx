@@ -591,6 +591,7 @@ def initTilt():  # Set up Tilt
                 tilt  # If we are running a Tilt, stop it
             except NameError:
                 tilt = None
+
             if tilt is not None:
                 tilt.stop()
             try:
@@ -606,7 +607,6 @@ def initTilt():  # Set up Tilt
                     })
             except:
                 logMessage("Configured for Tilt, however no Tilt is present.")
-
 
 def initISpindel():  # Initialize iSpindel
     global ispindel
@@ -1300,6 +1300,7 @@ def loop():  # Main program loop
                                             # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
 
                                             # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+
                                             if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
                                                 if api['tilts'][config['tiltColor']]['high_resolution']:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 4

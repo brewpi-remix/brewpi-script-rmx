@@ -338,18 +338,22 @@ class TiltManager(object):
 
         :return: None
         """
-        self.btctrl.stop_scan_request()
-        command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
-        self.btctrl.send_command(command)
+        if self.btctrl:
+            self.btctrl.stop_scan_request()
+            command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
+            self.btctrl.send_command(command)
 
-        asyncio.gather(*asyncio.Task.all_tasks()).cancel()
-        for thread in self.threads:
-            self.event_loop.call_soon_threadsafe(self.event_loop.stop)
-            thread.join()
+            try:
+                asyncio.gather(*asyncio.Task.all_tasks()).cancel()
+            except:
+                pass
+            for thread in self.threads:
+                self.event_loop.call_soon_threadsafe(self.event_loop.stop)
+                thread.join()
 
-        self.conn.close()
-        self.event_loop.close()
-        return
+            self.conn.close()
+            self.event_loop.close()
+            return
 
 
 class TiltValue:

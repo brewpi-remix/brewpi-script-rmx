@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -587,22 +587,26 @@ def initTilt():  # Set up Tilt
         if not checkBluetooth():
             logError("Configured for Tilt but no Bluetooth radio available.")
         else:
-            if tilt:
-                tilt.stop()
+            try:
+                tilt  # If we are running a Tilt, stop it
+            except NameError:
                 tilt = None
-            tilt = Tilt.TiltManager(60, 10, 0)
-            tilt.loadSettings()
-            tilt.start()
-            # Create prevTempJson for Tilt
-            if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                prevTempJson.update({
-                    config['tiltColor'] + 'HWVer': 0,
-                    config['tiltColor'] + 'SWVer': 0,
-                    config['tiltColor'] + 'SG': 0,
-                    config['tiltColor'] + 'Temp': 0,
-                    config['tiltColor'] + 'Batt': 0
-                })
 
+            if tilt is not None:
+                tilt.stop()
+            try:
+                tilt.start()
+                # Create prevTempJson for Tilt
+                if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                    prevTempJson.update({
+                        config['tiltColor'] + 'HWVer': 0,
+                        config['tiltColor'] + 'SWVer': 0,
+                        config['tiltColor'] + 'SG': 0,
+                        config['tiltColor'] + 'Temp': 0,
+                        config['tiltColor'] + 'Batt': 0
+                    })
+            except:
+                logMessage("Configured for Tilt, however no Tilt is present.")
 
 def initISpindel():  # Initialize iSpindel
     global ispindel
@@ -1296,6 +1300,7 @@ def loop():  # Main program loop
                                             # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
 
                                             # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+
                                             if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
                                                 if api['tilts'][config['tiltColor']]['high_resolution']:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 4

@@ -588,25 +588,25 @@ def initTilt():  # Set up Tilt
             logError("Configured for Tilt but no Bluetooth radio available.")
         else:
             try:
-                tilt  # If we are running a Tilt, stop it
-            except NameError:
-                tilt = None
-
-            if tilt is not None:
                 tilt.stop()
-            try:
-                tilt.start()
-                # Create prevTempJson for Tilt
-                if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                    prevTempJson.update({
-                        config['tiltColor'] + 'HWVer': 0,
-                        config['tiltColor'] + 'SWVer': 0,
-                        config['tiltColor'] + 'SG': 0,
-                        config['tiltColor'] + 'Temp': 0,
-                        config['tiltColor'] + 'Batt': 0
-                    })
             except:
-                logMessage("Configured for Tilt, however no Tilt is present.")
+                pass
+
+            tilt = None
+
+            #try:
+            tilt = Tilt.TiltManager(60, 10, 0)
+            tilt.loadSettings()
+            tilt.start()
+            # Create prevTempJson for Tilt
+            if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                prevTempJson.update({
+                    config['tiltColor'] + 'HWVer': 0,
+                    config['tiltColor'] + 'SWVer': 0,
+                    config['tiltColor'] + 'SG': 0,
+                    config['tiltColor'] + 'Temp': 0,
+                    config['tiltColor'] + 'Batt': 0
+                })
 
 def initISpindel():  # Initialize iSpindel
     global ispindel
@@ -1283,18 +1283,14 @@ def loop():  # Main program loop
                                         if c == config["tiltColor"]:
                                             # Found, turn off regular Tilt
                                             if tiltbridge == False:
-                                                logMessage(
-                                                    "Turned on Tiltbridge.")
+                                                logMessage("Turned on Tiltbridge.")
                                                 tiltbridge = True
                                                 try:
-                                                    tilt
-                                                except NameError:
+                                                    logMessage("Stopping Tilt.")
+                                                    tilt.stop()
                                                     tilt = None
-                                                    if tilt is not None:  # If we are running a Tilt, stop it
-                                                        logMessage(
-                                                            "Stopping Tilt.")
-                                                        tilt.stop()
-                                                        tilt = None
+                                                except:
+                                                    pass
 
                                             # TiltBridge report reference
                                             # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270

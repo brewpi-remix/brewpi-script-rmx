@@ -312,7 +312,8 @@ class TiltManager(object):
         # Turn debug printing on or off
         self.setDebug(debug)
 
-        self.event_loop = asyncio.get_event_loop()
+        self.event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.event_loop)
         # First create and configure a raw socket
         self.mysocket = aioblescan.create_bt_socket(self.dev_id)
 
@@ -338,22 +339,18 @@ class TiltManager(object):
 
         :return: None
         """
-        if self.btctrl:
-            self.btctrl.stop_scan_request()
-            command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
-            self.btctrl.send_command(command)
+        self.btctrl.stop_scan_request()
+        command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
+        self.btctrl.send_command(command)
+        asyncio.gather(*asyncio.Task.all_tasks()).cancel()
 
-            try:
-                asyncio.gather(*asyncio.Task.all_tasks()).cancel()
-            except:
-                pass
-            for thread in self.threads:
-                self.event_loop.call_soon_threadsafe(self.event_loop.stop)
-                thread.join()
+        for thread in self.threads:
+            self.event_loop.stop()
+            thread.join()
 
-            self.conn.close()
-            self.event_loop.close()
-            return
+        self.conn.close()
+        self.event_loop.close()
+        return
 
 
 class TiltValue:

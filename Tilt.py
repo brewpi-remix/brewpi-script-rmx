@@ -339,6 +339,7 @@ class TiltManager(object):
 
         :return: None
         """
+
         self.btctrl.stop_scan_request()
         command = aioblescan.HCI_Cmd_LE_Advertise(enable=False)
         self.btctrl.send_command(command)

@@ -588,26 +588,27 @@ def initTilt():  # Set up Tilt
             logError("Configured for Tilt but no Bluetooth radio available.")
         else:
             try:
-                tilt  # If we are running a Tilt, stop it
-            except NameError:
-                tilt = None
-
-            if tilt is not None:
                 tilt.stop()
-            try:
-                tilt.start()
-                # Create prevTempJson for Tilt
-                if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
-                    prevTempJson.update({
-                        config['tiltColor'] + 'HWVer': 0,
-                        config['tiltColor'] + 'SWVer': 0,
-                        config['tiltColor'] + 'SG': 0,
-                        config['tiltColor'] + 'Temp': 0,
-                        config['tiltColor'] + 'Batt': 0
-                    })
             except:
-                logMessage("Configured for Tilt, however no Tilt is present.")
+                pass
 
+            tilt = None
+
+            #try:
+            tilt = Tilt.TiltManager(60, 10, 0)
+            tilt.loadSettings()
+            tilt.start()
+            # Create prevTempJson for Tilt
+            if not checkKey(prevTempJson, config['tiltColor'] + 'SG'):
+                prevTempJson.update({
+                    config['tiltColor'] + 'HWVer': 0,
+                    config['tiltColor'] + 'SWVer': 0,
+                    config['tiltColor'] + 'SG': 0,
+                    config['tiltColor'] + 'Temp': 0,
+                    config['tiltColor'] + 'Batt': 0
+                })
+
+                
 def initISpindel():  # Initialize iSpindel
     global ispindel
     global config
@@ -1266,7 +1267,16 @@ def loop():  # Main program loop
 
                         # Begin: Tiltbridge Processing
                         elif checkKey(api, 'mdns_id') and checkKey(api, 'tilts'):
-                            # Received JSON from Tiltbridge
+                            # Received JSON from Tiltbridge, turn off Tilt
+                            if tiltbridge == False:
+                                logMessage("Turned on Tiltbridge.")
+                                tiltbridge = True
+                                try:
+                                    logMessage("Stopping Tilt.")
+                                    tilt.stop()
+                                    tilt = None
+                                except:
+                                    pass
                             # Log received line if true, false is short message, none = mute
                             if outputJson == True:
                                 logMessage("API TB JSON Recvd: " +
@@ -1279,74 +1289,63 @@ def loop():  # Main program loop
                             # Loop through (value) and match config["tiltColor"]
                             for t in api:
                                 if t == "tilts":
-                                    for c in api['tilts']:
-                                        if c == config["tiltColor"]:
-                                            # Found, turn off regular Tilt
-                                            if tiltbridge == False:
-                                                logMessage(
-                                                    "Turned on Tiltbridge.")
-                                                tiltbridge = True
-                                                try:
-                                                    tilt
-                                                except NameError:
-                                                    tilt = None
-                                                    if tilt is not None:  # If we are running a Tilt, stop it
-                                                        logMessage(
-                                                            "Stopping Tilt.")
-                                                        tilt.stop()
-                                                        tilt = None
+                                    if api['tilts']:
+                                        for c in api['tilts']:
+                                            if c == config["tiltColor"]:
+                                                # TiltBridge report reference
+                                                # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
 
-                                            # TiltBridge report reference
-                                            # https://github.com/thorrak/tiltbridge/blob/42adac730105c0efcb4f9ef7e0cacf84f795d333/src/tilt/tiltHydrometer.cpp#L270
+                                                # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
 
-                                            # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
+                                                if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
+                                                    if api['tilts'][config['tiltColor']]['high_resolution']:
+                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 4
+                                                elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
+                                                    if api['tilts'][config['tiltColor']]['sends_battery']:
+                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
+                                                else:
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 0
 
-                                            if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
-                                                if api['tilts'][config['tiltColor']]['high_resolution']:
-                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 4
-                                            elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
-                                                if api['tilts'][config['tiltColor']]['sends_battery']:
-                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
-                                            else:
-                                                prevTempJson[config['tiltColor'] + 'HWVer'] = 0
+                                                if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
+                                                    prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
 
-                                            if (checkKey(api['tilts'][config['tiltColor']], 'SWVer')):
-                                                prevTempJson[config["tiltColor"] + 'SWVer'] = int(api['tilts'][config['tiltColor']]['fwVersion'])
+                                                # Convert to proper temp unit
+                                                _temp = 0
+                                                if cc['tempFormat'] == api['tilts'][config['tiltColor']]['tempUnit']:
+                                                    _temp = Decimal(api['tilts'][config['tiltColor']]['temp'])
+                                                elif cc['tempFormat'] == 'F':
+                                                    _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'C', 'F')
+                                                else:
+                                                    _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
 
-                                            # Convert to proper temp unit
-                                            _temp = 0
-                                            if cc['tempFormat'] == api['tilts'][config['tiltColor']]['tempUnit']:
-                                                _temp = Decimal(api['tilts'][config['tiltColor']]['temp'])
-                                            elif cc['tempFormat'] == 'F':
-                                                _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'C', 'F')
-                                            else:
-                                                _temp = bc.convert(Decimal(api['tilts'][config['tiltColor']]['temp']), 'F', 'C')
+                                                _gravity = Decimal(api['tilts'][config['tiltColor']]['gravity'])
 
-                                            _gravity = Decimal(api['tilts'][config['tiltColor']]['gravity'])
+                                                # Clamp and round gravity values
+                                                _temp = clamp(_temp, Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
-                                            # Clamp and round gravity values
-                                            _temp = clamp(_temp, Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
+                                                # Clamp and round temp values
+                                                _gravity = clamp(_gravity, Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
 
-                                            # Clamp and round temp values
-                                            _gravity = clamp(_gravity, Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
+                                                # Choose proper resolution for SG and Temp
+                                                if (prevTempJson[config['tiltColor'] + 'HWVer']) == 4:
+                                                    changeWwwSetting('isHighResTilt', True)
+                                                    prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 4)
+                                                    prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp, 1)
+                                                else:
+                                                    changeWwwSetting('isHighResTilt', False)
+                                                    prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 3)
+                                                    prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
 
-                                            # Choose proper resolution for SG and Temp
-                                            if (prevTempJson[config['tiltColor'] + 'HWVer']) == 4:
-                                                changeWwwSetting('isHighResTilt', True)
-                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 4)
-                                                prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp, 1)
-                                            else:
-                                                changeWwwSetting('isHighResTilt', False)
-                                                prevTempJson[config['tiltColor'] + 'SG'] = round(_gravity, 3)
-                                                prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
+                                                # Get battery value from anything >= Tilt v2
+                                                if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
+                                                    if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
+                                                        prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
 
-                                            # Get battery value from anything >= Tilt v2
-                                            if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
-                                                if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
-                                                    prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+                                                # Set time of last update
+                                                lastTiltbridge = timestamp = time.time()
 
-                                            # Set time of last update
-                                            lastTiltbridge = timestamp = time.time()
+                                    else:
+                                        logError("Failed to parse {} Tilt from Tiltbridge payload.".format(config["tiltColor"]))
 
                         # END:  Tiltbridge Processing
 

@@ -1114,7 +1114,7 @@ def loop():  # Main program loop
                                         pinList=pinList.getPinList(hwVersion.board, hwVersion.shield))
                         phpConn.send(json.dumps(response).encode('utf-8'))
                     else:
-                        phpConn.send("device-list-not-up-to-date")
+                        phpConn.send(str.encode("device-list-not-up-to-date"))
                 elif messageType == "applyDevice":  # Change device settings
                     try:
                         # Load as JSON to check syntax

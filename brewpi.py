@@ -768,9 +768,9 @@ def startSerial():  # Start controller
             bgSerialConn = BackGroundSerial(serialConn)
             bgSerialConn.start()
             # Request settings from controller, processed later when reply is received
-            bgSerialConn.write('s')  # request control settings cs
-            bgSerialConn.write('c')  # request control constants cc
-            bgSerialConn.write('v')  # request control variables cv
+            bgSerialConn.writeln("s")  # request control settings cs
+            bgSerialConn.writeln("c")  # request control constants cc
+            bgSerialConn.writeln("v")  # request control variables cv
             # Answer from controller is received asynchronously later.
 
         # Keep track of time between new data requests
@@ -878,17 +878,17 @@ def loop():  # Main program loop
                     value = ""
 
                 if messageType == "ack":  # Acknowledge request
-                    phpConn.send("ack".encode('utf-8'))
+                    phpConn.send("ack".encode(encoding="utf-8"))
                 elif messageType == "lcd":  # LCD contents requested
-                    phpConn.send(json.dumps(lcdText).encode('utf-8'))
+                    phpConn.send(json.dumps(lcdText).encode(encoding="utf-8"))
                 elif messageType == "getMode":  # Echo mode setting
-                    phpConn.send(cs['mode']).encode('utf-8')
+                    phpConn.send(cs['mode'].encode(encoding="utf-8"))
                 elif messageType == "getFridge":  # Echo fridge temperature setting
-                    phpConn.send(json.dumps(cs['fridgeSet']).encode('utf-8'))
+                    phpConn.send(json.dumps(cs['fridgeSet']).encode(encoding="utf-8"))
                 elif messageType == "getBeer":  # Echo beer temperature setting
-                    phpConn.send(json.dumps(cs['beerSet']).encode('utf-8'))
+                    phpConn.send(json.dumps(cs['beerSet']).encode(encoding="utf-8"))
                 elif messageType == "getControlConstants":  # Echo control constants
-                    phpConn.send(json.dumps(cc).encode('utf-8'))
+                    phpConn.send(json.dumps(cc).encode(encoding="utf-8"))
                 elif messageType == "getControlSettings":  # Echo control settings
                     if cs['mode'] == "p":
                         profileFile = util.scriptPath() + 'settings/tempProfile.csv'
@@ -896,23 +896,23 @@ def loop():  # Main program loop
                             cs['profile'] = prof.readline().split(
                                 ",")[-1].rstrip("\n")
                     cs['dataLogging'] = config['dataLogging']
-                    phpConn.send(json.dumps(cs).encode('utf-8'))
+                    phpConn.send(json.dumps(cs).encode(encoding="utf-8"))
                 elif messageType == "getControlVariables":  # Echo control variables
-                    phpConn.send(json.dumps(cv).encode('utf-8'))
+                    phpConn.send(json.dumps(cv).encode(encoding="utf-8"))
                 elif messageType == "refreshControlConstants":  # Request control constants from controller
-                    bgSerialConn.write("c")
+                    bgSerialConn.writeln("c")
                     raise socket.timeout
                 elif messageType == "refreshControlSettings":  # Request control settings from controller
-                    bgSerialConn.write("s")
+                    bgSerialConn.writeln("s")
                     raise socket.timeout
                 elif messageType == "refreshControlVariables":  # Request control variables from controller
-                    bgSerialConn.write("v")
+                    bgSerialConn.writeln("v")
                     raise socket.timeout
                 elif messageType == "loadDefaultControlSettings":
-                    bgSerialConn.write("S")
+                    bgSerialConn.writeln("S")
                     raise socket.timeout
                 elif messageType == "loadDefaultControlConstants":
-                    bgSerialConn.write("C")
+                    bgSerialConn.writeln("C")
                     raise socket.timeout
                 elif messageType == "setBeer":  # New constant beer temperature received
                     try:
@@ -925,7 +925,7 @@ def loop():  # Main program loop
                         cs['mode'] = 'b'
                         # Round to 2 dec, python will otherwise produce 6.999999999
                         cs['beerSet'] = round(newTemp, 2)
-                        bgSerialConn.write(
+                        bgSerialConn.writeln(
                             "j{mode:\"b\", beerSet:" + json.dumps(cs['beerSet']) + "}")
                         logMessage("Beer temperature set to {0} degrees by web.".format(
                             str(cs['beerSet'])))
@@ -946,7 +946,7 @@ def loop():  # Main program loop
                     if cc['tempSetMin'] <= newTemp <= cc['tempSetMax']:
                         cs['mode'] = 'f'
                         cs['fridgeSet'] = round(newTemp, 2)
-                        bgSerialConn.write("j{mode:\"f\", fridgeSet:" +
+                        bgSerialConn.writeln("j{mode:\"f\", fridgeSet:" +
                                            json.dumps(cs['fridgeSet']) + "}")
                         logMessage("Fridge temperature set to {0} degrees by web.".format(
                             str(cs['fridgeSet'])))
@@ -959,14 +959,14 @@ def loop():  # Main program loop
                         logMessage("advanced settings.")
                 elif messageType == "setOff":  # Control mode set to OFF
                     cs['mode'] = 'o'
-                    bgSerialConn.write("j{mode:\"o\"}")
+                    bgSerialConn.writeln("j{mode:\"o\"}")
                     logMessage("Temperature control disabled.")
                     raise socket.timeout
                 elif messageType == "setParameters":
                     # Receive JSON key:value pairs to set parameters on the controller
                     try:
                         decoded = json.loads(value)
-                        bgSerialConn.write("j" + json.dumps(decoded))
+                        bgSerialConn.writeln("j" + json.dumps(decoded))
                         if 'tempFormat' in decoded:
                             # Change in web interface settings too
                             changeWwwSetting(
@@ -1017,16 +1017,16 @@ def loop():  # Main program loop
                 elif messageType == "startNewBrew":  # New beer name
                     newName = value
                     result = startNewBrew(newName)
-                    phpConn.send(json.dumps(result).encode('utf-8'))
+                    phpConn.send(json.dumps(result).encode(encoding="utf-8"))
                 elif messageType == "pauseLogging":  # Pause logging
                     result = pauseLogging()
-                    phpConn.send(json.dumps(result).encode('utf-8'))
+                    phpConn.send(json.dumps(result).encode(encoding="utf-8"))
                 elif messageType == "stopLogging":  # Stop logging
                     result = stopLogging()
-                    phpConn.send(json.dumps(result).encode('utf-8'))
+                    phpConn.send(json.dumps(result).encode(encoding="utf-8"))
                 elif messageType == "resumeLogging":  # Resume logging
                     result = resumeLogging()
-                    phpConn.send(json.dumps(result).encode('utf-8'))
+                    phpConn.send(json.dumps(result).encode(encoding="utf-8"))
                 elif messageType == "dateTimeFormatDisplay":  # Change date time format
                     config = util.configSet(
                         'dateTimeFormatDisplay', value, configFile)
@@ -1058,14 +1058,14 @@ def loop():  # Main program loop
                     except IOError as e:  # Catch all exceptions and report back an error
                         error = "I/O Error(%d) updating profile: %s." % (e.errno,
                                                                          e.strerror)
-                        phpConn.send(error)
+                        phpConn.send(error.encode(encoding="utf-8"))
                         logMessage(error)
                     else:
                         phpConn.send(
-                            "Profile successfully updated.".encode('utf-8'))
+                            "Profile successfully updated.".encode(encoding="utf-8"))
                         if cs['mode'] != 'p':
                             cs['mode'] = 'p'
-                            bgSerialConn.write("j{mode:\"p\"}")
+                            bgSerialConn.writeln("j{mode:\"p\"}")
                             logMessage("Profile mode enabled.")
                             raise socket.timeout  # Go to serial communication to update controller
                 elif messageType == "programController" or messageType == "programArduino":  # Reprogram controller
@@ -1099,22 +1099,22 @@ def loop():  # Main program loop
                     deviceList['listState'] = ""  # Invalidate local copy
                     if value.find("readValues") != -1:
                         # Request installed devices
-                        bgSerialConn.write("d{r:1}")
+                        bgSerialConn.writeln("d{r:1}")
                         # Request available, but not installed devices
-                        bgSerialConn.write("h{u:-1,v:1}")
+                        bgSerialConn.writeln("h{u:-1,v:1}")
                     else:
-                        bgSerialConn.write("d{}")  # Request installed devices
+                        bgSerialConn.writeln("d{}")  # Request installed devices
                         # Request available, but not installed devices
-                        bgSerialConn.write("h{u:-1}")
+                        bgSerialConn.writeln("h{u:-1}")
                 elif messageType == "getDeviceList":  # Echo device list
                     if deviceList['listState'] in ["dh", "hd"]:
                         response = dict(board=hwVersion.board,
                                         shield=hwVersion.shield,
                                         deviceList=deviceList,
                                         pinList=pinList.getPinList(hwVersion.board, hwVersion.shield))
-                        phpConn.send(json.dumps(response).encode('utf-8'))
+                        phpConn.send(json.dumps(response).encode(encoding="utf-8"))
                     else:
-                        phpConn.send(str.encode("device-list-not-up-to-date"))
+                        phpConn.send("device-list-not-up-to-date".encode(encoding="utf-8"))
                 elif messageType == "applyDevice":  # Change device settings
                     try:
                         # Load as JSON to check syntax
@@ -1123,7 +1123,7 @@ def loop():  # Main program loop
                         logMessage(
                             "ERROR. Invalid JSON parameter string received: {0}".format(value))
                         continue
-                    bgSerialConn.write("U{0}".format(
+                    bgSerialConn.writeln("U{0}".format(
                         json.dumps(configStringJson)))
                     deviceList['listState'] = ""  # Invalidate local copy
                 elif messageType == "writeDevice":  # Configure a device
@@ -1134,7 +1134,7 @@ def loop():  # Main program loop
                         logMessage(
                             "ERROR: invalid JSON parameter string received: " + value)
                         continue
-                    bgSerialConn.write("d" + json.dumps(configStringJson))
+                    bgSerialConn.writeln("d" + json.dumps(configStringJson))
                 elif messageType == "getVersion":  # Get firmware version from controller
                     if hwVersion:
                         response = hwVersion.__dict__
@@ -1143,13 +1143,13 @@ def loop():  # Main program loop
                         response['version'] = hwVersion.toString()
                     else:
                         response = {}
-                    phpConn.send(json.dumps(response).encode('utf-8'))
+                    phpConn.send(json.dumps(response).encode(encoding="utf-8"))
                 elif messageType == "resetController":  # Erase EEPROM
                     logMessage("Resetting controller to factory defaults.")
-                    bgSerialConn.write("E")
+                    bgSerialConn.writeln("E")
                 elif messageType == "api":  # External API Received
                     # Receive an API message in JSON key:value pairs
-                    # phpConn.send("Ok")
+                    # phpConn.send("Ok".encode(encoding="utf-8"))
                     try:
                         api = json.loads(value)
 
@@ -1466,7 +1466,7 @@ def loop():  # Main program loop
                                 statusIndex = statusIndex + 1
                     # End: iSpindel Items
 
-                    phpConn.send(json.dumps(status).encode('utf-8'))
+                    phpConn.send(json.dumps(status).encode(encoding="utf-8"))
                 else:  # Invalid message received
                     logMessage(
                         "ERROR. Received invalid message on socket: " + message)
@@ -1485,20 +1485,20 @@ def loop():  # Main program loop
 
                 if(time.time() - prevLcdUpdate) > 5:  # Request new LCD value
                     prevLcdUpdate += 5  # Give the controller some time to respond
-                    bgSerialConn.write('l')
+                    bgSerialConn.writeln("l")
 
                 if(time.time() - prevSettingsUpdate) > 60:  # Request Settings from controller
                     # Controller should send updates on changes, this is a periodic
                     # update to ensure it is up to date
                     prevSettingsUpdate += 5  # Give the controller some time to respond
-                    bgSerialConn.write('s')
+                    bgSerialConn.writeln("s")
 
                 # If no new data has been received for serialRequestInteval seconds
                 if (time.time() - prevDataTime) >= Decimal(config['interval']):
                     if prevDataTime == 0:  # First time through set the previous time
                         prevDataTime = time.time()
                     prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
-                    bgSerialConn.write("t")  # Request new from controller
+                    bgSerialConn.writeln("t")  # Request new from controller
                     prevDataTime += 5  # Give the controller some time to respond to prevent requesting twice
 
                 # Controller not responding
@@ -1775,7 +1775,7 @@ def loop():  # Main program loop
                     if newTemp != cs['beerSet']:
                         cs['beerSet'] = newTemp
                         # If temperature has to be updated send settings to controller
-                        bgSerialConn.write(
+                        bgSerialConn.writeln(
                             "j{beerSet:" + json.dumps(cs['beerSet']) + "}")
 
             except ConnectionError as e:

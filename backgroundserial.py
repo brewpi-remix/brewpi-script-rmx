@@ -84,6 +84,9 @@ class BackGroundSerial():
         except queue.Empty:
             return None
 
+    def writeln(self, data):
+        self.write(data + "\n")
+
     def write(self, data):
         self.exit_on_fatal_error()
         # prevent writing to a port in error state. This will leave unclosed handles to serial on the system

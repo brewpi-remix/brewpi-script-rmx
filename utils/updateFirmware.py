@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 

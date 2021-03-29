@@ -122,10 +122,13 @@ if __name__ == '__main__':
 
     for p in find_all_serial_ports():
         try:
-            print("{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid)))
+            if (p.vid):
+                print("{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid)))
+            else:
+                print("{} has no PID.".format(str(p)))
         except ValueError:
             # could not convert pid and vid to hex
-            print("{0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid)))
+            print("Value Error: {0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid)))
     print("Compatible ports: ")
     for p in find_compatible_serial_ports():
         print(p)

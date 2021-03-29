@@ -598,22 +598,23 @@ class ArduinoProgrammer(SerialProgrammer):
         bootLoaderPort = util.findSerialPort(bootLoader=True, my_port=config['port'])
         # bootLoaderPort = util.findSerialPort(bootLoader=True)
         if not bootLoaderPort:
-            printStdErr("\nERROR: Could not find port in bootloader.")
+            printStdErr("\nERROR: Could not find port in bootloader.")  
+            return False
 
         programCommand = (avrdudehome + 'avrdude' +
-                          ' -F' +  # override device signature check
-                          ' -e' +  # erase flash and eeprom before programming. This prevents issues with corrupted EEPROM
-                          ' -p ' + boardSettings['build.mcu'] +
-                          ' -c ' + boardSettings['upload.protocol'] +
-                          ' -b ' + boardSettings['upload.speed'] +
-                          ' -P ' + bootLoaderPort +
-                          ' -U ' + 'flash:w:' + "\"" + hexFileLocal + "\"" +
-                          ' -C ' + avrconf)
+                        ' -F' +  # override device signature check
+                        ' -e' +  # erase flash and eeprom before programming. This prevents issues with corrupted EEPROM
+                        ' -p ' + boardSettings['build.mcu'] +
+                        ' -c ' + boardSettings['upload.protocol'] +
+                        ' -b ' + boardSettings['upload.speed'] +
+                        ' -P ' + bootLoaderPort +
+                        ' -U ' + 'flash:w:' + "\"" + hexFileLocal + "\"" +
+                        ' -C ' + avrconf)
 
         printStdErr("\nProgramming Arduino with avrdude.")
 
         p = sub.Popen(programCommand, stdout=sub.PIPE,
-                      stderr=sub.PIPE, shell=True, cwd=hexFileDir)
+                    stderr=sub.PIPE, shell=True, cwd=hexFileDir)
         output, errors = p.communicate()
         output = output.decode()
         errors = errors.decode()

@@ -340,7 +340,7 @@ do_aliases() {
 
     # Set alias for activate
     activateAlias="alias activate="
-    aliasFile="$USERROOT/.bash_aliases"
+    aliasFile="$HOMEPATH/.bash_aliases"
     if ! grep "^$activateAlias" "$aliasFile" &>/dev/null; then
         echo -e "\nAdding alias to activate venv for BrewPi user."
         echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"

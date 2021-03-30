@@ -46,6 +46,7 @@ import BrewPiUtil as util
 import brewpiVersion
 import expandLogMessage
 from MigrateSettings import MigrateSettings
+from ConvertBrewPiDevice import ConvertBrewPiDevice
 
 
 msg_map = {"a": "Arduino"}
@@ -594,7 +595,14 @@ class ArduinoProgrammer(SerialProgrammer):
         hexFileLocal = os.path.basename(hexFile)
 
         time.sleep(1)
+
         # Get serial port while in bootloader
+
+        # Convert udev rule based port to /dev/tty*
+        if not config['port'].startswith("/dev/tty"):
+            convert = ConvertBrewPiDevice()
+            config['port'] = convert.get_device_from_brewpidev(config['port'])
+
         bootLoaderPort = util.findSerialPort(bootLoader=True, my_port=config['port'])
         # bootLoaderPort = util.findSerialPort(bootLoader=True)
         if not bootLoaderPort:

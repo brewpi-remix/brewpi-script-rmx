@@ -283,7 +283,7 @@ flash() {
     echo "" > /dev/tty 
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
-        [Yy]* ) eval "python3 -u $SCRIPTPATH/utils/updateFirmware.py $branch" ;;
+        [Yy]* ) eval "python3 -u $SCRIPTPATH/updateFirmware.py $branch" ;;
         * ) ;;
     esac
 }

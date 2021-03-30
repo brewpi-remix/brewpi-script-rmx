@@ -92,7 +92,7 @@ flash() {
         pythonpath="/home/brewpi/venv/bin/python"
     fi
 
-    eval "$pythonpath -u $GITROOT/utils/updateFirmware.py $branch"
+    eval "$pythonpath -u $GITROOT/updateFirmware.py $branch"
 }
 
 ############

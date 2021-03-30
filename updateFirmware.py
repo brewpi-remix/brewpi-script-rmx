@@ -35,7 +35,7 @@ import sys
 import os
 import subprocess
 import psutil
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial
 from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, readCfgWithDefaults, addSlash, setupSerial, scriptPath
 from gitHubReleases import gitHubReleases

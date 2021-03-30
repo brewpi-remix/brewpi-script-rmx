@@ -88,15 +88,15 @@ class ConvertBrewPiDevice:
 
 if __name__ == '__main__':
     convert = ConvertBrewPiDevice()
-    print("DEBUG: get_device_from_brewpidev(/dev/ttybrewpi1): {}".format(
-        convert.get_device_from_brewpidev("/dev/ttybrewpi1")))
+    print("DEBUG: get_device_from_brewpidev(/dev/brewpi1): {}".format(
+        convert.get_device_from_brewpidev("/dev/brewpi1")))
     print("DEBUG: get_device_from_serial_number(95433343933351C07232): {}".format(
         convert.get_device_from_serial_number("95433343933351C07232")))
 
     print("DEBUG: get_serial_number_from_device(/dev/ttyACM0): {}".format(
         convert.get_serial_number_from_device("/dev/ttyACM0")))
-    print("DEBUG: get_serial_number_from_brewpidev(/dev/ttybrewpi1): {}".format(
-        convert.get_serial_number_from_brewpidev("/dev/ttybrewpi1")))
+    print("DEBUG: get_serial_number_from_brewpidev(/dev/brewpi1): {}".format(
+        convert.get_serial_number_from_brewpidev("/dev/brewpi1")))
 
     print("DEBUG: get_brewpidev_from_serial_number(95433343933351C07232): {}".format(
         convert.get_brewpidev_from_serial_number("95433343933351C07232")))

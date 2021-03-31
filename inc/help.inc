@@ -43,7 +43,7 @@ usage() {
 version() {
 cat << EOF
 
-"$SCRIPTNAME" Copyright (C) 20219 Lee C. Bussy (@LBussy)
+"$SCRIPTNAME" Copyright (C) 2021 Lee C. Bussy (@LBussy)
 
 This program comes with ABSOLUTELY NO WARRANTY.
 

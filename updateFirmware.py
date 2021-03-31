@@ -349,14 +349,13 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 return True
 
     if hwVersion is not None and userInput:
+        choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
+        if not choice.startswith('y'):
+            restoreSettings = False
+
         choice = pipeInput("\nWould you like to try to restore your configured devices after programming?\n[Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreDevices = False
-            restoreSettings = False
-        else:
-            choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
-            if not choice.startswith('y'):
-                restoreSettings = False
 
     localFileName = None
     system1 = None

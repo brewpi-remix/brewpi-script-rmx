@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -33,10 +33,12 @@
 
 from serial.tools import list_ports
 import BrewPiUtil
+from pprint import pprint as pp
 
 known_devices = [
     {'vid': 0x2341, 'pid': 0x0043, 'name': "Arduino Uno"},
     {'vid': 0x2341, 'pid': 0x0001, 'name': "Arduino Uno"},
+    {'vid': 0x2341, 'pid': 0x0243, 'name': "Arduino Uno"},
     {'vid': 0x2a03, 'pid': 0x0043, 'name': "Arduino Uno"},
     {'vid': 0x2a03, 'pid': 0x0001, 'name': "Arduino Uno"},
     {'vid': 0x1a86, 'pid': 0x7523, 'name': "Arduino Uno"},
@@ -117,12 +119,16 @@ def configure_serial_for_device(s, d):
 
 if __name__ == '__main__':
     print("All ports:")
+
     for p in find_all_serial_ports():
         try:
-            print("{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid)))
+            if (p.vid):
+                print("{0}, VID:{1:04x}, PID:{2:04x}".format(str(p), (p.vid), (p.pid)))
+            else:
+                print("{} has no PID.".format(str(p)))
         except ValueError:
             # could not convert pid and vid to hex
-            print("{0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid)))
+            print("Value Error: {0}, VID:{1}, PID:{2}".format(str(p), (p.vid), (p.pid)))
     print("Compatible ports: ")
     for p in find_compatible_serial_ports():
         print(p)

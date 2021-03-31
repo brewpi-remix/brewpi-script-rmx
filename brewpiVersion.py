@@ -34,7 +34,7 @@
 import simplejson as json
 import sys
 import time
-from distutils.version import LooseVersion
+from packaging import version
 from BrewPiUtil import asciiToUnicode
 from serial import SerialException
 
@@ -131,7 +131,7 @@ class AvrInfo:
                 board_esp8266: "ESP8266"}
 
     def __init__(self, s=None):
-        self.version = LooseVersion("0.0.0")
+        self.version = version.parse("0.0.0")
         self.build = 0
         self.commit = None
         self.simulator = False
@@ -186,7 +186,7 @@ class AvrInfo:
             self.commit = j[AvrInfo.commit]
 
     def parseStringVersion(self, s):
-        self.version = LooseVersion(s)
+        self.version = version.parse(s)
 
     def toString(self):
         if self.version:
@@ -217,10 +217,10 @@ class AvrInfo:
         return string
 
     def isNewer(self, versionString):
-        return self.version < LooseVersion(versionString)
+        return self.version < version.parse(versionString)
 
     def isEqual(self, versionString):
-        return self.version == LooseVersion(versionString)
+        return self.version == version.parse(versionString)
 
     def familyName(self):
         family = AvrInfo.families.get(self.board)

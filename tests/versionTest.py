@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import unittest
 from brewpiVersion import AvrInfo
-from distutils.version import LooseVersion
+from packaging import version
 
 
 class VersionTestCase(unittest.TestCase):
     def assertVersionEqual(self, v, versionString):
-        self.assertEqual(v.version, LooseVersion(versionString))
+        self.assertEqual(v.version, version.parse(versionString))
         self.assertEqual(versionString, v.toString())
 
     def assertEmptyVersion(self, v):

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
 
@@ -35,12 +35,13 @@ import sys
 import os
 import subprocess
 import psutil
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..") # append parent directory to be able to import files
 import autoSerial
 from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, readCfgWithDefaults, addSlash, setupSerial, scriptPath
 from gitHubReleases import gitHubReleases
 import brewpiVersion
 import programController as programmer
+from ConvertBrewPiDevice import ConvertBrewPiDevice
 
 # import sentry_sdk
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
@@ -149,7 +150,14 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 printStdErr("\nUsing auto port configuration.")
                 port, name = autoSerial.detect_port()
             else:
-                printStdErr("\nUsing port {0} according to configuration settings.".format(config['port']))
+                # Convert udev rule based port to /dev/ttyA*
+                if not config['port'].startswith("/dev/ttyA"):
+                    oldport = config['port']
+                    convert = ConvertBrewPiDevice()
+                    config['port'] = convert.get_device_from_brewpidev(config['port'])
+                    printStdErr("\nUsing port {0} translated from port {1}.".format(config['port'], oldport))
+                else:
+                    printStdErr("\nUsing port {0} according to configuration settings.".format(config['port']))
                 port, name = autoSerial.detect_port(my_port = config['port'])
 
             if not port:
@@ -344,8 +352,8 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreSettings = False
-        choice = pipeInput("\nWould you like me to try to restore your configured devices after" +
-                           "\nprogramming? [Y/n]: ").lower()
+
+        choice = pipeInput("\nWould you like to try to restore your configured devices after programming?\n[Y/n]: ").lower()
         if not choice.startswith('y'):
             restoreDevices = False
 
@@ -383,7 +391,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
     else:
-        printStdErr('\nBrewPi was not running when we started, leaving do_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
+        printStdErr('\nBrewPi was not running when we started, leaving\ndo_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
     return result
 
 

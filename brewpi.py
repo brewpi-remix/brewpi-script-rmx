@@ -962,8 +962,7 @@ def loop():  # Main program loop
                     bgSerialConn.writeln("j{mode:\"o\"}")
                     logMessage("Temperature control disabled.")
                     raise socket.timeout
-                elif messageType == "setParameters":
-                    # Receive JSON key:value pairs to set parameters on the controller
+                elif messageType == "setParameters": # Receive JSON key:value pairs to set parameters on the controller
                     try:
                         decoded = json.loads(value)
                         bgSerialConn.writeln("j" + json.dumps(decoded))

@@ -35,11 +35,11 @@ import pprint
 import os
 import sys
 from time import sleep
-from distutils.version import LooseVersion
+from packaging import version
 
 try:
     import psutil
-    if LooseVersion(psutil.__version__) < LooseVersion("2.0"):
+    if version.parse(psutil.__version__) < version.parse("2.0"):
         print("Your version of pstuil is %s \n" \
         "BrewPi requires psutil 2.0 or higher, please upgrade your version of psutil.\n" \
         "This can best be done via pip, please run:\n" \

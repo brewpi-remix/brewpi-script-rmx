@@ -31,7 +31,7 @@
 # license and credits.
 
 from collections import namedtuple, OrderedDict
-from distutils.version import LooseVersion
+from packaging import version
 import unittest
 
 # SetttingMigrate containes 3 values:
@@ -102,8 +102,8 @@ class MigrateSettings:
         for setting in self.restoreValidity:
             for oldKey in [setting.key] + setting.aliases:
                 if oldKey in oldSettingsCopy:
-                    if (LooseVersion(oldVersion) >= LooseVersion(setting.minVersion) and
-                            LooseVersion(newVersion) <= LooseVersion(setting.maxVersion)):
+                    if (version.parse(oldVersion) >= version.parse(setting.minVersion) and
+                            version.parse(newVersion) <= version.parse(setting.maxVersion)):
                         keyValuePairs[setting.key] = oldSettingsCopy.pop(oldKey)
                         break
         return keyValuePairs, oldSettingsCopy

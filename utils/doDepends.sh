@@ -341,7 +341,14 @@ do_aliases() {
     # Set alias for activate
     activateAlias="alias activate="
     aliasFile="$HOMEPATH/.bash_aliases"
+    aliasBrewPiFile="$USERROOT/.bash_aliases"
+    # Check/add alias to current user for BrewPi's venv
     if ! grep "^$activateAlias" "$aliasFile" &>/dev/null; then
+        echo -e "\nAdding alias to activate venv for $REALUSER user."
+        echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
+    fi
+    # Check/add alias to BrewPi user for BrewPi's venv
+    if ! grep "^$activateAlias" "$aliasBrewPiFile" &>/dev/null; then
         echo -e "\nAdding alias to activate venv for BrewPi user."
         echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
     fi

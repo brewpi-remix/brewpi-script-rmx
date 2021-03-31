@@ -37,7 +37,6 @@ import os
 import pwd
 import grp
 import stat
-from distutils.version import LooseVersion
 
 repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
 

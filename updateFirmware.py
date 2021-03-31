@@ -392,7 +392,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
     else:
-        printStdErr('\nBrewPi was not running when we started, leaving do_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
+        printStdErr('\nBrewPi was not running when we started, leaving\ndo_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
     return result
 
 

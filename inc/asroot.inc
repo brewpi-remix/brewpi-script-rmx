@@ -43,13 +43,13 @@ asroot() {
         retval="$?"
         if [[ "$retval" == "0" ]]; then
             # If we are not root/sudo, relaunch as such
-            echo -e "\nNot running as root, relaunching correctly." > /dev/tty
+            echo -e "\nNot running as root, relaunching." > /dev/tty
             sleep 2
-            eval "sudo bash $SCRIPTPATH/$THISSCRIPT $*"
+            eval "sudo bash $SCRIPTPATH/$THISSCRIPT $@"
             exit $?
         else
             # sudo not available, give instructions
-            echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $*" 1>&2 > /dev/tty
+            echo -e "\nThis script must be run as root: sudo $SCRIPTPATH/$THISSCRIPT $@" 1>&2 > /dev/tty
             exit 1
         fi
     fi

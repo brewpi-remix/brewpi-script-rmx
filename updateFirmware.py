@@ -150,8 +150,8 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 printStdErr("\nUsing auto port configuration.")
                 port, name = autoSerial.detect_port()
             else:
-                # Convert udev rule based port to /dev/tty*
-                if not config['port'].startswith("/dev/tty"):
+                # Convert udev rule based port to /dev/ttyA*
+                if not config['port'].startswith("/dev/ttyA"):
                     oldport = config['port']
                     convert = ConvertBrewPiDevice()
                     config['port'] = convert.get_device_from_brewpidev(config['port'])

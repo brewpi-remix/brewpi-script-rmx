@@ -45,6 +45,7 @@ import grp
 import BrewPiUtil as util
 import brewpiVersion
 import expandLogMessage
+from packaging import version
 from MigrateSettings import MigrateSettings
 from ConvertBrewPiDevice import ConvertBrewPiDevice
 
@@ -292,10 +293,12 @@ class SerialProgrammer:
         restoreDevices = False
         if 'settings' in restoreWhat:
             if restoreWhat['settings']:
-                restoreSettings = True
+                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore settings on same or newer
+                    restoreSettings = True
         if 'devices' in restoreWhat:
             if restoreWhat['devices']:
-                restoreDevices = True
+                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore devices on same or newer
+                    restoreDevices = True
         # Even when restoreSettings and restoreDevices are set to True here,
         # they might be set to false due to version incompatibility later
 

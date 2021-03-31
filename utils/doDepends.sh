@@ -353,6 +353,8 @@ do_aliases() {
         echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
     fi
 
+    echo -e "$HOMEPATH"
+    read -rp "DEBUG Pause: " yn  < /dev/tty
     menuAlias="alias brewpi="
     aliasFile="$HOMEPATH/.bash_aliases"
     if ! grep "^$menuAlias" "$aliasFile" &>/dev/null; then

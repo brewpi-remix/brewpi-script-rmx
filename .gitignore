@@ -13,6 +13,7 @@ start.bat
 sftp-config.json
 !.gitignore
 .idea/
+downloads/
 utils/downloads/
 venv/
 .gitconfig

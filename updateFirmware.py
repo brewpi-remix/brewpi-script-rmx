@@ -41,6 +41,7 @@ from BrewPiUtil import createDontRunFile, removeDontRunFile, stopThisChamber, re
 from gitHubReleases import gitHubReleases
 import brewpiVersion
 import programController as programmer
+from ConvertBrewPiDevice import ConvertBrewPiDevice
 
 # import sentry_sdk
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
@@ -149,7 +150,14 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 printStdErr("\nUsing auto port configuration.")
                 port, name = autoSerial.detect_port()
             else:
-                printStdErr("\nUsing port {0} according to configuration settings.".format(config['port']))
+                # Convert udev rule based port to /dev/tty*
+                if not config['port'].startswith("/dev/tty"):
+                    oldport = config['port']
+                    convert = ConvertBrewPiDevice()
+                    config['port'] = convert.get_device_from_brewpidev(config['port'])
+                    printStdErr("\nUsing port {0} translated from port {1}.".format(config['port'], oldport))
+                else:
+                    printStdErr("\nUsing port {0} according to configuration settings.".format(config['port']))
                 port, name = autoSerial.detect_port(my_port = config['port'])
 
             if not port:

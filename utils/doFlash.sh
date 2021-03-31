@@ -18,7 +18,7 @@
 # along with BrewPi Script RMX. If not, see <https://www.gnu.org/licenses/>.
 
 # Declare this script's constants
-declare SCRIPTPATH GITROOT
+declare SCRIPTPATH GITROOT ARGUMENTS
 # Declare /inc/const.inc file constants
 declare THISSCRIPT SCRIPTNAME VERSION GITROOT GITURL GITPROJ PACKAGE
 # Declare /inc/asroot.inc file constants
@@ -52,13 +52,72 @@ init() {
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
 
-    # Get help and version functionality
-    # shellcheck source=/dev/null
-    . "$GITROOT/inc/help.inc" "$@"
-
     # Get config file read functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/config.inc" "$@"
+}
+
+
+############
+### Process this file's help
+############
+
+# Outputs to stdout the --help usage message.
+usage() {
+cat << EOF
+
+"$SCRIPTNAME" usage: $SCRIPTPATH/$THISSCRIPT
+
+Available options:
+    --silent or -s: Use default options, do not ask for user input
+    --beta or -b:   Include unstable (prerelease) releases
+    --shield or -d: Allow flashing a different shield
+EOF
+}
+
+# Outputs to stdout the --version message.
+version() {
+cat << EOF
+
+"$SCRIPTNAME" Copyright (C) 2021 Lee C. Bussy (@LBussy)
+
+This program comes with ABSOLUTELY NO WARRANTY.
+
+This is free software, and you are welcome to redistribute it
+under certain conditions.
+
+There is NO WARRANTY, to the extent permitted by law.
+EOF
+}
+
+localhelp() {
+    local arg
+    for arg in "$@"
+    do
+        arg="${arg//-}" # Strip out all dashes
+        if [[ "$arg" == "h"* ]]; then usage; exit 0
+        elif [[ "$arg" == "v"* ]]; then version; exit 0
+        elif [[ "$arg" == "shield"* ]] || [[ "$arg" == "d"* ]]; then shield
+        elif [[ "$arg" == "s"* ]]; then silent
+        elif [[ "$arg" == "b"* ]]; then beta
+        fi
+    done
+
+}
+
+silent() {
+    # --silent or -s: Use default options, do not ask for user input
+    ARGUMENTS="$ARGUMENTS --silent"
+}
+
+beta() {
+    # --beta or -b: Include unstable (prerelease) releases
+    ARGUMENTS="$ARGUMENTS --beta"
+}
+
+shield() {
+    # --shield or -d: Allow flashing a different shield
+    ARGUMENTS="$ARGUMENTS --shield"
 }
 
 ############
@@ -77,22 +136,15 @@ banner() {
 
 flash() {
     local yn branch pythonpath
+    # Check to see if we should allow beta code automatically
     branch="${GITBRNCH,,}"
-    if [ ! "$branch" == "master" ]; then
-        branch="--beta"
-    else
-        branch=""
+    if [ ! "$branch" == "master" ] && [[ ! "$ARGUMENTS" == *"beta"* ]]; then
+        ARGUMENTS="$ARGUMENTS --beta"
     fi
 
-    # TODO:  Determine if we are in multi-chamber
-
-    if [ -n "$CHAMBER" ]; then
-        pythonpath=$(which python)
-    else
-        pythonpath="/home/brewpi/venv/bin/python"
-    fi
-
-    eval "$pythonpath -u $GITROOT/updateFirmware.py $branch"
+    # Not a glamourous way to run in the venv but it's effective
+    pythonpath="/home/brewpi/venv/bin/python"
+    eval "$pythonpath -u $GITROOT/updateFirmware.py $ARGUMENTS"
 }
 
 ############
@@ -100,12 +152,12 @@ flash() {
 ############
 
 main() {
-    init "$@"   # Init and call supporting libs
-    const "$@"  # Get script constants
-    asroot      # Make sure we are running with root privs
-    help "$@"   # Process help and version requests
+    init "$@"       # Init and call supporting libs
+    const "$@"      # Get script constants
+    localhelp "$@"  # Process local help
+    asroot "$@"     # Make sure we are running with root privs
     banner "starting"
-    flash       # Flash firmware
+    flash "$@"  # Flash firmware
     banner "complete"
 }
 

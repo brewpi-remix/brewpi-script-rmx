@@ -138,7 +138,7 @@ tiltbridge = False
 lastBbApi = 0
 timeoutBB = 300
 lastiSpindel = 0
-timeoutiSpindel = 1800
+timeoutiSpindel = 3600
 lastTiltbridge = 0
 timeoutTiltbridge = 300
 

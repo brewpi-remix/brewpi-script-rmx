@@ -1240,7 +1240,7 @@ def loop():  # Main program loop
                                 _gravity = clamp(api['gravity'], Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
 
                                 # Capture interval to set timeout
-                                timeoutiSpindel = api['interval'] * 2.5
+                                timeoutiSpindel = round(api['interval'] * 3.5)
                                 # Set time of last update
                                 lastiSpindel = timestamp = time.time()
 

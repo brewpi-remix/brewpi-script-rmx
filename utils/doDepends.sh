@@ -323,7 +323,7 @@ do_venv() {
 
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
-    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES"
+    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES --ignore-installed"
     eval "$pipcmd"||die
 
     # Deactivate venv

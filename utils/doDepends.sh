@@ -349,20 +349,23 @@ do_aliases() {
         echo -e "\nAdding alias to activate BrewPi venv for $REALUSER user."
         echo "$piActivateAlias" >> "$piAliasFile"
     fi
+    chown "$REALUSER:$REALUSER" "$piAliasFile" || warn
     # Check/add alias to BrewPi user for BrewPi's venv
     brewPiActivateAlias="alias activate='. $USERROOT/venv/bin/activate'"
     if ! grep "^$brewPiActivateAlias" "$brewPiAliasFile" &>/dev/null; then
-        echo -e "\nAdding alias to activate BrewPi venv for $USERROOT user."
+        echo -e "\nAdding alias to activate BrewPi venv for brewpi user."
         echo "$brewPiActivateAlias" >> "$brewPiAliasFile"
     fi
+    chown "brewpi:brewpi" "$brewPiAliasFile" || warn
 
     # Set alias for BrewPi menu
     menuAlias="alias menu='sudo $GITROOT/utils/doMenu.sh'"
     if ! grep "^$menuAlias" "$piAliasFile" &>/dev/null; then
     echo -e "\nAdding alias to BrewPi Menu for $REALUSER user."
-        echo -e "\nAdding alias to activate BrewPi menu for $USERROOT user."
+        echo -e "\nAdding alias to activate BrewPi menu for $REALUSER user."
         echo "$menuAlias" >> "$piAliasFile"
     fi
+    chown "$REALUSER:$REALUSER" "$piAliasFile" || warn
 }
 
 ############

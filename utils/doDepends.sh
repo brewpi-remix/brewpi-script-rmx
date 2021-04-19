@@ -323,7 +323,7 @@ do_venv() {
 
     # Install any Python packages not installed, update those installed
     echo -e "\nChecking and installing required dependencies via pip3."
-    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES"
+    pipcmd="pip3 install -r $GITROOT/$PIP3PACKAGES --ignore-installed"
     eval "$pipcmd"||die
 
     # Deactivate venv
@@ -335,29 +335,37 @@ do_venv() {
 ############
 
 do_aliases() {
-    # Set alias for menu
-    local menuAlias activateAlias aliasFile
+    # Set aliases
+    local menuAlias piActivateAlias brewPiActivateAlias piAliasFile brewPiAliasFile
+
+    piAliasFile="$HOMEPATH/.bash_aliases"
+    brewPiAliasFile="$USERROOT/.bash_aliases"
 
     # Set alias for activate
-    activateAlias="alias activate="
-    aliasFile="$HOMEPATH/.bash_aliases"
-    aliasBrewPiFile="$USERROOT/.bash_aliases"
-    # Check/add alias to current user for BrewPi's venv
-    if ! grep "^$activateAlias" "$aliasFile" &>/dev/null; then
-        echo -e "\nAdding alias to activate venv for $REALUSER user."
-        echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
+    #
+    # Check/add alias to current user (pi) for BrewPi's venv
+    piActivateAlias="alias bpactivate='. $USERROOT/venv/bin/activate'"
+    if ! grep "^$piActivateAlias" "$piAliasFile" &>/dev/null; then
+        echo -e "\nAdding alias to activate BrewPi venv for $REALUSER user."
+        echo "$piActivateAlias" >> "$piAliasFile"
     fi
+    chown "$REALUSER:$REALUSER" "$piAliasFile" || warn
     # Check/add alias to BrewPi user for BrewPi's venv
-    if ! grep "^$activateAlias" "$aliasBrewPiFile" &>/dev/null; then
-        echo -e "\nAdding alias to activate venv for BrewPi user."
-        echo "$activateAlias'. $USERROOT/venv/bin/activate'" >> "$aliasFile"
+    brewPiActivateAlias="alias activate='. $USERROOT/venv/bin/activate'"
+    if ! grep "^$brewPiActivateAlias" "$brewPiAliasFile" &>/dev/null; then
+        echo -e "\nAdding alias to activate BrewPi venv for brewpi user."
+        echo "$brewPiActivateAlias" >> "$brewPiAliasFile"
     fi
+    chown "brewpi:brewpi" "$brewPiAliasFile" || warn
 
-    aliasFile="/home/brewpi/.bash_aliases"
-    if ! grep "^$menuAlias" "$aliasFile" &>/dev/null; then
-    echo -e "\nAdding alias for BrewPi Menu for $REALUSER user."
-        echo "$menuAlias'sudo $GITROOT/utils/doMenu.sh'" >> "$aliasFile"
+    # Set alias for BrewPi menu
+    menuAlias="alias menu='sudo $GITROOT/utils/doMenu.sh'"
+    if ! grep "^$menuAlias" "$piAliasFile" &>/dev/null; then
+    echo -e "\nAdding alias to BrewPi Menu for $REALUSER user."
+        echo -e "\nAdding alias to activate BrewPi menu for $REALUSER user."
+        echo "$menuAlias" >> "$piAliasFile"
     fi
+    chown "$REALUSER:$REALUSER" "$piAliasFile" || warn
 }
 
 ############

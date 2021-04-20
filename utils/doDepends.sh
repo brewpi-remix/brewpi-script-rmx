@@ -24,7 +24,11 @@ declare THISSCRIPT GITROOT USERROOT REALUSER
 # Declare /inc/asroot.inc file constants
 declare HOMEPATH 
 # Declare placeholders for nginx work
-declare KEEP_NGINX
+declare DANGER_AHEAD RECONFIG_APACHE
+# Declare alternative ports
+# TODO:  Determine a good port here
+GOODPORT=81
+GOODPORTSSL=444
 
 ############
 ### Init
@@ -141,32 +145,41 @@ rem_php5() {
 ### Remove nginx packages if installed
 ############
 
-rem_nginx() {
+check_nginx() {
     echo -e "\nChecking for previously installed nginx packages."
     # Check for nginx running on port 80
     nginixInstalled=$(sudo netstat -tulpn | grep :80 | grep nginx)
     if [ -z "$nginixInstalled" ] ; then
         echo -e "\nNo nginx daemon found running on port 80."
     else
-        echo -e "\nFound nginx packages installed. nginx will interfere with Apache2 and it is";
-        echo -e "recommended to uninstall. You can either do that now, or choose to reconfigure";
-        echo -e "nginx to use an alternate port. Choose one of the following:";
-        echo -e "\n\t[u] Uninstall nginx (this will break Fermentrack if installed.)";
-        echo -e "\t[r] Reconfigure nginx (and Fermentrack) to use a different port.";
+        echo -e "\nFound nginx packages installed. Choose one of the following:\n";
+        echo -e "\t[u] Uninstall nginx (this will break Fermentrack if installed.)";
+        echo -e "\t[n] Reconfigure nginx (and Fermentrack) to use a different port.";
+        echo -e "\t[a] Reconfigure Apache2 (and BrewPi) to use a different port.";
+        echo -e "\t[i] Ignore the danger and forge ahead anyway (likely to a crash).";
         echo -e "\t[X] Exit and do nothing.\n";
-        read -rp "[u/r/X]: " yn  < /dev/tty
+        read -rp "[u/n/a/i/X]: " yn  < /dev/tty
         case $yn in
             [Uu]* )
                 # Uninstall nginx
                 echo "";
-                sudo systemctl stop nginx;
-                sudo systemctl disable nginx;
-                sudo apt-get autoremove --purge nginx -y -q=2;
+                sudo systemctl stop nginx||die;
+                sudo systemctl disable nginx||die;
+                sudo apt-get autoremove --purge nginx -y -q=2||die;
                 echo -e "\nCleanup of the nginx environment complete.";
                 ;;
-            [Rr]* )
+            [Nn]* )
                 echo -e "\nReconfiguring nginx to alternate port.";
-                KEEP_NGINX=1;;
+                keep_nginx;
+                ;;
+            [Aa]* )
+                echo -e "\nReconfiguring Apache2 to alternate port.";
+                RECONFIG_APACHE=1;
+                ;;
+            [Ii]* )
+                echo -e "\nMaking a poort choice, onward!.";
+                DANGER_AHEAD=1;
+                ;;
             * )
                 echo -e "\nMaking no changes.";
                 exit 1;
@@ -182,24 +195,51 @@ rem_nginx() {
 keep_nginx() {
     local path ip
     path="/etc/nginx/sites-enabled"
-    # goodport # TODO:  determine a good port here
-    GOODPORT=81
-    GOODPORTSSL=444
-    #
+
     echo -e "\nAttempting to configure nginx for ports $GOODPORT/$GOODPORTSSL."
     for file in "$path"/*; do
         expanded=$(readlink -f "$file")
-        cp "$expanded" "$expanded.bak"
+        cp "$expanded" "$expanded.bak"||die
+        #  set CHECK_DOCKER?
         sed -i "s/listen 80 default_server/listen $GOODPORT default_server/g" "$expanded"
         sed -i "s/listen \[::\]:80 default_server/listen \[::\]:$GOODPORT default_server/g" "$expanded"
         sed -i "s/listen 443 ssl default_server/listen $GOODPORTSSL ssl default_server/g" "$expanded"
         sed -i "s/listen \[::\]:443 ssl default_server/listen \[::\]:$GOODPORTSSL ssl default_server/g" "$expanded"
     done
     systemctl restart nginx;
-    ip=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+
+    ip=$(hostname -I | awk '{print $1}')
     echo -e "\nReconfigured nginx to serve applications on port $GOODPORT/$GOODPORTSSL. You will have to"
     echo -e "access your previous nginx websites with the port at the end of the URL like:"
     echo -e "http://$(hostname).local:$GOODPORT or http://$ip:$GOODPORT"
+    sleep 5
+}
+
+############
+### Reconfigure Apache2
+############
+
+reconfig_apache() {
+    local ports_path sites_path GOODPORT GOODPORTSSL ip
+    ports_path="/etc/apache2/ports.conf"
+    sites_path="/etc/apache2/sites-enabled/000-default.conf"
+
+    echo -e "\nAttempting to configure Apache2 for ports $GOODPORT/$GOODPORTSSL."
+    # Change available ports
+    expanded=$(readlink -f "$ports_path")
+    cp "$expanded" "$expanded.bak"||die
+    sed -i "s/Listen 80/listen $GOODPORT/g" "$expanded"
+    sed -i "s/Listen 443/listen $GOODPORTSSL/g" "$expanded"
+    # Change sites
+    expanded=$(readlink -f "$sites_path")
+    cp "$expanded" "$expanded.bak"||die
+    sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:$GOODPORT>/g" "$expanded"
+    sed -i "s/<VirtualHost \*:443>/<VirtualHost \*:$GOODPORTSSL>/g" "$expanded"
+
+    ip=$(hostname -I | awk '{print $1}')
+    echo -e "\nReconfigured Apache2 to serve applications on port $GOODPORT/$GOODPORTSSL. You will have to"
+    echo -e "access your previous Apache2 websites with the port at the end of the URL:"
+    echo -e "http://$(hostname).local:$GOODPORT or http://$ip:$GOODPORT\n"
     sleep 5
 }
 
@@ -242,7 +282,13 @@ do_packages() {
             fi
         fi
     done
+
+    # Check to see if any port manipulation is needed, then start Apache
+    if [[ $RECONFIG_APACHE -eq 1 ]]; then
+        reconfig_apache     # Move Apache to safe port
+    fi
     sudo systemctl start apache2
+
     if [[ "$didInstall" -gt 0 ]]; then
         echo -e "All required apt packages have been installed."
     else
@@ -381,10 +427,7 @@ main() {
     banner "starting"
     apt_check           # Check on apt packages
     rem_php5            # Remove php5 packages
-    rem_nginx           # Offer to remove nginx packages
-    if [[ $KEEP_NGINX -eq 1 ]]; then
-        keep_nginx "$@" # Attempt to reconfigure nginx
-    fi
+    check_nginx         # Offer to remove nginx packages
     do_packages         # Check on required packages
     do_uart             # Slow down UART
     do_venv             # Set up venv

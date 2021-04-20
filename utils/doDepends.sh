@@ -24,7 +24,11 @@ declare THISSCRIPT GITROOT USERROOT REALUSER
 # Declare /inc/asroot.inc file constants
 declare HOMEPATH 
 # Declare placeholders for nginx work
-declare KEEP_NGINX DANGER_AHEAD RECONFIG_APACHE CHECK_DOCKER
+declare DANGER_AHEAD RECONFIG_APACHE
+# Declare alternative ports
+# TODO:  Determine a good port here
+GOODPORT=81
+GOODPORTSSL=444
 
 ############
 ### Init
@@ -192,10 +196,6 @@ keep_nginx() {
     local path ip
     path="/etc/nginx/sites-enabled"
 
-    # goodport # TODO:  determine a good port here
-    GOODPORT=81
-    GOODPORTSSL=444
-
     echo -e "\nAttempting to configure nginx for ports $GOODPORT/$GOODPORTSSL."
     for file in "$path"/*; do
         expanded=$(readlink -f "$file")
@@ -223,10 +223,6 @@ reconfig_apache() {
     local ports_path sites_path GOODPORT GOODPORTSSL ip
     ports_path="/etc/apache2/ports.conf"
     sites_path="/etc/apache2/sites-enabled/000-default.conf"
-
-    # goodport # TODO:  determine a good port here
-    GOODPORT=81
-    GOODPORTSSL=444
 
     echo -e "\nAttempting to configure Apache2 for ports $GOODPORT/$GOODPORTSSL."
     # Change available ports

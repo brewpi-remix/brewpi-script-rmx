@@ -138,7 +138,7 @@ tiltbridge = False
 lastBbApi = 0
 timeoutBB = 300
 lastiSpindel = 0
-timeoutiSpindel = 1800
+timeoutiSpindel = 3600
 lastTiltbridge = 0
 timeoutTiltbridge = 300
 
@@ -1232,11 +1232,20 @@ def loop():  # Main program loop
                                 else:
                                     _temp = bc.convert(
                                         api['temperature'], 'F', 'C')
+
                                 # Clamp and round temp values
                                 _temp = clamp(round(_temp, 2), Decimal(config['clampTempLower']), Decimal(config['clampTempUpper']))
 
                                 # Clamp and round gravity values
                                 _gravity = clamp(api['gravity'], Decimal(config['clampSGLower']), Decimal(config['clampSGUpper']))
+
+                                # Capture interval to set timeout
+                                _timeout = round(api['interval'] * 3.5)
+                                if not timeoutiSpindel == _timeout:
+                                    timeoutiSpindel = _timeout
+                                    logMessage("Setting iSpindel timeout to {} seconds".format(_timeout))
+                                # Set time of last update
+                                lastiSpindel = timestamp = time.time()
 
                                 # Update prevTempJson if keys exist
                                 if checkKey(prevTempJson, 'battery'):
@@ -1251,9 +1260,6 @@ def loop():  # Main program loop
                                         'spinSG': _gravity,
                                         'spinTemp': _temp
                                     })
-
-                                # Set time of last update
-                                lastiSpindel = timestamp = time.time()
 
                             elif not ispindel:
                                 logError('iSpindel packet received but no iSpindel configuration exists in {0}settings/config.cfg'.format(

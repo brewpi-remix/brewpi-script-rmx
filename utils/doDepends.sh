@@ -220,7 +220,7 @@ keep_nginx() {
 ############
 
 reconfig_apache() {
-    local ports_path sites_path GOODPORT GOODPORTSSL ip
+    local ports_path sites_path ip
     ports_path="/etc/apache2/ports.conf"
     sites_path="/etc/apache2/sites-enabled/000-default.conf"
 
@@ -239,7 +239,7 @@ reconfig_apache() {
     ip=$(hostname -I | awk '{print $1}')
     echo -e "\nReconfigured Apache2 to serve applications on port $GOODPORT/$GOODPORTSSL. You will have to"
     echo -e "access your previous Apache2 websites with the port at the end of the URL:"
-    echo -e "http://$(hostname).local:$GOODPORT or http://$ip:$GOODPORT\n"
+    echo -e "http://$(hostname).local:$GOODPORT or http://$ip:$GOODPORT"
     sleep 5
 }
 
@@ -294,12 +294,12 @@ do_packages() {
     else
         echo -e "\nNo apt packages were missing."
     fi
-    
+
     # Get list of installed packages with upgrade available
     upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
         grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
     uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
-    
+
     # Loop through only the required packages and see if they need an upgrade
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
@@ -308,7 +308,7 @@ do_packages() {
             doCleanup=1
         fi
     done
-    
+
     # Cleanup if we updated packages
     if [ -n "$doCleanup" ]; then
         echo -e "Cleaning up local repositories."

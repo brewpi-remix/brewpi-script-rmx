@@ -608,7 +608,7 @@ def initTilt():  # Set up Tilt
                     config['tiltColor'] + 'Batt': 0
                 })
 
-                
+
 def initISpindel():  # Initialize iSpindel
     global ispindel
     global config

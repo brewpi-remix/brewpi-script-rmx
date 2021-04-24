@@ -56,23 +56,23 @@ init() {
         popd &> /dev/null || exit 1
         exit 1
     fi
-    
+
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
-    
+
     # Get wireless lan device name and gateway
     WLAN="$(iw dev | awk '$1=="Interface"{print $2}')"
 }

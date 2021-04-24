@@ -43,7 +43,7 @@ init() {
         popd &> /dev/null || exit 1
         exit 1
     fi
-    
+
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
@@ -55,11 +55,11 @@ init() {
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
@@ -194,7 +194,7 @@ ExecStart=/bin/bash $scriptName
 SyslogIdentifier=$daemonName
 
 [Install]
-WantedBy=multi-user.target"                                     
+WantedBy=multi-user.target"
     } > "$unitFile"
     chown root:root "$unitFile"
     chmod 0644 "$unitFile"

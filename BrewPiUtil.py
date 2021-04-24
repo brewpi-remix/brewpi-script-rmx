@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (C) 2018, 2019 Lee C. Bussy (@LBussy)
+# Copyright (C) 2018-2021 Lee C. Bussy (@LBussy)
 
 # This file is part of LBussy's BrewPi Script Remix (BrewPi-Script-RMX).
 #
@@ -96,6 +96,7 @@ def readCfgWithDefaults(configFile = None):
     if error:
         defCfg = ConfigObj()
         defCfg.filename = defaultFile
+        defCfg['toolPath'] = '/home/pi/brewpi-tools-rmx/'
         defCfg['scriptPath'] = '/home/brewpi/'
         defCfg['wwwPath'] = '/var/www/html/'
         defCfg['port'] = 'auto'
@@ -126,8 +127,10 @@ def readCfgWithDefaults(configFile = None):
             logMessage("Using default configuration.")
 
     # Fix pathnames
+    defCfg['toolPath'] = addSlash(defCfg['toolPath'])
     defCfg['scriptPath'] = addSlash(defCfg['scriptPath'])
     defCfg['wwwPath'] = addSlash(defCfg['wwwPath'])
+
     return defCfg
 
 
@@ -270,7 +273,7 @@ def logMessage(*objs):
 def logWarn(*objs):
     """
     Prints a timestamped warning message to stdout
-    """ 
+    """
     if 'USE_TIMESTAMP_LOG' in os.environ:
         printStdOut(strftime("%Y-%m-%d %H:%M:%S [W]"), *objs)
     else:

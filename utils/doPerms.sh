@@ -92,11 +92,21 @@ perms() {
     if [ -e "$GITROOT/BEERSOCKET" ]; then
         chown -R brewpi:www-data "$GITROOT/BEERSOCKET" || warn
     fi
-    find "$GITROOT" -type d -exec chmod 775 {} \; || warn
-    find "$GITROOT" -type f -exec chmod 660 {} \; || warn
-    find "$GITROOT" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \; || warn
+
+    # Set the directories excluding venv
+    chmod 660 "$GITROOT"/*.* || warn
+    chmod +x "$GITROOT"/*.sh >/dev/null 2>&1 # Probably no shell scripts here
+    chmod +x "$GITROOT"/*.py || warn
+    for dirname in "$GITROOT"/*/; do
+        if [ "${dirname%%}" != "$GITROOT/venv/" ]; then
+            find "${dirname%%}" -type d -exec chmod 775 {} \; || warn
+            find "${dirname%%}" -type f -exec chmod 660 {} \; || warn
+            find "${dirname%%}" -type f -regex ".*\.\(py\|sh\)" -exec chmod 770 {} \; || warn
+        fi
+    done
     find "$GITROOT/logs" -type f -iname "*.txt" -exec chmod 777 {} \; || warn
     find "$GITROOT/settings" -type f -exec chmod 664 {} \; || warn
+
     echo -e "\nAllowing BrewPi python access to Bluetooth interfaces."
     setcap cap_net_raw+eip $(eval readlink -f `which python3`)
 }

@@ -255,7 +255,7 @@ class TiltManager(object):
                 if self.opts.json and self.debug: # Print Debug
                     display_raw = False
                     print("Tilt JSON: {}".format(tiltJson))
-      
+
         else: # Not a Tilt
             return
 

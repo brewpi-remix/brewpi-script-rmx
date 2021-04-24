@@ -44,27 +44,27 @@ init() {
         popd &> /dev/null || exit 1
         exit 1
     fi
-    
+
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
-    
+
     # Get error handling functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/error.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/asroot.inc" "$@"
-    
+
     # Get help and version functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/help.inc" "$@"
-    
+
     # Get network test functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/nettest.inc" "$@"
-    
+
     # Get config reading functionality
     # shellcheck source=/dev/null
     . "$GITROOT/inc/config.inc" "$@"
@@ -77,7 +77,7 @@ init() {
 banner() {
     local adj
     adj="$1"
-    echo -e "\n***Script $THISSCRIPT $adj.***" > /dev/tty 
+    echo -e "\n***Script $THISSCRIPT $adj.***" > /dev/tty
 }
 
 ############
@@ -195,12 +195,12 @@ updateme() {
     local branch
     branch=$(git branch | grep \* | cut -d ' ' -f2)
     url="${url/THISBRANCH/$branch}"
-    echo -e "\nDownloading current version of this script." > /dev/tty 
-    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; } > /dev/tty 
-    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty 
-    chmod 770 "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty 
-    echo -e "\nExecuting current version of script." > /dev/tty 
-    eval "bash $SCRIPTPATH/tmpUpdate.sh $*" > /dev/tty 
+    echo -e "\nDownloading current version of this script." > /dev/tty
+    cd "$SCRIPTPATH" && { curl -s "$url" -o "tmpUpdate.sh"; cd - &> /dev/null || die; } > /dev/tty
+    chown brewpi:brewpi "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty
+    chmod 770 "$SCRIPTPATH/tmpUpdate.sh" > /dev/tty
+    echo -e "\nExecuting current version of script." > /dev/tty
+    eval "bash $SCRIPTPATH/tmpUpdate.sh $*" > /dev/tty
 }
 
 ############
@@ -231,7 +231,7 @@ process() {
     pushd . &> /dev/null || die # Store current directory
     cd "$(dirname "$(readlink -e "$0")")" || die # Move to where the script is
     # Update repo as necessary
-    echo -e "\nChecking $doRepo for necessary updates." > /dev/tty 
+    echo -e "\nChecking $doRepo for necessary updates." > /dev/tty
     doRepoUrl "$doRepo" || warn
     updateRepo "$doRepo" || warn
     popd &> /dev/null || die # Move back to where we started
@@ -280,7 +280,7 @@ flash() {
     else
         branch=""
     fi
-    echo "" > /dev/tty 
+    echo "" > /dev/tty
     read -rp "Do you want to flash your controller now? [y/N]: " yn  < /dev/tty
     case "$yn" in
         [Yy]* ) eval "python3 -u $SCRIPTPATH/updateFirmware.py $branch" ;;

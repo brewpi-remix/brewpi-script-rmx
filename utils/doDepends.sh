@@ -22,7 +22,7 @@ declare SCRIPTPATH GITROOT APTPACKAGES PIP3PACKAGES REINSTALL GOODPORT GOODPORTS
 # Declare /inc/const.inc file constants
 declare THISSCRIPT GITROOT USERROOT REALUSER
 # Declare /inc/asroot.inc file constants
-declare HOMEPATH 
+declare HOMEPATH
 # Declare placeholders for nginx work
 declare DANGER_AHEAD RECONFIG_APACHE
 # Declare alternative ports
@@ -45,7 +45,7 @@ init() {
         popd &> /dev/null || exit 1
         exit 1
     fi
-    
+
     # Get project constants
     # shellcheck source=/dev/null
     . "$GITROOT/inc/const.inc" "$@"
@@ -268,7 +268,7 @@ do_packages() {
     fi
     for pkg in ${APTPACKAGES,,}; do
         if [ -n "$REINSTALL" ]; then
-            
+
             apt-get --reinstall install "${pkg,,}" -y -q=2||die
             echo
         else
@@ -294,12 +294,12 @@ do_packages() {
     else
         echo -e "\nNo apt packages were missing."
     fi
-    
+
     # Get list of installed packages with upgrade available
     upgradesAvail=$(dpkg --get-selections | xargs apt-cache policy {} | \
         grep -1 Installed | sed -r 's/(:|Installed: |Candidate: )//' | \
     uniq -u | tac | sed '/--/I,+1 d' | tac | sed '$d' | sed -n 1~2p)
-    
+
     # Loop through only the required packages and see if they need an upgrade
     for pkg in ${APTPACKAGES,,}; do
         if [[ ${upgradesAvail,,} == *"$pkg"* ]]; then
@@ -308,7 +308,7 @@ do_packages() {
             doCleanup=1
         fi
     done
-    
+
     # Cleanup if we updated packages
     if [ -n "$doCleanup" ]; then
         echo -e "Cleaning up local repositories."

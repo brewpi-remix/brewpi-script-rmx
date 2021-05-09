@@ -100,8 +100,17 @@ class AvrInfo:
     spark_shield_v1 = "V1"
     spark_shield_v2 = "V2"
     shield_i2c = "I2C"
+    shield_glycol = "Glycol"
 
-    shields = {0: shield_diy, 1: shield_revA, 2: shield_revC, 3: spark_shield_v1, 4: spark_shield_v2, 5: shield_i2c}
+    shields = {
+            0: shield_diy,
+            1: shield_revA,
+            2: shield_revC,
+            3: spark_shield_v1,
+            4: spark_shield_v2,
+            5: shield_i2c,
+            6: shield_glycol
+    }
 
     board_leonardo = "leonardo"
     board_standard = "uno"

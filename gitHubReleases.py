@@ -38,7 +38,7 @@ import pwd
 import grp
 import stat
 
-repo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
+repo = "https://api.github.com/repos/brewpi-remix/brewpi-firmware-rmx"
 
 class gitHubReleases:
     def __init__(self, url):

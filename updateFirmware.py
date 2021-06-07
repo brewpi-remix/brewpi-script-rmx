@@ -47,7 +47,7 @@ from ConvertBrewPiDevice import ConvertBrewPiDevice
 # sentry_sdk.init("https://5644cfdc9bd24dfbaadea6bc867a8f5b@sentry.io/1803681")
 
 # Globals
-firmRepo = "https://api.github.com/repos/lbussy/brewpi-firmware-rmx"
+firmRepo = "https://api.github.com/repos/brewpi-remix/brewpi-firmware-rmx"
 userInput = True
 
 # Replacement for raw_input which works when piped through shell
@@ -64,7 +64,7 @@ def article(word):
     if not word:
         return "a" # in case word is not valid
     firstLetter = word[0]
-    if firstLetter.lower() in 'aeiou':
+    if firstLetter.lower() in 'aeiouh':
         return "an"
     else:
         return "a"
@@ -399,7 +399,7 @@ def main():
     import getopt
     # Read in command line arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "sbh", ['beta', 'silent', 'shield'])
+        opts, args = getopt.getopt(sys.argv[1:], "sbhg", ['beta', 'silent', 'shield', 'glycol'])
     except getopt.GetoptError:
         # print help message for command line options
         print ("Unknown parameter, available options: \n" +
@@ -419,6 +419,9 @@ def main():
             beta = True
         if o in ('-h', '--shield'):
             doShield = True
+        if o in ('-g', '--glycol'):
+            doShield = True
+            beta = True
 
     result = updateFromGitHub(beta, doShield, userInput)
     return result

@@ -1,4 +1,5 @@
 # Home dir files
+.ssh
 .local
 .bash_logout
 .bash_aliases

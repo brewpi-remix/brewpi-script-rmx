@@ -128,8 +128,13 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         shield = hwVersion.shield
         board = hwVersion.board
 
-        printStdErr("\nFound the following controller:\n" + hwVersion.toExtendedString() + \
-                    "\non port " + ser.name + ".")
+        printStdErr("\nFound the following controller:")
+        printStdErr("\tVersion:" + hwVersion.toString())
+        printStdErr("\tBuild:\t" + hwVersion.build)
+        printStdErr("\tBoard:\t" + hwVersion.board)
+        printStdErr("\tShield:\t" + hwVersion.shield)
+        printStdErr("\tPort:\t" + ser.name)
+
     except:
         if hwVersion is None:
             choice = pipeInput("\nUnable to receive version from controller. If your controller is" +
@@ -194,9 +199,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     if hwVersion:
         # Make sure we didn't get half a string (happens when the BrewPi process
         # does not shut down or restarts)
-        if goodVersion(hwVersion):
-            printStdErr("\nCurrent firmware version on controller: " + hwVersion.toString())
-        else:
+        if not goodVersion(hwVersion):
             printStdErr("\nInvalid version returned from controller. Make sure you are running as root" +
                     "\nand the script is able to shut down correctly.")
             if startAfterUpdate:
@@ -292,8 +295,8 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
     if userInput:
         printStdErr("\nAvailable releases:")
         for i, menu_tag in enumerate(compatibleTags):
-            printStdErr("[%d] %s" % (i, menu_tag))
-        printStdErr("[" + str(len(compatibleTags)) + "] Cancel firmware update")
+            printStdErr("\t[%d] %s" % (i, menu_tag))
+        printStdErr("\t[" + str(len(compatibleTags)) + "] Cancel firmware update")
         num_choices = len(compatibleTags)
         while 1:
             try:
@@ -349,11 +352,15 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
                 return True
 
     if hwVersion is not None and userInput:
-        choice = pipeInput("\nWould you like to try to restore your settings after programming? [Y/n]: ").lower()
+        choice = pipeInput("\nWould you like to restore your settings after programming? [Y/n]: ").lower()
+        if choice == "":
+            choice = "y"
         if not choice.startswith('y'):
             restoreSettings = False
 
-        choice = pipeInput("\nWould you like to try to restore your configured devices after programming?\n[Y/n]: ").lower()
+        choice = pipeInput("\nWould you like to restore your configured devices after programming? [Y/n]: ").lower()
+        if choice == "":
+            choice = "y"
         if not choice.startswith('y'):
             restoreDevices = False
 
@@ -386,7 +393,13 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         return False
 
     printStdErr("\nUpdating firmware.")
-    result = programmer.programController(config, board, localFileName, {'settings': restoreSettings, 'devices': restoreDevices})
+
+    result = programmer.programController(config, board, localFileName, {
+        'settings': restoreSettings,
+        'devices': restoreDevices,
+        'versionNew': tag,
+        'versionOld': hwVersion.toString(),
+    })
     if startAfterUpdate:
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))

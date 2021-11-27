@@ -107,9 +107,9 @@ class LightYModem:
         while not ch1:
             ch1 = self.ymodem.read(1)
         ch1 = ord(ch1)
-        if ch1 == LightYModem.ack and self.seq == 0:    # may send also a crc16
+        if ch1 == LightYModem.ack and self.seq == 0:    # May send also a crc16
             ch2 = self.ymodem.read(1)
-        elif ch1 == LightYModem.ca:                   # cancel, always sent in pairs
+        elif ch1 == LightYModem.ca:                     # Cancel, always sent in pairs
             ch2 = self.ymodem.read(1)
         return ch1
 
@@ -231,16 +231,26 @@ class SerialProgrammer:
         self.oldSettings = {}
 
     def program(self, hexFile, restoreWhat):
+        self.versionNew = restoreWhat['versionNew']
+        self.versionOld = restoreWhat['versionOld']
+
         printStdErr("\n%(a)s program script started." % msg_map)
 
-        self.parse_restore_settings(restoreWhat)
+        if 'settings' in restoreWhat:
+            if restoreWhat['settings']:
+                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore settings on same or newer
+                    self.restoreSettings = True
+        if 'devices' in restoreWhat:
+            if restoreWhat['devices']:
+                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore devices on same or newer
+                    self.restoreDevices = True
 
         if self.restoreSettings or self.restoreDevices:
             printStdErr("Checking old version before programming.\n")
             if not self.open_serial(self.config, 57600, 0.2):
                 return 0
             self.delay_serial_open()
-            # request all settings from board before programming
+            # Request all settings from board before programming
             if self.fetch_current_version():
                 self.retrieve_settings_from_serial()
                 self.save_settings_to_file()
@@ -250,12 +260,14 @@ class SerialProgrammer:
                 return 0
         self.delay_serial_open()
 
+        # Actually do the firmware
         if(hexFile):
             if not self.flash_file(hexFile):
                 return 0
 
         self.fetch_new_version()
         self.reset_settings()
+
         if self.restoreSettings or self.restoreDevices:
             printStdErr(
                 "\nChecking which settings and devices may be restored.")
@@ -270,9 +282,9 @@ class SerialProgrammer:
             return 0
 
         if self.restoreSettings:
-            printStdErr("\nTrying to restore compatible settings from {0} to {1}".format(self.versionOld.toString(), self.versionNew.toString()))
+            printStdErr("\nTrying to restore compatible settings from {0} to {1}".format(self.versionOld, self.versionNew))
 
-            if(self.versionNew.isNewer("0.2")):
+            if version.parse(self.versionNew) <= version.parse("0.2"):
                 printStdErr(
                     "\nSettings may only be restored when updating to BrewPi 0.2.0 or higher")
                 self.restoreSettings = False
@@ -287,26 +299,6 @@ class SerialProgrammer:
         self.ser.close()
         self.ser = None
         return 1
-
-    def parse_restore_settings(self, restoreWhat):
-        restoreSettings = False
-        restoreDevices = False
-        if 'settings' in restoreWhat:
-            if restoreWhat['settings']:
-                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore settings on same or newer
-                    restoreSettings = True
-        if 'devices' in restoreWhat:
-            if restoreWhat['devices']:
-                if version.parse(self.versionNew) >= version.parse(self.versionOld): # Only restore devices on same or newer
-                    restoreDevices = True
-        # Even when restoreSettings and restoreDevices are set to True here,
-        # they might be set to false due to version incompatibility later
-
-        printStdErr("\nSettings will {0}be restored{1}.".format(("" if restoreSettings else "not "), (" if possible" if restoreSettings else "")))
-        printStdErr("\nDevices will {0}be restored{1}.\n".format(("" if restoreDevices else "not "), (" if possible" if restoreDevices else "")))
-
-        self.restoreSettings = restoreSettings
-        self.restoreDevices = restoreDevices
 
     def open_serial(self, config, baud, timeout):
         if self.ser:
@@ -331,22 +323,28 @@ class SerialProgrammer:
     def delay_serial_open(self):
         pass
 
-    def fetch_version(self, msg):
+    def fetch_version(self, msg = ""):
         version = brewpiVersion.getVersionFromSerial(self.ser)
         if version is None:
             printStdErr("\nWarning: Cannot receive version number from controller. Your controller is",
                         "\neither not programmed yet or running a very old version of BrewPi. It will",
                         "\nbe reset to defaults.")
         else:
-            printStdErr("{0}\nFound:\n{1}\non port:{2}".format(msg, version.toExtendedString(), self.ser.name))
-        return version
+            if not msg == "":
+                printStdErr(msg)
+            printStdErr("Found the following controller:")
+            printStdErr("\tVersion:" + version.toString())
+            printStdErr("\tBuild:\t" + version.build)
+            printStdErr("\tBoard:\t" + version.board)
+            printStdErr("\tShield:\t" + version.shield)
+        return version.toString()
 
     def fetch_current_version(self):
-        self.versionOld = self.fetch_version("\nChecking current version:\n")
+        self.versionOld = self.fetch_version("\nChecking current version.")
         return self.versionOld
 
     def fetch_new_version(self):
-        self.versionNew = self.fetch_version("\nChecking new version:\n")
+        self.versionNew = self.fetch_version("\nChecking new version.")
         return self.versionNew
 
     def retrieve_settings_from_serial(self):
@@ -355,7 +353,7 @@ class SerialProgrammer:
         printStdErr("\nRequesting old settings from %(a)s." % msg_map)
         expected_responses = 2
         # versions older than 2.0.0 did not have a device manager
-        if not self.versionOld.isNewer("0.2.0"):
+        if version.parse(self.versionOld) >= version.parse("0.2.0"):
             expected_responses += 1
             ser.write("d{}".encode())  # installed devices
             time.sleep(1)
@@ -369,16 +367,13 @@ class SerialProgrammer:
                 line = util.asciiToUnicode(str(line))
                 if line[0] == 'C':
                     expected_responses -= 1
-                    self.oldSettings['controlConstants'] = json_decode_response(
-                        line)
+                    self.oldSettings['controlConstants'] = json_decode_response(line)
                 elif line[0] == 'S':
                     expected_responses -= 1
-                    self.oldSettings['controlSettings'] = json_decode_response(
-                        line)
+                    self.oldSettings['controlSettings'] = json_decode_response(line)
                 elif line[0] == 'd':
                     expected_responses -= 1
-                    self.oldSettings['installedDevices'] = json_decode_response(
-                        line)
+                    self.oldSettings['installedDevices'] = json_decode_response(line)
 
     def save_settings_to_file(self):
         # This is format" "2019-01-08-16-50-15"
@@ -396,8 +391,7 @@ class SerialProgrammer:
         os.chown(settingsBackupDir, uid, gid) # chown dir
         os.chmod(settingsBackupDir, fileMode) # chmod dir
 
-        oldSettingsFilePath = os.path.join(
-            settingsBackupDir, oldSettingsFileName)
+        oldSettingsFilePath = os.path.join(settingsBackupDir, oldSettingsFileName)
         oldSettingsFile = open(oldSettingsFilePath, 'w')
         oldSettingsFile.write(json.dumps(self.oldSettings))
         oldSettingsFile.truncate()
@@ -447,9 +441,7 @@ class SerialProgrammer:
     def restore_settings(self):
         oldSettingsDict = self.get_combined_settings_dict(self.oldSettings)
         ms = MigrateSettings()
-        restored, omitted = ms.getKeyValuePairs(oldSettingsDict,
-                                                self.versionOld.toString(),
-                                                self.versionNew.toString())
+        restored, omitted = ms.getKeyValuePairs(oldSettingsDict, self.versionOld, self.versionNew)
 
         printStdErr("\nMigrating these settings:\n{0}".format(json.dumps(dict(restored.items()))))
         printStdErr("\nOmitting these settings:\n{0}".format(json.dumps(dict(omitted.items()))))
@@ -633,12 +625,10 @@ class ArduinoProgrammer(SerialProgrammer):
         # avrdude only uses stderr, append its output to the returnString
         printStdErr("\nResult of invoking avrdude:{0}".format(errors))
 
-        if("bytes of flash verified" in errors):
-            printStdErr("Avrdude done, programming successful.")
-        else:
+        if not ("bytes of flash verified" in errors):
             printStdErr("There was an error while programming.")
             return False
 
-        printStdErr("\nGiving the Arduino 10 seconds to reset.")
+        printStdErr("Giving the Arduino 10 seconds to reset.")
         self.delay(10)
         return True

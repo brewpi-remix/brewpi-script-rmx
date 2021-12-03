@@ -35,6 +35,7 @@ import subprocess as sub
 import time
 import simplejson as json
 import os
+import glob
 from sys import stderr
 import subprocess
 import platform
@@ -185,12 +186,12 @@ def fetchBoardSettings(boardsFile, boardType):
 def loadBoardsFile(arduinohome):
     boardsFileContent = None
     try:
-        boardsFileContent = open(
-            arduinohome + 'hardware/arduino/boards.txt', 'rb').readlines()
+        avrpath = "/usr/share/arduino"
+        boardsloc = glob.glob(avrpath + "/**/boards.txt", recursive = True)[0]
+        boardsFileContent = open(boardsloc, 'rb').readlines()
     except IOError:
         printStdErr(
-            "Could not read boards.txt from Arduino, probably because Arduino has not been installed.")
-        printStdErr("Please install it with: 'sudo apt install arduino-core'")
+            "Could not read boards.txt from Arduino, probably because Arduino has not been\ninstalled. Please install it with: 'sudo apt install arduino-core'")
     return boardsFileContent
 
 

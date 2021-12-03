@@ -39,7 +39,7 @@ from BrewPiUtil import asciiToUnicode
 from serial import SerialException
 
 def getVersionFromSerial(ser):
-    version = None
+    bprversion = None
     retries = 0
     oldTimeOut = ser.timeout
     startTime = time.time()
@@ -63,8 +63,8 @@ def getVersionFromSerial(ser):
                 line = asciiToUnicode(line)
                 if line[0] == 'N':
                     data = line.strip('\n')[2:]
-                    version = AvrInfo(data)
-                    if version and version.version != "0.0.0":
+                    bprversion = AvrInfo(data)
+                    if bprversion and bprversion.version != "0.0.0":
                         retry = False
                         break
             if time.time() - loopTime >= ser.timeout:
@@ -81,7 +81,7 @@ def getVersionFromSerial(ser):
         else:
             break
     ser.timeout = oldTimeOut # Restore previous serial timeout value
-    return version
+    return bprversion
 
 class AvrInfo:
     """ Parses and stores the version and other compile-time details reported by the controller. """

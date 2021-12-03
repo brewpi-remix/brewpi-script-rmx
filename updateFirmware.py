@@ -87,12 +87,15 @@ def printStdOut(*objs):
 
 # See if the version we got back from the board is valid
 def goodVersion(versn):
-    lst = versn.toString().split(".")
-    count = len(lst)
-    if count == 3:
-        M,m,p = lst
-        if M.isdigit() and m.isdigit() and p.isdigit():
-            return True
+    try:
+        lst = versn.toString().split(".")
+        count = len(lst)
+        if count == 3:
+            M,m,p = lst
+            if M.isdigit() and m.isdigit() and p.isdigit():
+                return True
+    except:
+        pass
     return False
 
 
@@ -196,7 +199,7 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         ser.close() # Close serial port so we can flash it
         ser = None
 
-    if hwVersion:
+    if hwVersion and hwVersion is not None:
         # Make sure we didn't get half a string (happens when the BrewPi process
         # does not shut down or restarts)
         if not goodVersion(hwVersion):
@@ -398,13 +401,13 @@ def updateFromGitHub(beta = False, doShield = False, usePinput = True, restoreSe
         'settings': restoreSettings,
         'devices': restoreDevices,
         'versionNew': tag,
-        'versionOld': hwVersion.toString(),
+        'versionOld': hwVersion,
     })
     if startAfterUpdate:
         # Only restart if it was running when we started
         removeDontRunFile('{0}do_not_run_brewpi'.format(addSlash(config['wwwPath'])))
     else:
-        printStdErr('\nBrewPi was not running when we started, leaving\ndo_not_run_brewpi in\n{0}.'.format(addSlash(config['wwwPath'])))
+        printStdErr('\nBrewPi was not running when we started, leaving \'do_not_run_brewpi\' in:\n{0}.'.format(addSlash(config['wwwPath'])))
     return result
 
 

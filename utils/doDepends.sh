@@ -321,6 +321,22 @@ do_packages() {
 }
 
 ############
+### Bring down boards.txt from Arduino-core
+############
+
+do_boards() {
+    local user project branch filename wgetcmd
+    echo -e "\nDownloading current boards configuration."
+    user="arduino"
+    project="ArduinoCore-avr"
+    branch="master"
+    filename="boards.txt"
+    target="$GITROOT/boards.txt"
+    wgetcmd="wget -q https://raw.githubusercontent.com/$user/$project/$branch/$filename -O $target"
+    eval "$wgetcmd"||die
+}
+
+############
 ### Reset BT baud rate < Pi4
 ############
 
@@ -429,6 +445,7 @@ main() {
     rem_php5            # Remove php5 packages
     check_nginx         # Offer to remove nginx packages
     do_packages         # Check on required packages
+    do_boards           # Get current boards.txt
     do_uart             # Slow down UART
     do_venv             # Set up venv
     do_aliases          # Set up BrewPi user aliases

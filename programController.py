@@ -183,15 +183,12 @@ def fetchBoardSettings(boardsFile, boardType):
     return boardSettings
 
 
-def loadBoardsFile(arduinohome):
+def loadBoardsFile():
     boardsFileContent = None
     try:
-        avrpath = "/usr/share/arduino"
-        boardsloc = glob.glob(avrpath + "/**/boards.txt", recursive = True)[0]
-        boardsFileContent = open(boardsloc, 'rb').readlines()
+        boardsFileContent = open(util.scriptPath() + "boards.txt", 'rb').readlines()
     except IOError:
-        printStdErr(
-            "Could not read boards.txt from Arduino, probably because Arduino has not been\ninstalled. Please install it with: 'sudo apt install arduino-core'")
+        printStdErr("Could not read {}boards.txt.".format(util.scriptPath()))
     return boardsFileContent
 
 
@@ -539,18 +536,11 @@ class ArduinoProgrammer(SerialProgrammer):
     def flash_file(self, hexFile):
         config, boardType = self.config, self.boardType
         printStdErr("\nLoading programming settings from board.txt.")
-        # location of Arduino sdk
-        arduinohome = config.get('arduinoHome', '/usr/share/arduino/')
-        # location of avr tools
-        avrdudehome = config.get(
-            'avrdudeHome', arduinohome + 'hardware/tools/')
-        # default to empty string because avrsize is on path
-        avrsizehome = config.get('avrsizeHome', '')
 
         # location of global avr conf
-        avrconf = config.get('avrConf', avrdudehome + 'avrdude.conf')
+        avrconf = config.get('avrConf', '/etc/avrdude.conf')
 
-        boardsFile = loadBoardsFile(arduinohome)
+        boardsFile = loadBoardsFile()
         if not boardsFile:
             return False
         boardSettings = fetchBoardSettings(boardsFile, boardType)
@@ -568,15 +558,12 @@ class ArduinoProgrammer(SerialProgrammer):
         printStdErr("\nChecking hex file size with avr-size.")
 
         # start programming the Arduino
-        avrsizeCommand = avrsizehome + 'avr-size ' + "\"" + hexFile + "\""
+        avrsizeCommand = 'avr-size ' + "\"" + hexFile + "\""
 
         # check program size against maximum size
         p = sub.Popen(avrsizeCommand, stdout=sub.PIPE,
                       stderr=sub.PIPE, shell=True)
         output, errors = p.communicate()
-        #if errors != "":
-        #    printStdErr('\navr-size error: {0}'.format(errors))
-        #    return False
 
         programSize = output.split()[7]
         printStdErr('\nProgram size: {0} bytes out of max {1}.'.format(programSize.decode(), boardSettings['upload.maximum_size']))
@@ -600,12 +587,11 @@ class ArduinoProgrammer(SerialProgrammer):
             config['port'] = convert.get_device_from_brewpidev(config['port'])
 
         bootLoaderPort = util.findSerialPort(bootLoader=True, my_port=config['port'])
-        # bootLoaderPort = util.findSerialPort(bootLoader=True)
         if not bootLoaderPort:
             printStdErr("\nERROR: Could not find port in bootloader.")
             return False
 
-        programCommand = (avrdudehome + 'avrdude' +
+        programCommand = ('avrdude' +
                         ' -F' +  # override device signature check
                         ' -e' +  # erase flash and eeprom before programming. This prevents issues with corrupted EEPROM
                         ' -p ' + boardSettings['build.mcu'] +

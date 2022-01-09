@@ -19,6 +19,7 @@ downloads/
 utils/downloads/
 venv/
 .gitconfig
+boards.txt
 
 # Compiled Python files
 *.py[co]

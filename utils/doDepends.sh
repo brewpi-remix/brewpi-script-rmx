@@ -75,7 +75,7 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
 
     # Packages to be installed/checked via apt
-    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools arduino-core apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
+    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools avrdude binutils-avr apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
     PIP3PACKAGES="requirements.txt"
 }
@@ -321,6 +321,22 @@ do_packages() {
 }
 
 ############
+### Bring down boards.txt from Arduino-core
+############
+
+do_boards() {
+    local user project branch filename wgetcmd
+    echo -e "\nDownloading current boards configuration."
+    user="arduino"
+    project="ArduinoCore-avr"
+    branch="master"
+    filename="boards.txt"
+    target="$GITROOT/boards.txt"
+    wgetcmd="wget -q https://raw.githubusercontent.com/$user/$project/$branch/$filename -O $target"
+    eval "$wgetcmd"||die
+}
+
+############
 ### Reset BT baud rate < Pi4
 ############
 
@@ -429,6 +445,7 @@ main() {
     rem_php5            # Remove php5 packages
     check_nginx         # Offer to remove nginx packages
     do_packages         # Check on required packages
+    do_boards           # Get current boards.txt
     do_uart             # Slow down UART
     do_venv             # Set up venv
     do_aliases          # Set up BrewPi user aliases

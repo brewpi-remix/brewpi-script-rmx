@@ -1342,9 +1342,10 @@ def loop():  # Main program loop
                                                     prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
 
                                                 # Get battery value from anything >= Tilt v2
-                                                if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
-                                                    if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
-                                                        prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+                                                if prevTempJson[config['tiltColor'] + 'HWVer']:
+                                                    if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
+                                                        if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
+                                                            prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
 
                                                 # Set time of last update
                                                 lastTiltbridge = timestamp = time.time()

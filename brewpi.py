@@ -1597,7 +1597,8 @@ def loop():  # Main program loop
                                 # Expire old Tiltbridge values
                                 if ((time.time() - lastTiltbridge) > timeoutTiltbridge) and tiltbridge == True:
                                     tiltbridge = False  # Turn off Tiltbridge in case we switched to BT
-                                    logMessage("Turned off Tiltbridge.")
+                                    color = config['tiltColor']
+                                    logMessage("Expired {} tilt and turned off Tiltbridge.".format(color))
                                     if checkKey(prevTempJson, color + 'Temp'):
                                         prevTempJson[color + 'Temp'] = None
                                     if checkKey(prevTempJson, color + 'SG'):

@@ -1302,12 +1302,10 @@ def loop():  # Main program loop
 
                                                 # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
 
-                                                if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
-                                                    if api['tilts'][config['tiltColor']]['high_resolution']:
-                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 4
-                                                elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
-                                                    if api['tilts'][config['tiltColor']]['sends_battery']:
-                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
+                                                if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution') and api['tilts'][config['tiltColor']]['high_resolution']):
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 4
+                                                elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery') and api['tilts'][config['tiltColor']]['sends_battery']):
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
                                                 else:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 0
 

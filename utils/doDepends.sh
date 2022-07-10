@@ -373,7 +373,7 @@ do_venv() {
         cp "$HOMEPATH/.bashrc" "$USERROOT/"
         cp "$HOMEPATH/.profile" "$USERROOT/"
 
-        venvcmd="python3 -m venv "$USERROOT/venv" --prompt bpr"
+        venvcmd="python3 -m venv $USERROOT/venv --prompt bpr"
         eval "$venvcmd"||die
     else
         echo -e "\nBrewPi user venv already exists."

@@ -1,9 +1,8 @@
-simplejson~=3.17.2
-requests~=2.21.0
-psutil~=5.8.0
-configobj~=5.0.6
+simplejson~=3.19.2
+requests~=2.31.0
+psutil~=5.9.6
+configobj~=5.0.8
 aioblescan~=0.2.6
-GitPython~=3.1.11
+GitPython~=3.1.40
 pyserial~=3.5
-numpy~=1.21.5
-packaging~=20.9
+numpy~=1.26.2

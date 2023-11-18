@@ -6,3 +6,4 @@ aioblescan~=0.2.6
 GitPython~=3.1.40
 pyserial~=3.5
 numpy~=1.26.2
+packaging~=23.2

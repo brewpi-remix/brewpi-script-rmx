@@ -1302,12 +1302,10 @@ def loop():  # Main program loop
 
                                                 # tilt.TILT_VERSIONS = ['Unknown', 'v1', 'v2', 'v3', 'Pro', 'v2 or 3']
 
-                                                if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution')):
-                                                    if api['tilts'][config['tiltColor']]['high_resolution']:
-                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 4
-                                                elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery')):
-                                                    if api['tilts'][config['tiltColor']]['sends_battery']:
-                                                        prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
+                                                if (checkKey(api['tilts'][config['tiltColor']], 'high_resolution') and api['tilts'][config['tiltColor']]['high_resolution']):
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 4
+                                                elif (checkKey(api['tilts'][config['tiltColor']], 'sends_battery') and api['tilts'][config['tiltColor']]['sends_battery']):
+                                                    prevTempJson[config['tiltColor'] + 'HWVer'] = 5 # Battery = >=2
                                                 else:
                                                     prevTempJson[config['tiltColor'] + 'HWVer'] = 0
 
@@ -1342,9 +1340,10 @@ def loop():  # Main program loop
                                                     prevTempJson[config['tiltColor'] + 'Temp'] = round(_temp)
 
                                                 # Get battery value from anything >= Tilt v2
-                                                if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
-                                                    if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
-                                                        prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
+                                                if prevTempJson[config['tiltColor'] + 'HWVer']:
+                                                    if int(prevTempJson[config['tiltColor'] + 'HWVer']) >= 2:
+                                                        if (checkKey(api['tilts'][config['tiltColor']], 'weeks_on_battery')):
+                                                            prevTempJson[config["tiltColor"] + 'Batt'] = int(api['tilts'][config['tiltColor']]['weeks_on_battery'])
 
                                                 # Set time of last update
                                                 lastTiltbridge = timestamp = time.time()
@@ -1596,7 +1595,8 @@ def loop():  # Main program loop
                                 # Expire old Tiltbridge values
                                 if ((time.time() - lastTiltbridge) > timeoutTiltbridge) and tiltbridge == True:
                                     tiltbridge = False  # Turn off Tiltbridge in case we switched to BT
-                                    logMessage("Turned off Tiltbridge.")
+                                    color = config['tiltColor']
+                                    logMessage("Expired {} tilt and turned off Tiltbridge.".format(color))
                                     if checkKey(prevTempJson, color + 'Temp'):
                                         prevTempJson[color + 'Temp'] = None
                                     if checkKey(prevTempJson, color + 'SG'):

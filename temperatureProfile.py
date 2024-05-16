@@ -38,7 +38,7 @@ import BrewPiUtil as util
 
 
 def getNewTemp(scriptPath):
-    with open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'rU') as csvfile:
+    with open(util.addSlash(scriptPath) + 'settings/tempProfile.csv', 'r') as csvfile:
         dialect = csv.Sniffer().sniff(csvfile.readline())
         csvfile.seek(0)
         temperatureReader = csv.reader(csvfile, dialect)

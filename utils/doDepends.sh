@@ -75,7 +75,7 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
 
     # Packages to be installed/checked via apt
-    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools avrdude binutils-avr apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libatlas-base-dev python3-numpy python3-scipy"
+    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools avrdude binutils-avr apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libopenblas-dev libatlas-base-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
     PIP3PACKAGES="requirements.txt"
 }

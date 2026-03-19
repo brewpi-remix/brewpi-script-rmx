@@ -138,7 +138,7 @@ flash() {
     local yn branch pythonpath
     # Check to see if we should allow beta code automatically
     branch="${GITBRNCH,,}"
-    if [ ! "$branch" == "master" ] && [[ ! "$ARGUMENTS" == *"beta"* ]]; then
+    if [ ! "$branch" == "main" ] && [[ ! "$ARGUMENTS" == *"beta"* ]]; then
         ARGUMENTS="$ARGUMENTS --beta"
     fi
 

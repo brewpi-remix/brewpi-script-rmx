@@ -275,7 +275,7 @@ cleanup() {
 flash() {
     local yn branch
     branch==$(git branch | grep \* | cut -d ' ' -f2)
-    if [ ! "$branch" == "master" ]; then
+    if [ ! "$branch" == "main" ]; then
         branch="--beta"
     else
         branch=""

@@ -75,7 +75,7 @@ init() {
     . "$GITROOT/inc/nettest.inc" "$@"
 
     # Packages to be installed/checked via apt
-    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools avrdude binutils-avr apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libopenblas-dev libatlas-base-dev python3-numpy python3-scipy"
+    APTPACKAGES="git python3 python3-pip python3-venv python3-setuptools avrdude binutils-avr apache2 php libapache2-mod-php php-cli php-cgi php-mbstring php-xml libopenblas-dev liblapack-dev python3-numpy python3-scipy"
     # Packages to be installed/check via pip3
     PIP3PACKAGES="requirements.txt"
 }
@@ -329,7 +329,7 @@ do_boards() {
     echo -e "\nDownloading current boards configuration."
     user="arduino"
     project="ArduinoCore-avr"
-    branch="master"
+    branch="main"
     filename="boards.txt"
     target="$GITROOT/boards.txt"
     wgetcmd="wget -q https://raw.githubusercontent.com/$user/$project/$branch/$filename -O $target"

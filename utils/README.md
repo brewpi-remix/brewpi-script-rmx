@@ -1,8 +1,8 @@
-# <a name="top"></a>![BrewPi Remix Legacy Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/master/images/brewpi_logo.png)
+# <a name="top"></a>![BrewPi Remix Legacy Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/main/images/brewpi_logo.png)
 
 # BrewPi Remix Remix Utilities
 
-The `utils` directory contains `bash` scripts which are used both by the user, and the system.  They are generally used to enforce conditions prior to executing a Python script, such as activating the Python virtual environment (venv) or runnign as root.
+The `utils` directory contains `bash` scripts which are used both by the user, and the system.  They are generally used to enforce conditions prior to executing a Python script, such as activating the Python virtual environment (venv) or running as root.
 
 |Filename|Description|Util*|
 |---|---|---|

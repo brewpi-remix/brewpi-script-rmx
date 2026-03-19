@@ -32,10 +32,15 @@
 
 import re
 
+
 def parseEnumInFile(hFilePath, enumName):
     messageDict = {}
     hFile = open(hFilePath)
-    regex = re.compile("[A-Z]+\(([A-Za-z][A-Z0-9a-z_]*),\s*\"([^\"]*)\"((?:\s*,\s*[A-Za-z][A-Z0-9a-z_\.]*\s*)*)\)\s*,?")
+
+    regex = re.compile(
+        r'[A-Z]+\(([A-Za-z][A-Z0-9a-z_]*),\s*"([^"]*)"((?:\s*,\s*[A-Za-z][A-Z0-9a-z_\.]*\s*)*)\)\s*,?'
+    )
+
     for line in hFile:
         if 'enum ' + enumName in line:
             break  # skip lines until enum open is encountered
@@ -43,15 +48,18 @@ def parseEnumInFile(hFilePath, enumName):
     count = 0
     for line in hFile:
         if 'MSG(' in line:
-            # print line
-            # print regex
-            # r = regex.search(str(line))
-            groups = regex.findall(line)
-            logKey = groups[0][0]
-            logString = groups[0][1]
-            paramNames = groups[0][2].replace(",", " ").split()
-            messageDict[count] = {'logKey': logKey, 'logString': logString,'paramNames': paramNames}
-            count += 1
+            match = regex.search(line)
+            if match:
+                logKey = match.group(1)
+                logString = match.group(2)
+                paramNames = match.group(3).replace(",", " ").split()
+
+                messageDict[count] = {
+                    'logKey': logKey,
+                    'logString': logString,
+                    'paramNames': paramNames
+                }
+                count += 1
 
         if 'END enum ' + enumName in line:
             break

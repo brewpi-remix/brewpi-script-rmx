@@ -329,7 +329,7 @@ do_boards() {
     echo -e "\nDownloading current boards configuration."
     user="arduino"
     project="ArduinoCore-avr"
-    branch="main"
+    branch="master"
     filename="boards.txt"
     target="$GITROOT/boards.txt"
     wgetcmd="wget -q https://raw.githubusercontent.com/$user/$project/$branch/$filename -O $target"

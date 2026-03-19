@@ -1,4 +1,4 @@
-# <a name="top"></a>![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/master/images/brewpi_logo.png)
+# <a name="top"></a>![BrewPi Legacy Remix Logo](https://raw.githubusercontent.com/brewpi-remix/brewpi-www-rmx/main/images/brewpi_logo.png)
 
 Before we proceed, a huge thank you to [Elco Jacobs](https://github.com/elcojacobs), without whom none of this would be possible.
 
@@ -10,4 +10,4 @@ These [forks](https://en.wikipedia.org/wiki/Fork_(software_development)) are int
 
 # Getting Started
 
-To get started, please head over to the [BrewPi Remix Tools](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/master/README.md) README page, and follow along there.
+To get started, please head over to the [BrewPi Remix Tools](https://github.com/brewpi-remix/brewpi-tools-rmx/blob/main/README.md) README page, and follow along there.

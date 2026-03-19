@@ -251,13 +251,13 @@ def check_repo(repo): # Check most recent commit date on the repo passed to it
 
     print("You are on branch " + localBranch)
 
-    if not localBranch in ["master", "legacy"] and not userInput:
-        print("Your checked out branch is not master, our stable release branch.")
-        print("It is highly recommended that you switch to the stable master branch.")
+    if not localBranch in ["main", "legacy"] and not userInput:
+        print("Your checked out branch is not main, our stable release branch.")
+        print("It is highly recommended that you switch to the stable main branch.")
         choice = raw_input("Would you like to do that? [Y/n]: ")
         if any(choice == x for x in ["", "yes", "Yes", "YES", "yes", "y", "Y"]):
-            print("Switching branch to master.")
-            newBranch = "master"
+            print("Switching branch to main.")
+            newBranch = "main"
 
     ### Get available remotes
     remote = repo.remotes[0] # default to first found remote

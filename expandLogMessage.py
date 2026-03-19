@@ -124,14 +124,22 @@ def expandLogMessage(logMessageJsonString):
     return expanded
 
 def filterOutLogMessages(input_string):
-    # Removes log messages from string received from Serial. Log messages
-    # are sometimes printed in the middle of a JSON string, which causes
-    # decode errors. This function filters them out and prints them.
-    m = re.compile("D:\{.*?\}\r?\n")
-    log_messages = m.findall(input_string)
-    stripped = m.sub('', input_string)
+    """
+    Remove embedded log messages from a serial string.
 
-    return (stripped, log_messages)
+    Log messages are expected to look like:
+        D:{...}\n
+    or:
+        D:{...}\r\n
+
+    Returns:
+        tuple[str, list[str]]: The cleaned string and the removed log messages.
+    """
+    pattern = re.compile(r"D:\{.*?\}\r?\n")
+    log_messages = pattern.findall(input_string)
+    stripped = pattern.sub("", input_string)
+
+    return stripped, log_messages
 
 if __name__ == '__main__':
     # Quick dirty test
